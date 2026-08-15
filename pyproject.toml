@@ -1,0 +1,107 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "synaps-gridplan"
+version = "0.1.1"
+description = "Deterministic maintenance scheduling contour for power-grid assets on SynAPS (experimental)"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+authors = [{ name = "SynAPS-GridPlan Contributors" }]
+keywords = [
+  "power-grid",
+  "maintenance",
+  "scheduling",
+  "TOIR",
+  "outage",
+  "operations-research",
+  "constraint-programming",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "synaps @ git+https://github.com/KonkovDV/SynAPS.git@c6b8c11fb677118296e6537a861c3e5dc527f842",
+  "pydantic>=2.9",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "ruff>=0.8",
+  "mypy>=1.13",
+]
+
+[project.scripts]
+synaps-gridplan = "synaps_gridplan.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/KonkovDV/SynAPS-GridPlan"
+Repository = "https://github.com/KonkovDV/SynAPS-GridPlan"
+Issues = "https://github.com/KonkovDV/SynAPS-GridPlan/issues"
+Upstream = "https://github.com/KonkovDV/SynAPS"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/synaps_gridplan"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/synaps_gridplan" = "synaps_gridplan"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src/synaps_gridplan",
+  "/native/synaps-gridplan-rs",
+  "/schemas",
+  "/tests",
+  "/benchmark",
+  "/README.md",
+  "/LICENSE",
+  "/CHANGELOG.md",
+  "/APPLICATION.md",
+  "/SECURITY.md",
+  "/pyproject.toml",
+]
+exclude = [
+  "/native/synaps-gridplan-rs/target",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "slow: CP-SAT exact-solve guards (~10 s each)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/test_jury_report.py" = ["E402"]
+"tests/test_res_severny.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["synaps_gridplan"]
+mypy_path = "src"

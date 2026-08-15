@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/KonkovDV/SynAPS-GridPlan/schemas/gridplan.v2.result.schema.json",
+  "title": "GridPlanResultV2",
+  "type": "object",
+  "required": ["outcome", "schedule", "schedule_problem"],
+  "properties": {
+    "outcome": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "solver_config",
+        "status",
+        "verified_feasible",
+        "hard_violation_count",
+        "metadata",
+        "id_map"
+      ],
+      "properties": {
+        "schema_version": { "type": "string" },
+        "solver_config": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["optimal", "feasible", "infeasible", "timeout", "error"]
+        },
+        "verified_feasible": { "type": "boolean" },
+        "hard_violation_count": { "type": "integer", "minimum": 0 },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "input_hash": { "type": "string" },
+            "config_hash": { "type": "string" },
+            "synaps_commit": { "type": "string" },
+            "gridplan_version": { "type": "string" },
+            "claim_level": { "type": "string" },
+            "data_provenance": { "type": "string" },
+            "claim_status": { "type": "string" },
+            "risk_proxy": { "type": "object" },
+            "gridplan_violations": { "type": "array" }
+          }
+        },
+        "id_map": { "type": "object" },
+        "frozen_assignments": { "type": "array" }
+      }
+    },
+    "schedule": { "type": "object" },
+    "schedule_problem": { "type": "object" },
+    "report": { "type": "object" },
+    "diff": { "type": "object" }
+  },
+  "additionalProperties": true
+}

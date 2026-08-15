@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/KonkovDV/SynAPS-GridPlan/schemas/gridplan.v2.diff.schema.json",
+  "title": "GridPlanDiffV2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "added_assignments",
+    "removed_assignments",
+    "moved_assignments",
+    "unchanged_frozen_assignments"
+  ],
+  "properties": {
+    "schema_version": { "const": "gridplan.diff.v1" },
+    "added_assignments": { "type": "array" },
+    "removed_assignments": { "type": "array" },
+    "moved_assignments": { "type": "array" },
+    "unchanged_frozen_assignments": { "type": "array" },
+    "frozen_job_count": { "type": "integer", "minimum": 0 },
+    "newly_late_jobs": { "type": "array", "items": { "type": "string" } },
+    "newly_unassigned_jobs": { "type": "array", "items": { "type": "string" } },
+    "changed_metrics": { "type": "object" },
+    "violations": { "type": "array" }
+  },
+  "additionalProperties": true
+}

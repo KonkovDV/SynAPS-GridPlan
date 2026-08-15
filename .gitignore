@@ -1,0 +1,35 @@
+# Local / OS / tooling
+.DS_Store
+Thumbs.db
+*.pyc
+__pycache__/
+.venv/
+.idea/
+.vscode/
+.cursor/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.benchmarks/
+dist/
+build/
+coverage.xml
+htmlcov/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Working notes — not part of the published tree
+/docs/
+
+# Generated benchmark I/O
+benchmark/results/*.json
+benchmark/results/*.log
+benchmark/instances/*.json
+benchmark/scenarios/*.json
+
+# Rust build
+native/synaps-gridplan-rs/target/
