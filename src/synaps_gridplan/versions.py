@@ -9,5 +9,5 @@ ISO16290_TRL = 4
 
 # SynAPS commit this GridPlan release is validated against.
 # Bump deliberately when upgrading the engine; never float on branch tips.
-SYNAPS_COMMIT = "c6b8c11fb677118296e6537a861c3e5dc527f842"
+SYNAPS_COMMIT = "af7294349fa9a376907b152988ac31b17b3ce6da"
 SYNAPS_REPO = "https://github.com/KonkovDV/SynAPS"

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 — 2026-08-16 (engine pin)
+
+Revalidated against SynAPS
+[`af72943`](https://github.com/KonkovDV/SynAPS/commit/af7294349fa9a376907b152988ac31b17b3ce6da)
+after the engine CI fix (native-repair skip reasons without the Rust wheel,
+ALNS seed stub, ruff/mypy, control-plane 429). Product claims unchanged.
+
 ## 0.1.1 — 2026-08-15
 
 Public contest packet: crew- and window-constrained ТОиР scheduling on SynAPS.
