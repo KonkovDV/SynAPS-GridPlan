@@ -3,9 +3,11 @@
 ## 0.1.1 — 2026-08-16 (engine pin)
 
 Revalidated against SynAPS
-[`af72943`](https://github.com/KonkovDV/SynAPS/commit/af7294349fa9a376907b152988ac31b17b3ce6da)
-after the engine CI fix (native-repair skip reasons without the Rust wheel,
-ALNS seed stub, ruff/mypy, control-plane 429). Product claims unchanged.
+[`bd09d13`](https://github.com/KonkovDV/SynAPS/commit/bd09d13561b3bd690845d07546def59b4521b16c)
+after the engine CI close (native-repair skip reasons without the Rust wheel,
+ALNS seed stub, ruff/mypy, control-plane 429, Fastify/AJV `num_workers: null`
+coerced to 0 no longer 500s `/api/v1/solve`, function-length ratchet, `uv`
+lock-check, Linux lockfile without Windows `tzdata`). Product claims unchanged.
 
 ## 0.1.1 — 2026-08-15
 

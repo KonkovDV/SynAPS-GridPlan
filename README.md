@@ -7,7 +7,7 @@ with a Rust checker for the same constraints.
 | | |
 | --- | --- |
 | Version | **0.1.1** |
-| SynAPS pin | [`af72943`](https://github.com/KonkovDV/SynAPS/commit/af7294349fa9a376907b152988ac31b17b3ce6da) |
+| SynAPS pin | [`bd09d13`](https://github.com/KonkovDV/SynAPS/commit/bd09d13561b3bd690845d07546def59b4521b16c) |
 | Maturity | ISO 16290 TRL 4 (lab fixtures). Not a plant pilot. |
 
 What it does: assign crews to jobs under qualifications, outage windows,
