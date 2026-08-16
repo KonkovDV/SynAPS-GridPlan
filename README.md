@@ -46,15 +46,53 @@ python -m pytest -q -m "not slow"
 On Windows after `git pull`, reinstall the editable package — hatchling can
 leave a stale copy in `site-packages`.
 
+### Exit codes and fail-closed
+
+`solve` always writes a plan JSON. The process exit code is the checker, not
+“did GREED crash”:
+
+| Exit | Meaning |
+| --- | --- |
+| **0** | Verified plan: `verified_feasible=true`, zero hard violations |
+| **2** | Plan written, but the independent checker found hard violations |
+| **1** | Usage / unexpected error |
+
+GREED does not model asset exclusivity. On the default small feeder
+(`--seed 42`) it returns **exit 2**, `verified_feasible=false`, kind
+`ASSET_OVERLAP`. That is the product working, not a broken install.
+
+### Commands
+
+Jury demo (synthetic РЭС «Северный» — GREED verifies, FIFO does not):
+
 ```bash
-python -m synaps_gridplan synthesize --mode small --seed 42 -o feeder.json
-python -m synaps_gridplan synthesize --mode gres-block --seed 42 -o gres.json
-python -m synaps_gridplan solve feeder.json --solver GREED -o result.json
-python -m synaps_gridplan report result.json --format markdown
 python benchmark/jury_benchmark.py
 ```
 
-Optional Rust checker:
+Small feeder — expected fail-closed on the default seed:
+
+```bash
+python -m synaps_gridplan synthesize --mode small --seed 42 -o feeder.json
+python -m synaps_gridplan solve feeder.json --solver GREED -o result.json
+# exit 2, ASSET_OVERLAP — fail-closed
+```
+
+Same generator, seed that GREED verifies on this pin:
+
+```bash
+python -m synaps_gridplan synthesize --mode small --seed 12 -o feeder.json
+python -m synaps_gridplan solve feeder.json --solver GREED -o result.json
+python -m synaps_gridplan report result.json --format markdown
+```
+
+Generation-shaped fixture (synthetic, not a live plant):
+
+```bash
+python -m synaps_gridplan synthesize --mode gres-block --seed 42 -o gres.json
+```
+
+Optional Rust checker (FIFO on `small --seed 42` also exits **2** — same
+fail-closed). For a verified plan use the Python jury command above.
 
 ```bash
 cd native/synaps-gridplan-rs

@@ -43,6 +43,8 @@ ISO 16290, **уровень 4**: лабораторные (синтетичес�
 | Перепланирование не двигает замороженные заявки ПЛ | Scenario B в том же контуре |
 | Блок ГРЭС (синтетика): GREED чистый, FIFO нет | `tests/test_gres_block.py` |
 | Подделка графика ловится | `tests/test_adversarial_*.py` |
+| CLI exit 2 = fail-closed (`small --seed 42`) | README, `tests/test_cli_baselines.py` |
+| Python и Rust сходятся по kind доменного слоя | `tests/test_native_parity.py` |
 | Версия пакета = pin SynAPS в `pyproject.toml` | `tests/test_version_pins.py` |
 
 РЭС «Северный» — типовая схема 110/35/10 кВ и открытые нормы длительностей
@@ -76,7 +78,13 @@ ISO 16290, **уровень 4**: лабораторные (синтетичес�
 **Чем это не Excel и не 1С?** Excel не доказывает допустимость. 1С хранит
 заявки и факт. Здесь считаются слоты и проверяются правила.
 
-**Rust считает GREED?** Нет. Rust — FIFO и проверка.
+**Rust считает GREED?** Нет. Rust — FIFO и проверка. `cargo run -- check`
+принимает JSON Python CLI (`id_map`).
+
+**`solve --seed 42` вернул код 2?** Это fail-closed, не сломанный install.
+GREED не моделирует эксклюзивность актива; чекер находит `ASSET_OVERLAP`.
+Демо для жюри: `python benchmark/jury_benchmark.py`. На маленькой фикстуре
+зелёный GREED — `--seed 12`.
 
 **Оптимум на РЭС — значит оптимум везде?** CP-SAT доказал makespan на одной
 синтетической постановке. Другие цели и размеры — отдельно.

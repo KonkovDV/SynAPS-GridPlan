@@ -339,3 +339,21 @@ def test_independent_interruptions_do_not_hull_across_a_gap() -> None:
         )
     }
     assert "SIMULTANEOUS_OUTAGE_BAN" not in kinds
+
+
+def test_interruption_job_without_any_window_is_not_verified() -> None:
+    a = _asset()
+    c = _crew()
+    j = _job("J1", a, interruption_required=True, duration_min=60)
+    p = GridPlanProblem(
+        assets=[a],
+        crews=[c],
+        jobs=[j],
+        outage_windows=[],
+        planning_horizon_start=T0,
+        planning_horizon_end=T0 + HORIZON,
+    )
+    o = plan_with_config(p, solver_config="GREED", apply_frozen=False)
+    assert o.verified_feasible is False
+    kinds = o.metadata.get("gridplan_violation_kinds", [])
+    assert "OUTAGE_WINDOW_MISSING" in kinds or "OUTAGE_WINDOW_VIOLATION" in kinds

@@ -19,6 +19,7 @@
     "outage_windows": { "type": "array" },
     "spare_parts": { "type": "array" },
     "frozen_assignments": { "type": "array" },
+    "simultaneous_outage_bans": { "type": "array" },
     "travel_minutes": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
     "planning_horizon_start": { "type": "string", "format": "date-time" },
     "planning_horizon_end": { "type": "string", "format": "date-time" },

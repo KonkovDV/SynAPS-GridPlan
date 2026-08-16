@@ -4,7 +4,7 @@ use synaps_gridplan_rs::fifo::plan_fifo;
 use synaps_gridplan_rs::fingerprint::{fingerprint_payload, stable_int};
 use synaps_gridplan_rs::ids::gridplan_uid;
 use synaps_gridplan_rs::model::{FrozenAssignment, GridPlanProblem};
-use synaps_gridplan_rs::schedule::Assignment;
+use synaps_gridplan_rs::schedule::{assignments_from_python_cli, Assignment};
 use synaps_gridplan_rs::synthetic::synthesize_feeder;
 use uuid::Uuid;
 
@@ -221,4 +221,36 @@ fn chain_hull_occupies_gap_under_outage_ban() {
         "{kinds:?}"
     );
     assert!(!kinds.iter().any(|k| k == "OUTAGE_WINDOW_VIOLATION"));
+}
+
+#[test]
+fn python_cli_json_maps_operation_id_via_id_map() {
+    let op = Uuid::parse_str("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa0").unwrap();
+    let wc = Uuid::parse_str("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb0").unwrap();
+    let job = Uuid::parse_str("cccccccc-cccc-cccc-cccc-ccccccccccc0").unwrap();
+    let crew = Uuid::parse_str("dddddddd-dddd-dddd-dddd-ddddddddddd0").unwrap();
+    let root = serde_json::json!({
+        "outcome": {
+            "id_map": {
+                "job:cccccccc-cccc-cccc-cccc-ccccccccccc0": op,
+                "crew:dddddddd-dddd-dddd-dddd-ddddddddddd0": wc
+            },
+            "frozen_assignments": []
+        },
+        "schedule": {
+            "assignments": [{
+                "operation_id": op,
+                "work_center_id": wc,
+                "start_time": "2026-09-01T06:00:00+00:00",
+                "end_time": "2026-09-01T07:00:00+00:00",
+                "setup_minutes": 5
+            }]
+        }
+    });
+    let (assignments, frozen) = assignments_from_python_cli(&root).expect("map");
+    assert!(frozen.is_empty());
+    assert_eq!(assignments.len(), 1);
+    assert_eq!(assignments[0].job_id, job);
+    assert_eq!(assignments[0].crew_id, crew);
+    assert_eq!(assignments[0].setup_minutes, 5);
 }

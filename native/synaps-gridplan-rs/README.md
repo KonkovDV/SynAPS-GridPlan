@@ -32,11 +32,34 @@ cargo build --release
 ```bash
 cargo run -- synthesize --mode small --seed 42 -o feeder.json
 cargo run -- solve feeder.json --engine fifo -o plan.json
+# exit 2 = fail-closed (FIFO on this seed is not verified). Exit 0 = checked plan.
 cargo run -- report plan.json --format markdown
 cargo run -- check feeder.json plan.json
 # optional, requires `pip install -e .` at repo root:
 cargo run -- solve feeder.json --engine greed -o greed.json
 ```
+
+Exit **2** means the checker rejected the plan. It is not a build failure.
+Verified contest demo: `python benchmark/jury_benchmark.py` at repo root.
+
+`check` accepts native `PlanResult` **or** Python CLI solve JSON
+(`outcome.id_map` + `schedule.assignments` with `operation_id`).
+
+## Kind names (GridPlan layer)
+
+Rust does not reimplement the SynAPS engine checker. Domain kinds match
+except two aliases:
+
+| Python | Rust |
+| --- | --- |
+| `UNKNOWN_OPERATION` | `UNKNOWN_JOB` |
+| `DUPLICATE_ASSIGNMENT` | `DUPLICATE_JOB_ASSIGNMENT` |
+
+Other domain kinds (`ASSET_OVERLAP`, `CREW_OVERLAP`, `OUTAGE_WINDOW_*`,
+`FROZEN_ASSIGNMENT_CONFLICT`, …) are identical strings. Engine-only kinds
+(`MACHINE_OVERLAP`, `DURATION_BELOW_GRAIN`, …) stay in Python.
+
+Parity guard: `tests/test_native_parity.py` (needs `cargo` on PATH).
 
 ## License
 

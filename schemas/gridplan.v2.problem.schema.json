@@ -18,6 +18,7 @@
     "jobs": { "type": "array", "minItems": 1 },
     "outage_windows": { "type": "array" },
     "spare_parts": { "type": "array" },
+    "frozen_assignments": { "type": "array" },
     "simultaneous_outage_bans": { "type": "array" },
     "travel_minutes": {
       "type": "object",

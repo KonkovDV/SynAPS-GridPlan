@@ -15,7 +15,7 @@ pub use constraints::{check_plan, merge_expected_frozen, Violation};
 pub use fifo::plan_fifo;
 pub use fingerprint::{fingerprint_payload, stable_digest, stable_int};
 pub use model::GridPlanProblem;
-pub use schedule::PlanResult;
+pub use schedule::{assignments_from_python_cli, looks_like_python_cli_result, PlanResult};
 pub use synthetic::synthesize_feeder;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

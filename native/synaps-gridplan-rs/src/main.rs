@@ -11,7 +11,9 @@ use synaps_gridplan_rs::constraints::check_plan;
 use synaps_gridplan_rs::fifo::plan_fifo;
 use synaps_gridplan_rs::model::{FrozenAssignment, GridPlanProblem};
 use synaps_gridplan_rs::report::{render_csv, render_markdown};
-use synaps_gridplan_rs::schedule::{Assignment, PlanResult};
+use synaps_gridplan_rs::schedule::{
+    assignments_from_python_cli, looks_like_python_cli_result, Assignment, PlanResult,
+};
 use synaps_gridplan_rs::synthetic::synthesize_feeder;
 use synaps_gridplan_rs::VERSION;
 
@@ -160,20 +162,21 @@ fn load_assignments_flexible(
 ) -> Result<(Vec<Assignment>, Vec<FrozenAssignment>), String> {
     let raw = fs::read_to_string(path).map_err(|e| e.to_string())?;
     let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
+    if looks_like_python_cli_result(&v) {
+        return assignments_from_python_cli(&v);
+    }
     if let Ok(plan) = serde_json::from_value::<PlanResult>(v.clone()) {
         return Ok((plan.assignments, vec![]));
     }
     if let Some(arr) = v.get("assignments").and_then(|a| a.as_array()) {
         let mut out = Vec::new();
         for item in arr {
-            // Native shape
             if item.get("job_id").is_some() {
                 out.push(serde_json::from_value(item.clone()).map_err(|e| e.to_string())?);
                 continue;
             }
-            // Python report shape uses operation_id — cannot map without id_map.
             return Err(
-                "assignments use operation_id; pass a native PlanResult or domain job_id rows"
+                "assignments use operation_id; pass Python CLI JSON (with outcome.id_map) or native job_id rows"
                     .into(),
             );
         }

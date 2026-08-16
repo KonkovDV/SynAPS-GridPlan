@@ -120,3 +120,37 @@ def test_cli_synthesize_solve_report_disrupt(tmp_path: Path) -> None:
     repaired_raw = json.loads(repaired.read_text(encoding="utf-8"))
     assert "diff" in repaired_raw
     assert repaired_raw["diff"]["schema_version"] == "gridplan.diff.v1"
+
+
+def test_cli_small_seed42_greed_is_fail_closed(tmp_path: Path) -> None:
+    feeder = tmp_path / "feeder.json"
+    result = tmp_path / "result.json"
+    assert main(["synthesize", "--mode", "small", "--seed", "42", "-o", str(feeder)]) == 0
+    assert main(["solve", str(feeder), "--solver", "GREED", "-o", str(result)]) == 2
+    raw = json.loads(result.read_text(encoding="utf-8"))
+    assert raw["outcome"]["verified_feasible"] is False
+    assert "ASSET_OVERLAP" in raw["outcome"]["metadata"]["gridplan_violation_kinds"]
+
+
+def test_cli_small_seed12_greed_is_verified(tmp_path: Path) -> None:
+    feeder = tmp_path / "feeder.json"
+    result = tmp_path / "result.json"
+    assert main(["synthesize", "--mode", "small", "--seed", "12", "-o", str(feeder)]) == 0
+    assert main(["solve", str(feeder), "--solver", "GREED", "-o", str(result)]) == 0
+    raw = json.loads(result.read_text(encoding="utf-8"))
+    assert raw["outcome"]["verified_feasible"] is True
+    assert raw["outcome"]["hard_violation_count"] == 0
+
+
+def test_small_greed_multiseed_records_fail_closed() -> None:
+    """Default seed 42 is dirty; seed 12 is clean. GREED is not asset-exclusive."""
+
+    dirty: list[int] = []
+    clean: list[int] = []
+    for seed in [*range(16), 42]:
+        problem = synthesize_feeder(mode="small", seed=seed)
+        outcome = plan_with_config(problem, solver_config="GREED")
+        (clean if outcome.verified_feasible else dirty).append(seed)
+    assert 42 in dirty
+    assert 12 in clean
+    assert dirty, "expected at least one fail-closed small seed"
