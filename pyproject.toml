@@ -76,6 +76,7 @@ include = [
   "/APPLICATION.md",
   "/SECURITY.md",
   "/pyproject.toml",
+  "/requirements-lock.txt",
 ]
 exclude = [
   "/native/synaps-gridplan-rs/target",

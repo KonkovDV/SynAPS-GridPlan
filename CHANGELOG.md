@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 — 2026-08-17 (application brief)
+
+Public `APPLICATION.md` states the marathon customer (ПАО «Россети»),
+team (single author; no invented expert), bottom-up TAM/SAM/SOM, and the
+pilot ask. `requirements-lock.txt` pins the same SynAPS SHA on Linux
+(`uv pip compile --python-platform linux`). Product claims unchanged.
+
 ## 0.1.1 — 2026-08-16 (engine pin)
 
 Revalidated against SynAPS

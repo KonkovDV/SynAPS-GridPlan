@@ -45,6 +45,13 @@ def test_pyproject_synaps_git_pin_matches_versions() -> None:
     assert f"@{SYNAPS_COMMIT}" in text
 
 
+def test_requirements_lock_pins_same_synaps_commit() -> None:
+    lock = Path(__file__).resolve().parents[1] / "requirements-lock.txt"
+    text = lock.read_text(encoding="utf-8")
+    assert f"@{SYNAPS_COMMIT}" in text
+    assert "tzdata==" not in text
+
+
 def test_installed_synaps_source_mentions_rt20_markers() -> None:
     """Smoke: installed tree contains the fail-closed surfaces the pin promises
     (UNKNOWN_* checks, repair kwargs guard, empty-disruption refuse).

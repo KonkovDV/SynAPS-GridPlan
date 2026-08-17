@@ -113,6 +113,7 @@ schemas/                    JSON Schema
 benchmark/                  synthetic РЭС / jury runners
 tests/
 APPLICATION.md              MIK application brief (Russian)
+requirements-lock.txt       Linux pin of Python deps + SynAPS SHA
 ```
 
 ## License
