@@ -608,6 +608,7 @@ def _spare_violations(
                     )
                 )
             consumption[spare_id] = consumption.get(spare_id, 0) + 1
+            # one unit per listed spare id; per-job BOM quantity is out of scope
     for spare in problem.spare_parts:
         used = consumption.get(spare.id, 0)
         if used > spare.usable_quantity:

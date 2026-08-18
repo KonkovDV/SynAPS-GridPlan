@@ -1,7 +1,7 @@
-"""Emergency-day guard: узел «Восточный» 18.08.2026 must stay GREED-clean,
-FIFO-broken, and the pre-attack frozen ПЛ window must survive replan.
+"""Emergency-day guard: узел «Восточный» must stay GREED-clean,
+FIFO-broken, and the pre-agreed frozen ПЛ window must survive replan.
 
-Protects the emergency-restoration demo (synthetic, public-news-shaped)
+Protects the emergency-restoration demo (synthetic, regulatory chain)
 from regressions in adapter/planner semantics: emergency outage windows,
 inspection→repair chains, ДГУ jobs without interruption, frozen ПЛ rows.
 """
@@ -50,7 +50,7 @@ def test_emergency_instance_shape(problem) -> None:
     switching = [j for j in problem.jobs if "switch_110" in j.required_qualifications]
     assert len(switching) == 4  # локализация + 3 ввода в работу 110 кВ
     # Прецедентный граф обязан оставаться линеен: адаптер компилирует только
-    # цепочки (join/fan-out молча теряют рёбра — см. docs/29, находка ED-2).
+    # цепочки (join/fan-out silently drop edges).
     succ_count: dict[str, int] = {}
     for j in problem.jobs:
         assert len(j.predecessor_job_ids) <= 1
@@ -69,7 +69,7 @@ def test_emergency_greed_verified_clean(problem) -> None:
 
 
 def test_emergency_frozen_pl_row_pinned(problem) -> None:
-    """ТО Т-2 (Городская) — заявка ПЛ 13:00–17:00, согласованная до атаки:
+    """ТО Т-2 (Городская) — заявка ПЛ 13:00–17:00, согласованная накануне:
     GREED обязан поставить её ровно в замороженный слот и на ОВБ-2."""
     outcome = plan_with_config(problem, solver_config="GREED", apply_frozen=True)
     assert outcome.verified_feasible
@@ -91,8 +91,8 @@ def test_emergency_fifo_breaks_hard_rules(problem) -> None:
 
 
 def test_emergency_replan_preserves_frozen_pl(problem) -> None:
-    """Повторный облёт 14:00: цепочка ВЛ-110 уходит на repair; замороженная
-    ПЛ-0817-14 и остальной день обязаны остаться неподвижными."""
+    """Уточнение объёма по ВЛ-110: цепочка уходит на repair; замороженная
+    ПЛ-0901-14 и остальной день обязаны остаться неподвижными."""
     base = plan_with_config(problem, solver_config="GREED", apply_frozen=True)
     ref_to_job = {j.external_ref: j for j in problem.jobs}
     disrupted = [ref_to_job[r] for r in DISRUPTED_REFS]
@@ -118,14 +118,18 @@ def test_emergency_determinism(problem) -> None:
     ]
 
 
-def test_emergency_report_renders_verified(tmp_path) -> None:
+def test_emergency_report_renders_verified() -> None:
     """A dirty GREED plan must not be labelled verified in the rendered report."""
     results = run()
     md = render_md(results)
     assert results["scenario_a"]["greed"]["verified_feasible"]
-    assert "18.08.2026" in md
+    assert "Восточный" in md
+    assert "СТО 17330282" in md
     assert "ДГУ-200" in md
-    assert "ПЛ-0817-14" in md
+    assert "ПЛ-0901-14" in md
     assert "Локализация повреждённого участка" in md
+    assert "Мособлэнерго" not in md
+    assert "до атаки" not in md
+    assert "Реальный день" not in md
     fp = results["scenario_c"]["plan_fingerprint"]
     assert isinstance(fp, str) and len(fp) == 64 and fp[:16] in md

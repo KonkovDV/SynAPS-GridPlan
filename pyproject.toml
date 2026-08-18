@@ -100,6 +100,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 "tests/test_jury_report.py" = ["E402"]
 "tests/test_res_severny.py" = ["E402"]
+"tests/test_emergency_day.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.12"
