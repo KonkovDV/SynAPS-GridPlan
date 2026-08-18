@@ -9,6 +9,7 @@ with a Rust checker for the same constraints.
 | Version | **0.1.1** |
 | SynAPS pin | [`bd09d13`](https://github.com/KonkovDV/SynAPS/commit/bd09d13561b3bd690845d07546def59b4521b16c) |
 | Maturity | ISO 16290 TRL 4 (lab fixtures). Not a plant pilot. |
+| Pitch | [SynAPS-GridPlan.pdf](SynAPS-GridPlan.pdf) (22 slides, Russian) |
 
 What it does: assign crews to jobs under qualifications, outage windows,
 spares (one stock unit per listed part), linear precedence, frozen ПЛ rows,
@@ -137,6 +138,7 @@ schemas/                    JSON Schema
 benchmark/                  synthetic РЭС / jury / emergency-day / scale runners
 tests/
 APPLICATION.md              MIK application brief (Russian)
+SynAPS-GridPlan.pdf         22-slide MIK pitch (Russian)
 requirements-lock.txt       Linux pin of Python deps + SynAPS SHA
 ```
 

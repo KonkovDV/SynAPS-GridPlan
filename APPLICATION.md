@@ -99,6 +99,7 @@ SCADA не нужен.
 | CLI exit 2 = fail-closed (`small --seed 42`) | README, `tests/test_cli_baselines.py` |
 | Python и Rust сходятся по kind доменного слоя | `tests/test_native_parity.py` |
 | Версия пакета = pin SynAPS в `pyproject.toml` | CLI `version`, `tests/test_version_pins.py` |
+| Питч (22 слайда) | [`SynAPS-GridPlan.pdf`](SynAPS-GridPlan.pdf) |
 
 РЭС «Северный» — типовая схема 110/35/10 кВ и открытые нормы длительностей
 (СТО 34.01-24 и др.). Это не выгрузка ПАО «Россети».

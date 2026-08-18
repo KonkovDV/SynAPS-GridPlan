@@ -71,6 +71,7 @@ include = [
   "/LICENSE",
   "/CHANGELOG.md",
   "/APPLICATION.md",
+  "/SynAPS-GridPlan.pdf",
   "/SECURITY.md",
   "/pyproject.toml",
   "/requirements-lock.txt",

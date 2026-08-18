@@ -20,6 +20,7 @@ ISO 16290 TRL 4. Not a plant pilot.
   (one chain per asset, one outage, stock ≥ demand). GREED verifies; FIFO
   does not. `small --seed 42` remains the fail-closed ASSET_OVERLAP demo.
   50k engine runs are a different domain.
+- Contest pitch PDF at repo root: `SynAPS-GridPlan.pdf` (22 slides, Russian).
 - CLI `version` prints GridPlan version and the SynAPS pin. Editable install
   follows `src/` (no hatch `force-include` snapshot in `site-packages`).
   Emergency-day console banner is ASCII so Windows cp1251 demos do not crash.
