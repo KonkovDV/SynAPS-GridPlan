@@ -26,7 +26,7 @@ SAIDI optimisation, or replace an EAM / 1С:ТОИР suite.
 | CP-SAT proves optimal makespan on that instance (dual bound = achieved) | `test_res_cpsat_proves_optimal_makespan` (pytest marker `slow`) |
 | Local replan keeps frozen ПЛ rows | same tests, Scenario B |
 | Generation-shaped fixture (GRES-block) GREED-clean; FIFO is not | `tests/test_gres_block.py` |
-| Emergency-restoration day (synthetic, shaped by public 18.08.2026 news): full chain localize → repair → test → re-energize; GREED clean (FIFO: 27), frozen ПЛ row survives replan | `tests/test_emergency_day.py`, `benchmark/results/emergency_day_report.md` |
+| Emergency-restoration day (synthetic, shaped by public 18.08.2026 news): full chain «localize → repair → test → re-energize»; GREED clean, FIFO breaks 27 rules; frozen ПЛ row survives replan | `tests/test_emergency_day.py`, `benchmark/results/emergency_day_report.md` |
 | Checker catches overlap, ЗИП, quals, short duration, unknown ops | `tests/test_adversarial_*.py` |
 
 РЭС «Северный» copies public equipment *types* and industry norms. It is not
@@ -70,7 +70,8 @@ Jury demo (synthetic РЭС «Северный» — GREED verifies, FIFO does n
 python benchmark/jury_benchmark.py
 ```
 
-Emergency-restoration day (synthetic узел «Восточный», public-news-shaped):
+Emergency-restoration day (synthetic узел «Восточный», shaped by public
+18.08.2026 news):
 
 ```bash
 python benchmark/emergency_day_benchmark.py
