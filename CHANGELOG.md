@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.1 — 2026-08-18 (emergency-day scenario)
+
+New synthetic benchmark `benchmark/emergency_day_benchmark.py`: an
+emergency-restoration day (узел «Восточный») shaped by the public
+18.08.2026 news about the особый режим in the Moscow-region grid —
+dispatcher-issued emergency outage windows, inspection → repair → test
+chains on a 110 kV feed, ДГУ hook-up jobs for de-energised ТП, and one
+pre-attack frozen ПЛ row. GREED builds the day verified-clean; calendar
+FIFO breaks it (17 hard violations); replan after a repeat БПЛА survey
+keeps the frozen ПЛ row unmoved; two GREED runs are bit-identical.
+Guarded by `tests/test_emergency_day.py` (7 tests; 91 total).
+Report: `benchmark/results/emergency_day_report.md`. Product claims
+unchanged (synthetic, experiment, not a pilot).
+
 ## 0.1.1 — 2026-08-17 (application brief)
 
 Public `APPLICATION.md` states the marathon customer (ПАО «Россети»),
