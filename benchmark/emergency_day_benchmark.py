@@ -914,7 +914,7 @@ def main() -> None:
         f"repair_ok={_ok(b['repaired'])} frozen_moved={b['frozen_windows_moved']} "
         f"deterministic={r['scenario_c']['two_runs_identical']}"
     )
-    print(f"[emergency-day] report → {RESULTS / 'emergency_day_report.md'}")
+    print(f"[emergency-day] report -> {RESULTS / 'emergency_day_report.md'}")
 
 
 if __name__ == "__main__":

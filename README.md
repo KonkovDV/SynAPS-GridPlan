@@ -49,11 +49,16 @@ Python ≥ 3.12. SynAPS is pinned by commit, not by branch.
 
 ```bash
 python -m pip install -e ".[dev]" --force-reinstall
+python -m synaps_gridplan version
 python -m pytest -q -m "not slow"
 ```
 
-On Windows after `git pull`, reinstall the editable package — hatchling can
-leave a stale copy in `site-packages`.
+`version` must print this checkout and SynAPS pin `bd09d13…`. If `source` is a
+copy under `site-packages` instead of `<repo>/src/synaps_gridplan`, reinstall:
+
+```bash
+python -m pip install -e ".[dev]" --force-reinstall --no-deps
+```
 
 ## Commands
 

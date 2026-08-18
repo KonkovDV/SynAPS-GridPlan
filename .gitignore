@@ -24,6 +24,12 @@ htmlcov/
 
 # Working notes — not part of the published tree
 /docs/
+/_SUBMIT_MIK_2026_08_18/
+
+# Local IDE isolation (not the public contest tree)
+APS.code-workspace
+.cursorignore
+.cursorindexingignore
 
 # Generated benchmark I/O
 benchmark/results/*.json
