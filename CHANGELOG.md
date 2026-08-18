@@ -16,9 +16,10 @@ ISO 16290 TRL 4. Not a plant pilot.
   (СТО 17330282.29.240.004-2008 / приказ Минэнерго № 289), 23 jobs / 8 crews.
   GREED verified-clean; FIFO 27 hard violations; replan keeps the frozen ПЛ
   row. Lab instance, not a reconstruction of a live branch.
-- Generic feeder `medium`/`stress` (200/600 jobs): GREED assigns all, checker
-  rejects — published as scale-and-fail-closed, not a verified month. 50k
-  engine runs are a different domain.
+- Generic feeder `medium`/`stress` (200/600 jobs): packed as a campaign
+  (one chain per asset, one outage, stock ≥ demand). GREED verifies; FIFO
+  does not. `small --seed 42` remains the fail-closed ASSET_OVERLAP demo.
+  50k engine runs are a different domain.
 - Honest limits in `APPLICATION.md`: linear predecessor chains only, ЗИП as
   one stock unit per listed part, KPI baseline taken from the DZO curator
   on P0 (not invented here).

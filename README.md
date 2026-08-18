@@ -21,9 +21,9 @@ replace an EAM / 1С:ТОИР suite. Risk scores in reports are advisory proxies
 not a risk engine.
 
 The checked campaign-shaped demo is synthetic РЭС «Северный» (55 jobs).
-Generic feeder modes `medium` (200) and `stress` (600) show search time and
-that the checker still fail-closes; they are not verified monthly plans.
-50k/500k runs in the SynAPS README are a different domain — not this product.
+Generic feeder modes `medium` (200) and `stress` (600) are packed so GREED
+verifies; calendar FIFO does not. 50k/500k runs in the SynAPS README are a
+different domain — not this product.
 
 GREED and FIFO are heuristics (`heuristic_feasible`). Only CP-SAT may be
 called `optimal`, and only when the solver proves it.
@@ -37,7 +37,7 @@ called `optimal`, and only when the solver proves it.
 | Local replan keeps frozen ПЛ rows | same tests, Scenario B |
 | Generation-shaped fixture (GRES-block) GREED-clean; FIFO is not | `tests/test_gres_block.py` |
 | Emergency-restoration day (synthetic узел «Восточный», СТО 17330282 / приказ № 289 chain): GREED clean, FIFO breaks 27 rules; frozen ПЛ row survives replan | `tests/test_emergency_day.py`, `benchmark/results/emergency_day_report.md` |
-| Generic 200/600-job feeder: GREED assigns all, checker rejects (fail-closed at size) | `tests/test_scale_feeder.py`, `benchmark/results/scale_report.md` |
+| Generic 200/600-job feeder: GREED verified-clean; FIFO breaks windows | `tests/test_scale_feeder.py`, `benchmark/results/scale_report.md` |
 | Checker catches overlap, ЗИП, quals, short duration, unknown ops | `tests/test_adversarial_*.py` |
 
 РЭС «Северный» copies public equipment *types* and industry norms. It is not
@@ -75,6 +75,12 @@ Emergency-restoration day (synthetic узел «Восточный», regulatory
 
 ```bash
 python benchmark/emergency_day_benchmark.py
+```
+
+Campaign-scale feeder (200 and 600 jobs, GREED verifies):
+
+```bash
+python benchmark/scale_benchmark.py
 ```
 
 Generation-shaped fixture (synthetic, not a live plant):

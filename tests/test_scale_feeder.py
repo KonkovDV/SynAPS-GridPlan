@@ -1,8 +1,7 @@
-"""Generic feeder scale: search time and fail-closed checker, not a verified month.
+"""Generic feeder scale: campaign packing so GREED verifies at 200 and 600.
 
-The checked campaign-shaped demo remains РЭС «Северный» (55 jobs).
-`medium` (200) and `stress` (600) are random-window feeders: GREED assigns
-every job, the independent checker still rejects the plan.
+`small --seed 42` remains the fail-closed ASSET_OVERLAP demo. Medium/stress
+are packed as one linear chain per asset, one interruption, stock ≥ demand.
 """
 
 from __future__ import annotations
@@ -22,23 +21,41 @@ def test_stress_instance_shape() -> None:
     assert len(problem.jobs) == 600
     assert len(problem.crews) == 15
     assert problem.domain_attributes["data_provenance"] == "synthetic"
+    interrupt = [j for j in problem.jobs if j.interruption_required]
+    assert len(interrupt) == 80
+    for job in problem.jobs:
+        assert len(job.predecessor_job_ids) <= 1
 
 
-def test_medium_greed_is_fail_closed() -> None:
-    """200-job generic feeder: search finishes, checker must not rubber-stamp."""
+def test_medium_greed_verified_clean() -> None:
     problem = synthesize_feeder(mode="medium", seed=12)
     assert len(problem.jobs) == 200
+    assert len(problem.outage_windows) == 40
     outcome = plan_with_config(problem, solver_config="GREED", apply_frozen=True)
     assert len(outcome.schedule.assignments) == 200
+    assert outcome.verified_feasible
+    assert outcome.hard_violation_count == 0
+
+
+def test_stress_greed_verified_clean() -> None:
+    problem = synthesize_feeder(mode="stress", seed=12)
+    outcome = plan_with_config(problem, solver_config="GREED", apply_frozen=True)
+    assert len(outcome.schedule.assignments) == 600
+    assert outcome.verified_feasible
+    assert outcome.hard_violation_count == 0
+
+
+def test_medium_fifo_breaks_windows() -> None:
+    problem = synthesize_feeder(mode="medium", seed=12)
+    outcome = plan_with_config(problem, solver_config="FIFO", apply_frozen=False)
     assert not outcome.verified_feasible
     assert outcome.hard_violation_count >= 1
 
 
-def test_committed_scale_report_does_not_claim_verified_month() -> None:
+def test_committed_scale_report_shows_verified_campaign() -> None:
     text = SCALE_REPORT.read_text(encoding="utf-8")
-    assert "55" in text
     assert "200" in text
     assert "600" in text
-    assert "не допустимый месячный график" in text
+    assert "GREED" in text
     assert "50k" in text
-    assert "verified_feasible" in text or "проверка" in text.lower()
+    assert "seed 42" in text

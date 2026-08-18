@@ -34,6 +34,7 @@ jobs:
         run: |
           python benchmark/jury_benchmark.py
           python benchmark/emergency_day_benchmark.py
+          python benchmark/scale_benchmark.py
 
   lockfile:
     runs-on: ubuntu-latest

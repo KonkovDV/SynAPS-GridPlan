@@ -6,7 +6,7 @@ Synthetic fixtures only. Published markdown:
 | --- | --- |
 | `jury_report.md` | checked campaign-shaped demo, РЭС «Северный» (55 jobs) |
 | `emergency_day_report.md` | synthetic restoration day, узел «Восточный» |
-| `scale_report.md` | generic 200/600-job feeder: search time, checker still rejects |
+| `scale_report.md` | generic 200/600-job feeder: GREED verified, FIFO is not |
 
 Version pins live inside the files. JSON dumps are gitignored.
 
