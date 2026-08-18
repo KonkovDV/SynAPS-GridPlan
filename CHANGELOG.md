@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.1 — 2026-08-18 (emergency-day detail pass)
+
+The emergency-day instance is deepened to the full regulatory restoration
+chain (СТО 17330282.29.240.004-2008 / Приказ Минэнерго № 289 stages):
+per-apparatus локализация (switching crew) → осмотр/облёт → ремонт →
+опробование/испытания → ввод в работу, ДГУ with priority to a соцобъект
+(ФАП), transfer of ТП from ДГУ back to the main scheme after the feeding
+center is re-energised, and the 0.4 kV private-sector tail late at night.
+23 jobs / 10 assets / 8 crews (incl. оперативный персонал ОП-1).
+GREED verified-clean; FIFO breaks 27 hard rules; replan of the 3-job
+ВЛ-110 chain keeps the frozen ПЛ row unmoved; determinism unchanged.
+Finding recorded in the internal jury pack: the adapter compiles only
+linear predecessor chains (engine forbids cross-order precedence) — the
+GridPlan checker catches dropped edges fail-closed; the instance is
+linear by construction and a linearity guard test is added.
+Report regenerated: `benchmark/results/emergency_day_report.md`.
+
 ## 0.1.1 — 2026-08-18 (emergency-day scenario)
 
 New synthetic benchmark `benchmark/emergency_day_benchmark.py`: an

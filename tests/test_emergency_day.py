@@ -16,7 +16,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmark"))
 
-from emergency_day_benchmark import build_emergency_problem, render_md, run  # noqa: E402
+from emergency_day_benchmark import (  # noqa: E402
+    DISRUPTED_REFS,
+    build_emergency_problem,
+    render_md,
+    run,
+)
 
 from synaps_gridplan.baselines import plan_with_config  # noqa: E402
 from synaps_gridplan.planner import replan_after_disruption  # noqa: E402
@@ -28,9 +33,9 @@ def problem():
 
 
 def test_emergency_instance_shape(problem) -> None:
-    assert len(problem.assets) == 9
-    assert len(problem.jobs) == 15
-    assert len(problem.crews) == 7
+    assert len(problem.assets) == 10
+    assert len(problem.jobs) == 23
+    assert len(problem.crews) == 8
     assert len(problem.outage_windows) == 5
     assert len(problem.spare_parts) == 4
     assert len(problem.frozen_assignments) == 1
@@ -38,9 +43,20 @@ def test_emergency_instance_shape(problem) -> None:
     assert fr.immutable and fr.source == "pl_window"
     assert (fr.end - fr.start) == timedelta(hours=4)
     emergency = [j for j in problem.jobs if j.kind == "emergency"]
-    # 3 ремонта 110 кВ + ремонт/расчистка Ф-3 + 2 подключения ДГУ
-    assert len(emergency) == 7
+    # локализация + 3 ввода 110 кВ + ввод Ф-3 + 3 ремонта 110 кВ + ремонт и
+    # расчистка Ф-3 + 2 ДГУ + перевод ТП + ответвление 0,4 кВ = 14
+    assert len(emergency) == 14
     assert problem.domain_attributes["data_provenance"] == "synthetic"
+    switching = [j for j in problem.jobs if "switch_110" in j.required_qualifications]
+    assert len(switching) == 4  # локализация + 3 ввода в работу 110 кВ
+    # Прецедентный граф обязан оставаться линеен: адаптер компилирует только
+    # цепочки (join/fan-out молча теряют рёбра — см. docs/29, находка ED-2).
+    succ_count: dict[str, int] = {}
+    for j in problem.jobs:
+        assert len(j.predecessor_job_ids) <= 1
+        for p in j.predecessor_job_ids:
+            succ_count[str(p)] = succ_count.get(str(p), 0) + 1
+    assert all(v == 1 for v in succ_count.values())
 
 
 def test_emergency_greed_verified_clean(problem) -> None:
@@ -79,10 +95,8 @@ def test_emergency_replan_preserves_frozen_pl(problem) -> None:
     ПЛ-0817-14 и остальной день обязаны остаться неподвижными."""
     base = plan_with_config(problem, solver_config="GREED", apply_frozen=True)
     ref_to_job = {j.external_ref: j for j in problem.jobs}
-    disrupted = [
-        ref_to_job["Аварийный ремонт ВЛ-110 Л-101 (провод)"],
-        ref_to_job["Опробование ВЛ-110 Л-101"],
-    ]
+    disrupted = [ref_to_job[r] for r in DISRUPTED_REFS]
+    assert len(disrupted) == 3
     repaired = replan_after_disruption(
         problem, base_outcome=base, disrupted_job_ids=[j.id for j in disrupted]
     )
@@ -112,5 +126,6 @@ def test_emergency_report_renders_verified(tmp_path) -> None:
     assert "18.08.2026" in md
     assert "ДГУ-200" in md
     assert "ПЛ-0817-14" in md
+    assert "Локализация повреждённого участка" in md
     fp = results["scenario_c"]["plan_fingerprint"]
     assert isinstance(fp, str) and len(fp) == 64 and fp[:16] in md
