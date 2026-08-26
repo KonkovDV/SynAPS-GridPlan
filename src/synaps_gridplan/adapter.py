@@ -49,7 +49,6 @@ def _lookup_travel_minutes(
 ) -> int:
     """Travel minutes for a state pair. Empty matrix means zero, not a phantom 30.
 
-    A partial matrix that is missing ``from|to`` (and the home fallback) is
     A partial matrix missing ``from|to`` (and the home fallback) raises;
     an empty matrix is zero travel.
     """
@@ -397,6 +396,7 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
                         OperationAuxRequirement(
                             operation_id=operation.id,
                             aux_resource_id=id_map[spare_key],
+                            # one stock unit per listed spare; BOM quantity is out of scope
                             quantity_needed=1,
                         )
                     )

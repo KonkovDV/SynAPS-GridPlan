@@ -35,7 +35,7 @@ pub fn render_markdown(plan: &PlanResult) -> String {
         String::new(),
         "## Objective".into(),
         String::new(),
-        format!("| makespan_min | tardiness_min | coverage | unscheduled |"),
+        "| makespan_min | tardiness_min | coverage | unscheduled |".into(),
         "| ---: | ---: | ---: | ---: |".into(),
         format!(
             "| {:.1} | {:.1} | {:.3} | {} |",
