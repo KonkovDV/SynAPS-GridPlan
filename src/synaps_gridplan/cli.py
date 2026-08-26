@@ -102,6 +102,8 @@ def main(argv: list[str] | None = None) -> int:
     p_dis.add_argument("--job-id", action="append", required=True)
     p_dis.add_argument("-o", "--output", type=Path, required=True)
 
+    sub.add_parser("version", help="Print GridPlan version, SynAPS pin, and import path")
+
     args = parser.parse_args(argv)
 
     if args.command == "synthesize":
@@ -125,6 +127,17 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write(render_report(outcome, fmt=args.format))
         if args.format != "json":
             sys.stdout.write("\n")
+        return 0
+
+    if args.command == "version":
+        from synaps_gridplan.versions import GRIDPLAN_VERSION, ISO16290_TRL, SYNAPS_COMMIT
+
+        sys.stdout.write(
+            f"synaps-gridplan {GRIDPLAN_VERSION}\n"
+            f"synaps_commit {SYNAPS_COMMIT}\n"
+            f"iso16290_trl {ISO16290_TRL}\n"
+            f"source {Path(__file__).resolve()}\n"
+        )
         return 0
 
     if args.command == "disrupt":

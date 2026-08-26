@@ -29,6 +29,15 @@ cargo build --release
 
 ## CLI
 
+Verified contest demo (Python, GREED checks clean):
+
+```bash
+# from repo root
+python benchmark/jury_benchmark.py
+```
+
+Native FIFO on the default small seed is the fail-closed example:
+
 ```bash
 cargo run -- synthesize --mode small --seed 42 -o feeder.json
 cargo run -- solve feeder.json --engine fifo -o plan.json
