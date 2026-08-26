@@ -7,8 +7,10 @@ with a Rust checker for the same constraints.
 | | |
 | --- | --- |
 | Version | **0.1.1** |
+| Default branch | `main` (GitHub). Local clones may still be on `master`. |
 | SynAPS pin | [`bd09d13`](https://github.com/KonkovDV/SynAPS/commit/bd09d13561b3bd690845d07546def59b4521b16c) |
 | Maturity | ISO 16290 TRL 4 (lab fixtures). Not a plant pilot. |
+| Pitch | [SynAPS-GridPlan.pdf](SynAPS-GridPlan.pdf) (22 slides, Russian) |
 
 What it does: assign crews to jobs under qualifications, outage windows,
 spares (one stock unit per listed part), linear precedence, frozen ПЛ rows,
@@ -18,7 +20,13 @@ checker, independent of the search, rejects a plan that breaks those rules.
 What it does not do: SCADA, EMS, GIS, failure prediction, N-1 load-flow,
 SAIDI optimisation, BOM-quantity ЗИП, join/fan-out predecessor graphs, or
 replace an EAM / 1С:ТОИР suite. Risk scores in reports are advisory proxies,
-not a risk engine.
+not a risk engine. The SynAPS kernel night-window analog (5k ops, per-op 8 h
+windows, no machine calendar) did not reach full coverage (hashed ratio
+0.75–0.88 on 5k@8, three seeds); GridPlan emergency / night work is **not**
+that kernel ladder and is not N-1. Kernel `WorkCenter.calendar` is clipped
+only on greedy-family configs; CP-SAT/ALNS/LBBD refuse a non-empty calendar.
+Kernel pin stays
+`bd09d13` until this repo regression-runs the calendar primitive (ADR-0004 / ADR-0005).
 
 The checked campaign-shaped demo is synthetic РЭС «Северный» (55 jobs).
 Generic feeder modes `medium` (200) and `stress` (600) are packed so GREED
@@ -49,11 +57,16 @@ Python ≥ 3.12. SynAPS is pinned by commit, not by branch.
 
 ```bash
 python -m pip install -e ".[dev]" --force-reinstall
+python -m synaps_gridplan version
 python -m pytest -q -m "not slow"
 ```
 
-On Windows after `git pull`, reinstall the editable package — hatchling can
-leave a stale copy in `site-packages`.
+`version` must print this checkout and SynAPS pin `bd09d13…`. If `source` is a
+copy under `site-packages` instead of `<repo>/src/synaps_gridplan`, reinstall:
+
+```bash
+python -m pip install -e ".[dev]" --force-reinstall --no-deps
+```
 
 ## Commands
 
@@ -132,6 +145,7 @@ schemas/                    JSON Schema
 benchmark/                  synthetic РЭС / jury / emergency-day / scale runners
 tests/
 APPLICATION.md              MIK application brief (Russian)
+SynAPS-GridPlan.pdf         22-slide MIK pitch (Russian)
 requirements-lock.txt       Linux pin of Python deps + SynAPS SHA
 ```
 

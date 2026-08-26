@@ -9,11 +9,18 @@ from __future__ import annotations
 
 import contextlib
 import importlib.metadata
+import json
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
+import pytest
 import synaps
 
+from synaps_gridplan.cli import main
 from synaps_gridplan.versions import GRIDPLAN_VERSION, SYNAPS_COMMIT, SYNAPS_REPO
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_VERSIONS = REPO_ROOT / "src" / "synaps_gridplan" / "versions.py"
 
 
 def test_gridplan_version_matches_pyproject() -> None:
@@ -50,6 +57,51 @@ def test_requirements_lock_pins_same_synaps_commit() -> None:
     text = lock.read_text(encoding="utf-8")
     assert f"@{SYNAPS_COMMIT}" in text
     assert "tzdata==" not in text
+
+
+def _path_from_file_url(url: str) -> Path:
+    parsed = urlparse(url)
+    path = unquote(parsed.path)
+    if path.startswith("/") and len(path) > 2 and path[2] == ":":
+        path = path[1:]
+    return Path(path).resolve()
+
+
+def test_imported_pin_matches_this_checkout() -> None:
+    """Catch a leftover ``pip install -e`` from a retired tree."""
+    text = REPO_VERSIONS.read_text(encoding="utf-8")
+    assert f'SYNAPS_COMMIT = "{SYNAPS_COMMIT}"' in text
+    assert f'GRIDPLAN_VERSION = "{GRIDPLAN_VERSION}"' in text
+
+
+def test_editable_install_is_this_checkout() -> None:
+    raw = importlib.metadata.distribution("synaps-gridplan").read_text("direct_url.json")
+    if raw is None:
+        pytest.skip("synaps-gridplan has no PEP 610 direct_url.json")
+    info = json.loads(raw)
+    if not (info.get("dir_info") or {}).get("editable"):
+        pytest.skip("synaps-gridplan is not an editable install")
+    assert _path_from_file_url(info["url"]) == REPO_ROOT.resolve()
+
+
+def test_cli_version_prints_pin(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["version"]) == 0
+    out = capsys.readouterr().out
+    assert f"synaps-gridplan {GRIDPLAN_VERSION}" in out
+    assert SYNAPS_COMMIT in out
+    assert "iso16290_trl 4" in out
+    assert "source " in out
+
+
+def test_installed_synaps_git_commit_matches_pin() -> None:
+    raw = importlib.metadata.distribution("synaps").read_text("direct_url.json")
+    if raw is None:
+        pytest.skip("synaps has no PEP 610 direct_url.json")
+    vcs = json.loads(raw).get("vcs_info") or {}
+    commit_id = vcs.get("commit_id")
+    if not commit_id:
+        pytest.skip("synaps is not a git install")
+    assert commit_id == SYNAPS_COMMIT
 
 
 def test_installed_synaps_source_mentions_rt20_markers() -> None:

@@ -133,3 +133,30 @@ def test_emergency_report_renders_verified() -> None:
     assert "Реальный день" not in md
     fp = results["scenario_c"]["plan_fingerprint"]
     assert isinstance(fp, str) and len(fp) == 64 and fp[:16] in md
+
+
+def test_benchmark_console_prints_encode_as_cp1251() -> None:
+    """Windows jury demos use cp1251; a single arrow must not abort a green run."""
+    import ast
+
+    root = Path(__file__).resolve().parents[1] / "benchmark"
+    for path in root.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if not isinstance(func, ast.Name) or func.id != "print":
+                continue
+            for arg in node.args:
+                parts: list[str] = []
+                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                    parts.append(arg.value)
+                elif isinstance(arg, ast.JoinedStr):
+                    parts.extend(
+                        v.value
+                        for v in arg.values
+                        if isinstance(v, ast.Constant) and isinstance(v.value, str)
+                    )
+                for part in parts:
+                    part.encode("cp1251")
