@@ -20,7 +20,13 @@ checker, independent of the search, rejects a plan that breaks those rules.
 What it does not do: SCADA, EMS, GIS, failure prediction, N-1 load-flow,
 SAIDI optimisation, BOM-quantity ЗИП, join/fan-out predecessor graphs, or
 replace an EAM / 1С:ТОИР suite. Risk scores in reports are advisory proxies,
-not a risk engine.
+not a risk engine. The SynAPS kernel night-window analog (5k ops, per-op 8 h
+windows, no machine calendar) did not reach full coverage (hashed ratio
+0.75–0.88 on 5k@8, three seeds); GridPlan emergency / night work is **not**
+that kernel ladder and is not N-1. Kernel `WorkCenter.calendar` is clipped
+only on greedy-family configs; CP-SAT/ALNS/LBBD refuse a non-empty calendar.
+Kernel pin stays
+`bd09d13` until this repo regression-runs the calendar primitive (ADR-0004 / ADR-0005).
 
 The checked campaign-shaped demo is synthetic РЭС «Северный» (55 jobs).
 Generic feeder modes `medium` (200) and `stress` (600) are packed so GREED
