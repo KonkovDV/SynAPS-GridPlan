@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — 2026-08-27
+
+- CI push trigger is ``main`` only. GitHub default was already ``main``;
+  leftover ``origin/master`` is an ancestor and is removed.
+
 ## 0.1.1 — 2026-08-18
 
 Public contest packet on SynAPS
