@@ -2,6 +2,10 @@
 
 ## Unreleased — 2026-08-27
 
+- SynAPS pin bumped to
+  [`54ebf9f`](https://github.com/KonkovDV/SynAPS/commit/54ebf9f32bc871cc27283331d7536c1068c7e606)
+  (KI-N12 / ADR-0004). Regression: fail-closed coverage, calendar refuse,
+  kernel claims-lint on that SHA. Not a courtesy float on ``main``.
 - CI push trigger is ``main`` only. GitHub default was already ``main``;
   leftover ``origin/master`` is an ancestor and is removed.
 

@@ -33,7 +33,7 @@ classifiers = [
   "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-  "synaps @ git+https://github.com/KonkovDV/SynAPS.git@bd09d13561b3bd690845d07546def59b4521b16c",
+  "synaps @ git+https://github.com/KonkovDV/SynAPS.git@54ebf9f32bc871cc27283331d7536c1068c7e606",
   "pydantic>=2.9",
 ]
 

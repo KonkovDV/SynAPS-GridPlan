@@ -8,7 +8,7 @@ with a Rust checker for the same constraints.
 | --- | --- |
 | Version | **0.1.1** |
 | Default branch | `main` |
-| SynAPS pin | [`bd09d13`](https://github.com/KonkovDV/SynAPS/commit/bd09d13561b3bd690845d07546def59b4521b16c) |
+| SynAPS pin | [`54ebf9f`](https://github.com/KonkovDV/SynAPS/commit/54ebf9f32bc871cc27283331d7536c1068c7e606) |
 | Maturity | ISO 16290 TRL 4 (lab fixtures). Not a plant pilot. |
 | Pitch | [SynAPS-GridPlan.pdf](SynAPS-GridPlan.pdf) (22 slides, Russian) |
 
@@ -25,8 +25,8 @@ windows, no machine calendar) did not reach full coverage (hashed ratio
 0.75–0.88 on 5k@8, three seeds); GridPlan emergency / night work is **not**
 that kernel ladder and is not N-1. Kernel `WorkCenter.calendar` is clipped
 only on greedy-family configs; CP-SAT/ALNS/LBBD refuse a non-empty calendar.
-Kernel pin stays
-`bd09d13` until this repo regression-runs the calendar primitive (ADR-0004 / ADR-0005).
+Kernel pin is `54ebf9f` after the ADR-0004 regression (fail-closed coverage,
+calendar refuse, kernel claims-lint on that SHA).
 
 The checked campaign-shaped demo is synthetic РЭС «Северный» (55 jobs).
 Generic feeder modes `medium` (200) and `stress` (600) are packed so GREED
@@ -61,7 +61,7 @@ python -m synaps_gridplan version
 python -m pytest -q -m "not slow"
 ```
 
-`version` must print this checkout and SynAPS pin `bd09d13…`. If `source` is a
+`version` must print this checkout and SynAPS pin `54ebf9f…`. If `source` is a
 copy under `site-packages` instead of `<repo>/src/synaps_gridplan`, reinstall:
 
 ```bash
