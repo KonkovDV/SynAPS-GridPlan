@@ -1,7 +1,7 @@
 # Демо-бенчмарк SynAPS-GridPlan
 
 Синтетический РЭС «Северный» (открытые нормы и типы объектов, не данные ПАО «Россети»).
-Версия GridPlan 0.1.1, SynAPS `54ebf9f32bc8`, ISO 16290 TRL 4.
+Версия GridPlan 0.1.2, SynAPS `6178c93b705f`, ISO 16290 TRL 4.
 GREED/FIFO — эвристики: `heuristic_feasible`, не `optimal`.
 
 **Состав:** 55 работ, 7 бригад, 39 активов,

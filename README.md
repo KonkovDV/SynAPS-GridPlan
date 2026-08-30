@@ -6,9 +6,9 @@ with a Rust checker for the same constraints.
 
 | | |
 | --- | --- |
-| Version | **0.1.1** |
+| Version | **0.1.2** |
 | Default branch | `main` |
-| SynAPS pin | [`54ebf9f`](https://github.com/KonkovDV/SynAPS/commit/54ebf9f32bc871cc27283331d7536c1068c7e606) |
+| SynAPS pin | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
 | Maturity | ISO 16290 TRL 4 (lab fixtures). Not a plant pilot. |
 | Pitch | [SynAPS-GridPlan.pdf](SynAPS-GridPlan.pdf) (22 slides, Russian) |
 
@@ -23,10 +23,12 @@ replace an EAM / 1С:ТОИР suite. Risk scores in reports are advisory proxies
 not a risk engine. The SynAPS kernel night-window analog (5k ops, per-op 8 h
 windows, no machine calendar) did not reach full coverage (hashed ratio
 0.75–0.88 on 5k@8, three seeds); GridPlan emergency / night work is **not**
-that kernel ladder and is not N-1. Kernel `WorkCenter.calendar` is clipped
-only on greedy-family configs; CP-SAT/ALNS/LBBD refuse a non-empty calendar.
-Kernel pin is `54ebf9f` after the ADR-0004 regression (fail-closed coverage,
-calendar refuse, kernel claims-lint on that SHA).
+that kernel ladder and is not N-1. Kernel `WorkCenter.calendar` is encoded
+by CP-SAT/ALNS/LBBD (occupancy in one shift) and clipped on greedy-family
+configs. Auto-route stays `CALENDAR_AWARE`. Kernel pin is `6178c93` after the
+ADR-0004 regression (fail-closed coverage, calendar encode, kernel claims-lint
+on that SHA). KI-N12 stays closed; this is a new pin, not a reopen. Not the
+diverged local 0.1.10 tree.
 
 The checked campaign-shaped demo is synthetic РЭС «Северный» (55 jobs).
 Generic feeder modes `medium` (200) and `stress` (600) are packed so GREED
@@ -61,7 +63,7 @@ python -m synaps_gridplan version
 python -m pytest -q -m "not slow"
 ```
 
-`version` must print this checkout and SynAPS pin `54ebf9f…`. If `source` is a
+`version` must print this checkout and SynAPS pin `6178c93…`. If `source` is a
 copy under `site-packages` instead of `<repo>/src/synaps_gridplan`, reinstall:
 
 ```bash

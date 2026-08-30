@@ -8,7 +8,7 @@
 Именованный макет района — `jury_report.md` (55 работ, РЭС «Северный»).
 Fail-closed демо на маленьком фидере — `small --seed 42` (ASSET_OVERLAP).
 
-Версия GridPlan 0.1.1, SynAPS `bd09d13561b3`.
+Версия GridPlan 0.1.2, SynAPS `6178c93b705f`.
 Время стены — локальный прогон, не SLA.
 
 | Режим | Работ | GREED назн. | GREED наруш. | GREED | GREED, с | FIFO наруш. |
