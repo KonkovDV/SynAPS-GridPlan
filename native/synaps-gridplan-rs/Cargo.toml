@@ -1,6 +1,6 @@
 [package]
 name = "synaps_gridplan_rs"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 rust-version = "1.75"
 description = "Native GridPlan contour: FIFO baseline, fail-closed checks, fingerprints (experimental)"

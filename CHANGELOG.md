@@ -1,13 +1,18 @@
 # Changelog
 
-## Unreleased — 2026-08-27
+## Unreleased
+
+## 0.1.2 — 2026-08-30
 
 - SynAPS pin bumped to
+  [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169)
+  (ADR-0004). Regression: fail-closed coverage, CP-SAT/ALNS/LBBD encode a
+  non-empty `WorkCenter.calendar` (greedy still clips), kernel claims-lint
+  on that SHA. Not a courtesy float on ``main``. Not the diverged local
+  0.1.10 / ``6fd3393`` tree. KI-N12 stays closed.
+- Previous origin pin was
   [`54ebf9f`](https://github.com/KonkovDV/SynAPS/commit/54ebf9f32bc871cc27283331d7536c1068c7e606)
-  (KI-N12 / ADR-0004). Regression: fail-closed coverage, calendar refuse,
-  kernel claims-lint on that SHA. Not a courtesy float on ``main``.
-- CI push trigger is ``main`` only. GitHub default was already ``main``;
-  leftover ``origin/master`` is an ancestor and is removed.
+  (GridPlan #7). CI push trigger remains ``main`` only.
 
 ## 0.1.1 — 2026-08-18
 
