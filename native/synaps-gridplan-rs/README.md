@@ -3,7 +3,7 @@
 Native GridPlan contour in Rust: deterministic FIFO, the same domain checks
 as Python, fingerprints, synthetic feeder. Optional bridge to Python GREED.
 
-Version **0.1.2**. GREED is not implemented in this crate.
+Version **0.1.3**. GREED is not implemented in this crate.
 
 ## Scope
 

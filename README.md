@@ -6,7 +6,7 @@ with a Rust checker for the same constraints.
 
 | | |
 | --- | --- |
-| Version | **0.1.2** |
+| Version | **0.1.3** |
 | Default branch | `main` |
 | SynAPS pin | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
 | Maturity | ISO 16290 TRL 4 (lab fixtures). Not a plant pilot. |

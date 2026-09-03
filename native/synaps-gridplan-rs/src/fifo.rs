@@ -151,7 +151,8 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
     }
 
     let violations = check_plan(problem, &assignments, &problem.frozen_assignments);
-    let status = if assignments.is_empty() {
+    // Empty instance (zero jobs) is vacuously feasible, not a solver failure.
+    let status = if assignments.is_empty() && !problem.jobs.is_empty() {
         "infeasible"
     } else if violations.is_empty() {
         "feasible"

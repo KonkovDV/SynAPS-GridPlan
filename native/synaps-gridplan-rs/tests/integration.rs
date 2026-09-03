@@ -42,6 +42,17 @@ fn infeasible_mode_not_verified() {
 }
 
 #[test]
+fn empty_jobs_fifo_is_feasible() {
+    let mut p = synthesize_feeder("small", 1, None, None, None).unwrap();
+    p.jobs.clear();
+    p.frozen_assignments.clear();
+    let plan = plan_fifo(&p);
+    assert_eq!(plan.status, "feasible");
+    assert!(plan.verified_feasible);
+    assert_eq!(plan.objective.unscheduled_operations, 0);
+}
+
+#[test]
 fn frozen_conflict_detected_on_check() {
     let p = synthesize_feeder("frozen-conflict", 9, None, None, None).unwrap();
     assert!(!p.frozen_assignments.is_empty());
