@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.1.3 — 2026-09-03
+
+- Canonical tree is origin ``main`` (this pin). The diverged local 0.1.10 /
+  0.1.11 lab checkout is not the product.
+- FIFO (Python and Rust): a problem with zero jobs is vacuously ``feasible``,
+  not ``infeasible``. Guarded by overlap + native integration tests.
+
 ## 0.1.2 — 2026-08-30
 
 - SynAPS pin bumped to

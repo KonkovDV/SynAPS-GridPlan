@@ -357,3 +357,22 @@ def test_interruption_job_without_any_window_is_not_verified() -> None:
     assert o.verified_feasible is False
     kinds = o.metadata.get("gridplan_violation_kinds", [])
     assert "OUTAGE_WINDOW_MISSING" in kinds or "OUTAGE_WINDOW_VIOLATION" in kinds
+
+
+def test_empty_problem_fifo_is_feasible_not_infeasible() -> None:
+    """Zero jobs is a vacuously valid plan, not a solver failure."""
+    from synaps_gridplan.baselines import plan_fifo
+
+    p = GridPlanProblem(
+        assets=[_asset()],
+        crews=[_crew()],
+        jobs=[],
+        planning_horizon_start=T0,
+        planning_horizon_end=T0 + HORIZON,
+    )
+    outcome = plan_fifo(p)
+    assert outcome.status == "feasible"
+    assert outcome.verified_feasible
+    assert outcome.ok
+    assert outcome.schedule.objective.coverage == 1.0
+    assert outcome.schedule.objective.unscheduled_operations == 0

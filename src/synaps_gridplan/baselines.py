@@ -112,9 +112,15 @@ def plan_fifo(
         if job is not None and job.due_date is not None and a.end_time > job.due_date:
             tardiness += (a.end_time - job.due_date).total_seconds() / 60.0
 
+    # Empty instance (zero jobs) is vacuously feasible, not a solver failure.
+    status = (
+        SolverStatus.INFEASIBLE
+        if not assignments and schedule_problem.operations
+        else SolverStatus.FEASIBLE
+    )
     result = ScheduleResult(
         solver_name="FIFO",
-        status=SolverStatus.FEASIBLE if assignments else SolverStatus.INFEASIBLE,
+        status=status,
         assignments=assignments,
         objective=ObjectiveValues(
             makespan_minutes=makespan,
