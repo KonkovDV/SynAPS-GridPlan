@@ -230,10 +230,15 @@ class DisruptionEvent(BaseModel):
 class SimultaneousOutageBan(BaseModel):
     """Explicit customer-declared ban on overlapping interruption occupancy.
 
-    Combinatorial ``network_constraints`` — NOT N-1 / power-flow / topology.
+    Combinatorial ``network_constraints`` — not N-1 / power-flow / topology.
     Occupancy of a precedence-connected interruption chain is the hull
-    [first start, last end] (Goel et al., EJOR 2013: downtime from disconnect
-    to reconnect). Independent interruption jobs (no precedence) stay separate.
+    [first start, last end] (Goel & Meisel, EJOR 231:210–228, 2013,
+    doi:10.1016/j.ejor.2013.05.021: downtime from disconnect to reconnect).
+    Independent interruption jobs (no precedence) stay separate.
+
+    Pairwise declared mutex is the combinatorial family listed by Tang et al.,
+    Energies 18(20):5454 (2025). Their power-flow / voltage objectives are
+    out of scope here.
     """
 
     id: UUID = Field(default_factory=uuid4)

@@ -204,7 +204,8 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
             "applicability_limits": [
                 "Native FIFO only — not SynAPS GREED/CPSAT.",
                 "Synthetic/experiment results are not industrial proof.",
-                "Heuristic FEASIBLE does not imply OPTIMAL."
+                "Heuristic FEASIBLE does not imply OPTIMAL.",
+                "Combinatorial crew/window/mutex only; power-flow / N-1 / SAIDI are out of scope."
             ]
         }),
     }

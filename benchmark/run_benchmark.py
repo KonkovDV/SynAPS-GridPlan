@@ -125,6 +125,7 @@ def run(*, try_cpsat: bool = False) -> dict:
         "applicability": [
             "Synthetic only. Not customer evidence.",
             "Heuristic FEASIBLE is not OPTIMAL.",
+            "Combinatorial crew/window/mutex only; power-flow is out of scope.",
         ],
     }
     (RESULTS / "latest.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")

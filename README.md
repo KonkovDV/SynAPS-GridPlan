@@ -6,7 +6,7 @@ with a Rust checker for the same constraints.
 
 | | |
 | --- | --- |
-| Version | **0.1.3** |
+| Version | **0.1.4** |
 | Default branch | `main` |
 | SynAPS pin | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
 | Maturity | ISO 16290 TRL 4 (lab fixtures). Not a plant pilot. |
@@ -29,6 +29,11 @@ configs. Auto-route stays `CALENDAR_AWARE`. Kernel pin is `6178c93` after the
 ADR-0004 regression (fail-closed coverage, calendar encode, kernel claims-lint
 on that SHA). KI-N12 stays closed; this is a new pin, not a reopen. Not the
 diverged local 0.1.10 tree.
+
+World practice (Hydro-Québec TMS split, SOGL OPI vs plan proposal, Goel
+downtime hull, Energies 2025 combinatorial mutex/windows — not their
+power-flow): [PRACTICE.md](PRACTICE.md). CLI: `python -m synaps_gridplan
+practice`. Electrical security remains out of scope.
 
 The checked campaign-shaped demo is synthetic РЭС «Северный» (55 jobs).
 Generic feeder modes `medium` (200) and `stress` (600) are packed so GREED
@@ -60,6 +65,7 @@ Python ≥ 3.12. SynAPS is pinned by commit, not by branch.
 ```bash
 python -m pip install -e ".[dev]" --force-reinstall
 python -m synaps_gridplan version
+python -m synaps_gridplan practice
 python -m pytest -q -m "not slow"
 ```
 
@@ -147,6 +153,7 @@ schemas/                    JSON Schema
 benchmark/                  synthetic РЭС / jury / emergency-day / scale runners
 tests/
 APPLICATION.md              MIK application brief (Russian)
+PRACTICE.md                 World-practice mapping (citations, honest limits)
 SynAPS-GridPlan.pdf         22-slide MIK pitch (Russian)
 requirements-lock.txt       Linux pin of Python deps + SynAPS SHA
 ```

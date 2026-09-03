@@ -9,6 +9,7 @@ from collections import Counter
 from typing import Any, Literal
 
 from synaps_gridplan.planner import PlanOutcome
+from synaps_gridplan.practice import PRACTICE_LAYER, applicability_limits
 from synaps_gridplan.versions import GRIDPLAN_VERSION, ISO16290_TRL, SYNAPS_COMMIT
 
 # Shared labels for demo reports. Unknown kinds are printed as-is.
@@ -111,12 +112,8 @@ def _as_dict(outcome: PlanOutcome) -> dict[str, Any]:
         "frozen_assignment_count": len(outcome.frozen_assignments),
         "metadata": meta,
         "id_map_size": len(outcome.id_map),
-        "applicability_limits": [
-            "Synthetic/experiment results are not industrial proof.",
-            "Risk metrics are advisory proxies, not failure certificates.",
-            "Heuristic FEASIBLE does not imply OPTIMAL.",
-            "ЗИП consumable checks are GridPlan post-checks (SynAPS aux = concurrent pool).",
-        ],
+        "practice": meta.get("practice"),
+        "applicability_limits": applicability_limits(),
     }
 
 
@@ -231,14 +228,19 @@ def _as_markdown(outcome: PlanOutcome) -> str:
             lines.append(f"- `{v.get('kind')}`: {v.get('message')}")
     else:
         lines.append("Engine (SynAPS) hard violations: none")
+    practice = meta.get("practice") or {}
+    layer = practice.get("layer", PRACTICE_LAYER)
+    security = practice.get("electrical_security", "out_of_scope")
+    limit_lines = [f"- {item}" for item in applicability_limits()]
     lines.extend(
         [
             "",
             "## Applicability limits",
             "",
-            "- Synthetic/experiment results are not industrial proof.",
-            "- Risk metrics are advisory proxies, not failure certificates.",
-            "- Heuristic FEASIBLE does not imply OPTIMAL.",
+            *limit_lines,
+            "",
+            f"- practice layer: `{layer}`",
+            f"- electrical_security: `{security}` (see PRACTICE.md).",
             "",
             "## Next step recommendation",
             "",

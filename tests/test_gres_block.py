@@ -2,7 +2,7 @@
 
 Dual-GTU ban is combinatorial (not N-1). Blade ЗИП is consumable. FIFO is
 dirty on the stock instance; GREED is not. Ban occupancy is the hull of a
-precedence-connected interruption chain (Goel et al., EJOR 2013).
+precedence-connected interruption chain (Goel & Meisel, EJOR 2013).
 """
 
 from __future__ import annotations

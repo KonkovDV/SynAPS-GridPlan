@@ -103,6 +103,10 @@ def main(argv: list[str] | None = None) -> int:
     p_dis.add_argument("-o", "--output", type=Path, required=True)
 
     sub.add_parser("version", help="Print GridPlan version, SynAPS pin, and import path")
+    sub.add_parser(
+        "practice",
+        help="Print world-practice alignment (citations; not a pilot claim)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -138,6 +142,15 @@ def main(argv: list[str] | None = None) -> int:
             f"iso16290_trl {ISO16290_TRL}\n"
             f"source {Path(__file__).resolve()}\n"
         )
+        return 0
+
+    if args.command == "practice":
+        from synaps_gridplan.practice import render_practice_markdown
+
+        text = render_practice_markdown()
+        sys.stdout.write(text)
+        if not text.endswith("\n"):
+            sys.stdout.write("\n")
         return 0
 
     if args.command == "disrupt":

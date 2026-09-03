@@ -62,6 +62,7 @@ pub fn render_markdown(plan: &PlanResult) -> String {
         "- Native FIFO contour only; GREED remains Python/SynAPS.".into(),
         "- Synthetic/experiment results are not industrial proof.".into(),
         "- Heuristic FEASIBLE does not imply OPTIMAL.".into(),
+        "- Combinatorial crew/window/mutex only; power-flow / N-1 / SAIDI are out of scope.".into(),
         String::new(),
     ]);
     lines.join("\n")
