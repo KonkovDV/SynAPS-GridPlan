@@ -140,6 +140,12 @@ fn synthesize_gres_block_is_python_only() {
 }
 
 #[test]
+fn synthesize_dual_feed_hall_is_python_only() {
+    let err = synthesize_feeder("dual-feed-hall", 1, None, None, None).unwrap_err();
+    assert!(err.contains("Python-only"), "{err}");
+}
+
+#[test]
 fn chain_hull_occupies_gap_under_outage_ban() {
     let p: GridPlanProblem = serde_json::from_value(serde_json::json!({
         "assets": [

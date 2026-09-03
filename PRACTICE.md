@@ -29,6 +29,8 @@ system**. GridPlan is the first box only.
 | Synergrid / Elia design note (2026-05-06) | 2026 | SOGL outage-planning coordination extended to 1–25 MW production/storage and TSO-connected demand. Availability plans, freeze of coordinated slots. | Frozen ПЛ rows as agreed-slot freeze. | Becoming an Outage Planning Agent under SOGL. |
 | Nordic RCC OPC | 2025 | Y-1 baseline (before 1 Dec), then W-4 and W-1 updates among TSOs. | Freeze of an agreed slot after coordination. | Regional OPC among TSOs. |
 | Hexaly + PosAm at ČEZ Distribuce | — | Daily field workforce: qualifications, geography, live dispatch. Different product class (FSM), not monthly outage-window ТОиР. | FIFO EDD / GREED as **transparent OR baselines** for *this* contour. | Claiming ČEZ as a GridPlan deployment; Hexaly as the engine. |
+| Uptime Institute Tier III | 2021 | Concurrent maintainability: take one path out of service without dropping IT load. | Declared dual-feed mutex (`dual-feed-hall`). | Tier certificate, UPS/cooling, fault tolerance. |
+| MMTS-9 / M9 public outage (18 Aug 2026) | 2026 | Utility loss at a traffic-exchange colocation; cascade through MSK-IX is topology/traffic. | Same mutex family; DGU/UPS jobs may stay online. | Reconstructing M9, modelling IX failover, naming live campuses. |
 
 ## Papers (verified URLs)
 
@@ -56,6 +58,24 @@ Hydro-Québec TMS is the closest **architectural** cousin: CP for what can
 be written as constraints, a separate simulator for what cannot. GridPlan
 ships layer 1 and an independent checker. It does not ship layer 2.
 
+## Dual-feed hall (concurrent maintainability)
+
+Uptime Institute Tier III: each utility/distribution path can be taken out
+of service on a **planned** basis without dropping the IT load. That is a
+declared mutex on two paths — the same combinatorial family as
+`SIMULTANEOUS_OUTAGE_BAN`. GridPlan ships that mutex on a synthetic hall
+(`synthesize --mode dual-feed-hall`). It does **not** certify a Tier, model
+UPS/cooling, or prove fault tolerance (Tier IV).
+
+Public incident class, 18 Aug 2026: utility loss at MMTS-9 / M9 (MSK-IX
+colocation) after a substation event on Vavilova, reported by open news
+(Meduza, Habr). The cascade through an exchange is **traffic and topology**,
+out of scope here. The fixture is not a reconstruction of M9, not Yandex/VK
+campuses, not a siting study for «ЦОД у ТЭС», and not PVO.
+
+- Uptime Tier III: <https://journal.uptimeinstitute.com/explaining-uptime-institutes-tier-classification-system/>
+- Meduza, 18 Aug 2026: <https://meduza.io/news/2026/08/18/polzovateli-po-vsey-rossii-pozhalovalis-na-rabotu-runeta-veroyatnaya-prichina-sboya-avariya-na-krupnom-uzle-svyazi-v-moskve-v-etom-rayone-otklyuchilsya-svet>
+
 ## What this release changed in code
 
 - Plan JSON and markdown reports carry `practice.layer` /
@@ -64,6 +84,8 @@ ships layer 1 and an independent checker. It does not ship layer 2.
 - `SIMULTANEOUS_OUTAGE_BAN` occupancy stays the Goel hull; comments cite
   the verified EJOR DOI (`10.1016/j.ejor.2013.05.021`), not a guessed one.
 - CLI: `python -m synaps_gridplan practice`.
+- Synthetic dual-feed hall (`dual-feed-hall`): concurrent-maintainability
+  mutex on two utility paths. Not M9, not a live campus.
 
 No power-flow, no RL, no Hexaly, no SOGL OPA adapter. Those belong in
 other systems — the same split Hydro-Québec documents.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from uuid import UUID
 
@@ -17,12 +18,19 @@ from synaps_gridplan.planner import PlanOutcome, replan_after_disruption
 from synaps_gridplan.report import render_report
 from synaps_gridplan.synthetic import synthesize_feeder
 from synaps_gridplan.synthetic_gres import synthesize_gres_block
+from synaps_gridplan.synthetic_hall import synthesize_dual_feed_hall
+
+_FIXED_SYNTH: dict[str, Callable[..., GridPlanProblem]] = {
+    "gres-block": synthesize_gres_block,
+    "dual-feed-hall": synthesize_dual_feed_hall,
+}
 
 
 def _synthesize_problem(args: argparse.Namespace) -> GridPlanProblem:
-    """Build a synthetic instance. ``gres-block`` is fixed-size — feeder flags are illegal."""
+    """Build a synthetic instance. Fixed modes reject feeder sizing flags."""
 
-    if args.mode == "gres-block":
+    builder = _FIXED_SYNTH.get(args.mode)
+    if builder is not None:
         extras = [
             name
             for name, value in (
@@ -33,8 +41,10 @@ def _synthesize_problem(args: argparse.Namespace) -> GridPlanProblem:
             if value is not None
         ]
         if extras:
-            raise ValueError("gres-block is a fixed synthetic block; omit " + ", ".join(extras))
-        return synthesize_gres_block(seed=args.seed)
+            raise ValueError(
+                f"{args.mode} is a fixed synthetic instance; omit " + ", ".join(extras)
+            )
+        return builder(seed=args.seed)
     return synthesize_feeder(
         n_assets=40 if args.assets is None else args.assets,
         n_jobs=200 if args.jobs is None else args.jobs,
@@ -48,24 +58,27 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="synaps-gridplan")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_syn = sub.add_parser("synthesize", help="Write a synthetic feeder or GRES-block JSON")
+    p_syn = sub.add_parser(
+        "synthesize",
+        help="Write a synthetic feeder, GRES-block, or dual-feed hall JSON",
+    )
     p_syn.add_argument(
         "--assets",
         type=int,
         default=None,
-        help="feeder size (default 40); illegal with --mode gres-block",
+        help="feeder size (default 40); illegal with fixed modes",
     )
     p_syn.add_argument(
         "--jobs",
         type=int,
         default=None,
-        help="feeder size (default 200); illegal with --mode gres-block",
+        help="feeder size (default 200); illegal with fixed modes",
     )
     p_syn.add_argument(
         "--crews",
         type=int,
         default=None,
-        help="feeder size (default 10); illegal with --mode gres-block",
+        help="feeder size (default 10); illegal with fixed modes",
     )
     p_syn.add_argument("--seed", type=int, default=42)
     p_syn.add_argument(
@@ -79,6 +92,7 @@ def main(argv: list[str] | None = None) -> int:
             "infeasible",
             "frozen-conflict",
             "gres-block",
+            "dual-feed-hall",
         ],
     )
     p_syn.add_argument("-o", "--output", type=Path, required=True)

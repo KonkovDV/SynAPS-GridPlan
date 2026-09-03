@@ -53,6 +53,12 @@ pub fn synthesize_feeder(
                 "gres-block is Python-only (synaps-gridplan synthesize --mode gres-block)".into(),
             )
         }
+        "dual-feed-hall" => {
+            return Err(
+                "dual-feed-hall is Python-only (synaps-gridplan synthesize --mode dual-feed-hall)"
+                    .into(),
+            )
+        }
         other => return Err(format!("unknown mode: {other}")),
     };
     if n_assets < 1 || n_jobs < 1 || n_crews < 1 {

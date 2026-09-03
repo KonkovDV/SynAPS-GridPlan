@@ -11,6 +11,10 @@
   markdown reports carry ``practice.layer`` /
   ``electrical_security=out_of_scope``. CLI ``practice``. Not a power-flow,
   N-1, SAIDI, or plant-pilot claim.
+- Synthetic dual-feed hall (``dual-feed-hall``): Uptime Tier III concurrent
+  maintainability as a declared two-path mutex. Public MMTS-9 / M9 (18 Aug
+  2026) is cited as an incident *class*, not a reconstruction. Not IX
+  cascade, not a named campus.
 
 ## 0.1.3 — 2026-09-03
 

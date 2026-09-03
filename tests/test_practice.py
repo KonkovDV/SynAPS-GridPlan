@@ -109,3 +109,16 @@ def test_cli_practice_prints_citations(capsys: pytest.CaptureFixture[str]) -> No
     assert "10.3390/en18205454" in out
     assert ELECTRICAL_SECURITY in out
     assert "PRACTICE.md" in out
+
+
+def test_dual_feed_and_m9_are_cited_as_limits() -> None:
+    urls = {r.url for r in REFS}
+    assert any("uptimeinstitute.com" in u for u in urls)
+    assert any("meduza.io" in u for u in urls)
+    text = PRACTICE_MD.read_text(encoding="utf-8")
+    assert "Concurrently Maintainable" in text or "concurrent maintainability" in text.lower()
+    assert "MMTS-9" in text
+    assert "not a reconstruction" in text.lower() or "not a reconstruction of M9" in text.lower()
+    assert "Кириенко" not in text
+    assert "Савиновский" not in text
+    assert "dual-feed-hall" in text

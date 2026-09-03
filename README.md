@@ -51,6 +51,7 @@ called `optimal`, and only when the solver proves it.
 | CP-SAT proves optimal makespan on that instance (dual bound = achieved) | `test_res_cpsat_proves_optimal_makespan` (pytest marker `slow`) |
 | Local replan keeps frozen ПЛ rows | same tests, Scenario B |
 | Generation-shaped fixture (GRES-block) GREED-clean; FIFO is not | `tests/test_gres_block.py` |
+| Dual-feed hall (synthetic concurrent-maintainability mutex, not M9): GREED clean; overlapping both feeds is `SIMULTANEOUS_OUTAGE_BAN` | `tests/test_dual_feed_hall.py` |
 | Emergency-restoration day (synthetic узел «Восточный», СТО 17330282 / приказ № 289 chain): GREED clean, FIFO breaks 27 rules; frozen ПЛ row survives replan | `tests/test_emergency_day.py`, `benchmark/results/emergency_day_report.md` |
 | Generic 200/600-job feeder: GREED verified-clean; FIFO breaks windows | `tests/test_scale_feeder.py`, `benchmark/results/scale_report.md` |
 | Checker catches overlap, ЗИП, quals, short duration, unknown ops | `tests/test_adversarial_*.py` |
@@ -110,6 +111,12 @@ Generation-shaped fixture (synthetic, not a live plant):
 python -m synaps_gridplan synthesize --mode gres-block --seed 42 -o gres.json
 ```
 
+Dual-feed hall (synthetic concurrent-maintainability mutex, not M9):
+
+```bash
+python -m synaps_gridplan synthesize --mode dual-feed-hall --seed 42 -o hall.json
+```
+
 Optional Rust checker. For a verified plan use the Python jury command above.
 
 ```bash
@@ -117,8 +124,8 @@ cd native/synaps-gridplan-rs
 cargo test
 ```
 
-`gres-block` synthesis is Python-only. Native `synthesize --mode gres-block`
-exits with an error on purpose.
+`gres-block` and `dual-feed-hall` synthesis is Python-only. Native
+`synthesize` of those modes exits with an error on purpose.
 
 ### Exit codes and fail-closed
 

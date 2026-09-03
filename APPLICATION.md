@@ -33,6 +33,11 @@ SCADA, GIS и 1С не подменяются.
 Заморозка строки ПЛ — фиксация согласованного слота, не процесс OPC у TSO.
 Таблица источников: `PRACTICE.md`.
 
+Отдельная синтетическая постановка — два независимых ввода в машинный зал
+(`dual-feed-hall`): явный запрет занять оба пути сразу (аналог Uptime
+Tier III concurrent maintainability). Это не реконструкция ММТС-9 / MSK-IX,
+не кампус Яндекса или VK, не расчёт каскада трафика и не ПВО.
+
 ## Готовность
 
 ISO 16290, **уровень 4**: лабораторные (синтетические) постановки, автотесты,
@@ -102,6 +107,7 @@ SCADA не нужен.
 | Аварийные сутки (синтетика, регламент СТО 17330282 / приказ № 289: локализация→ремонт→опробование→ввод, ДГУ, замороженная ПЛ): GREED чист, FIFO 27 нарушений | `tests/test_emergency_day.py`, `benchmark/results/emergency_day_report.md` |
 | Генератор 200/600 работ: GREED проходит проверку, FIFO ломает окна | `tests/test_scale_feeder.py`, `benchmark/results/scale_report.md` |
 | Блок ГРЭС (синтетика): GREED чистый, FIFO нет | `tests/test_gres_block.py` |
+| Два ввода в зал (синтетика, не М9): GREED чистый; совпадение вводов — `SIMULTANEOUS_OUTAGE_BAN` | `tests/test_dual_feed_hall.py` |
 | Подделка графика ловится | `tests/test_adversarial_*.py` |
 | CLI exit 2 = fail-closed (`small --seed 42`) | README, `tests/test_cli_baselines.py` |
 | Python и Rust сходятся по kind доменного слоя | `tests/test_native_parity.py` |

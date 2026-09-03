@@ -24,6 +24,7 @@ OVERCLAIM_DENYLIST: tuple[str, ...] = (
     "plant pilot",
     "industrial proof",
     "hydro-québec production",
+    "live m9",
 )
 
 
@@ -155,6 +156,35 @@ REFS: tuple[PracticeRef, ...] = (
         ),
         kind="industry",
     ),
+    PracticeRef(
+        key="uptime_tier_iii",
+        year=2021,
+        citation=(
+            "Uptime Institute. Tier Classification: Tier III Concurrently "
+            "Maintainable — each distribution path can be removed from service "
+            "on a planned basis without impacting IT load."
+        ),
+        url=(
+            "https://journal.uptimeinstitute.com/"
+            "explaining-uptime-institutes-tier-classification-system/"
+        ),
+        kind="industry",
+    ),
+    PracticeRef(
+        key="mmts9_public_2026",
+        year=2026,
+        citation=(
+            "Public incident class, 18 Aug 2026: utility loss at MMTS-9 / M9 "
+            "(MSK-IX colocation). News reports, not a GridPlan reconstruction."
+        ),
+        url=(
+            "https://meduza.io/news/2026/08/18/"
+            "polzovateli-po-vsey-rossii-pozhalovalis-na-rabotu-runeta-"
+            "veroyatnaya-prichina-sboya-avariya-na-krupnom-uzle-svyazi-v-moskve-"
+            "v-etom-rayone-otklyuchilsya-svet"
+        ),
+        kind="industry",
+    ),
 )
 
 ALIGNMENT: tuple[PracticeMap, ...] = (
@@ -238,6 +268,22 @@ ALIGNMENT: tuple[PracticeMap, ...] = (
             "Daily field-service technician routing, SLA dispatch, or Hexaly as the search engine."
         ),
     ),
+    PracticeMap(
+        key="uptime_tier_iii",
+        we_implement=(
+            "Declared mutex on two utility paths so planned work occupies "
+            "only one path at a time (dual-feed-hall fixture)."
+        ),
+        we_do_not=("Uptime Tier certification, UPS/cooling topology, or Tier IV fault tolerance."),
+    ),
+    PracticeMap(
+        key="mmts9_public_2026",
+        we_implement=(
+            "Same combinatorial family: do not occupy both declared feeds "
+            "at once; DGU/UPS jobs can stay online."
+        ),
+        we_do_not=("Reconstruction of MMTS-9, MSK-IX traffic cascade, or a named live hall."),
+    ),
 )
 
 APPLICABILITY_LIMITS: tuple[str, ...] = (
@@ -252,6 +298,10 @@ APPLICABILITY_LIMITS: tuple[str, ...] = (
     "SIMULTANEOUS_OUTAGE_BAN is a customer-declared pair, not CSA/OPI from load-flow.",
     "Frozen ПЛ rows freeze agreed slots; they are not a year-ahead OPC process.",
     ("FIFO/GREED are OR baselines for this contour, not a field FSM (ČEZ/Hexaly class)."),
+    (
+        "Dual-feed hall mutex is a concurrent-maintainability analogue, "
+        "not Uptime certification and not an IX cascade model."
+    ),
 )
 
 
