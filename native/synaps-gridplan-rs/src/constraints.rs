@@ -273,7 +273,9 @@ fn chain_occupancy_spans(
     jobs: &[&MaintenanceJob],
     scheduled: &HashMap<Uuid, ScheduledSpan<'_>>,
 ) -> Vec<OccupancySpan> {
-    // Hull of a precedence-connected interruption chain on one asset.
+    // Hull [first start, last end] of a precedence-connected interruption
+    // chain (Goel & Meisel, EJOR 2013, doi:10.1016/j.ejor.2013.05.021).
+    // Not pairwise task intervals.
     if jobs.is_empty() {
         return vec![];
     }

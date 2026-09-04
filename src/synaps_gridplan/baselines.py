@@ -1,6 +1,8 @@
 """Deterministic calendar FIFO baseline (no SynAPS solver).
 
-Earliest-due-date dispatch for synthetic comparisons. Not an industrial method.
+Earliest-due-date dispatch for synthetic comparisons. Transparent OR
+baseline — not an industrial field-workforce method (ČEZ Distribuce /
+Hexaly class: daily technician routing). Heuristic, never optimal.
 """
 
 from __future__ import annotations

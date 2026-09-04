@@ -213,6 +213,8 @@ fn default_base_plan() -> String {
     "base_plan".into()
 }
 
+/// Customer-declared anti-coincidence of interruption occupancy.
+/// Combinatorial mutex (not N-1 / power-flow). Occupancy uses the Goel hull.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimultaneousOutageBan {
     pub id: Uuid,

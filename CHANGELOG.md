@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.1.4 — 2026-09-03
+
+- World-practice mapping locked in ``PRACTICE.md`` and
+  ``synaps_gridplan.practice`` (verified citations: Hydro-Québec TMS CP 2022,
+  Energies 2025 mutex/windows, Goel & Meisel EJOR 2013 downtime hull, SOGL/OPC
+  freeze vs OPI, Hexaly/ČEZ as a *different* FSM class). Plan JSON and
+  markdown reports carry ``practice.layer`` /
+  ``electrical_security=out_of_scope``. CLI ``practice``. Not a power-flow,
+  N-1, SAIDI, or plant-pilot claim.
+- Synthetic dual-feed hall (``dual-feed-hall``): Uptime Tier III concurrent
+  maintainability as a declared two-path mutex. Public MMTS-9 / M9 (18 Aug
+  2026) is cited as an incident *class*, not a reconstruction. Not IX
+  cascade, not a named campus.
+
 ## 0.1.3 — 2026-09-03
 
 - Canonical tree is origin ``main`` (this pin). The diverged local 0.1.10 /

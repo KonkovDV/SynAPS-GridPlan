@@ -1,4 +1,8 @@
-"""GridPlan post-checks — domain constraints SynAPS does not fully encode."""
+"""GridPlan post-checks — domain constraints SynAPS does not fully encode.
+
+Formalizable crew/window/mutex/freeze rules (Hydro-Québec TMS layer 1,
+Popovic et al., CP 2022). Power-flow / CSA is a different system.
+"""
 
 from __future__ import annotations
 
@@ -378,7 +382,8 @@ def _simultaneous_outage_ban_violations(
 
     Explicit ``network_constraints`` only — not topology / N-1 / load-flow.
     Chain occupancy is the hull of a precedence-connected interruption
-    component (Goel et al., EJOR 2013), not pairwise task intervals.
+    component (Goel & Meisel, EJOR 2013, doi:10.1016/j.ejor.2013.05.021),
+    not pairwise task intervals.
     """
     if not problem.simultaneous_outage_bans:
         return []

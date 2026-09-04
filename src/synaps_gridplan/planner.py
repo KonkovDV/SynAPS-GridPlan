@@ -15,6 +15,7 @@ from synaps_gridplan.adapter import compile_frozen_assignments, to_schedule_prob
 from synaps_gridplan.constraints import check_gridplan_constraints
 from synaps_gridplan.fingerprint import fingerprint_payload
 from synaps_gridplan.model import SCHEMA_VERSION, FrozenAssignment, GridPlanProblem
+from synaps_gridplan.practice import practice_snapshot
 from synaps_gridplan.risk_metrics import compute_risk_metrics
 from synaps_gridplan.versions import GRIDPLAN_VERSION, ISO16290_TRL, SYNAPS_COMMIT
 
@@ -310,6 +311,7 @@ def _wrap(
                 if claim_status == "heuristic_feasible"
                 else None
             ),
+            "practice": practice_snapshot(),
         }
     )
 

@@ -6,7 +6,7 @@ with a Rust checker for the same constraints.
 
 | | |
 | --- | --- |
-| Version | **0.1.3** |
+| Version | **0.1.4** |
 | Default branch | `main` |
 | SynAPS pin | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
 | Maturity | ISO 16290 TRL 4 (lab fixtures). Not a plant pilot. |
@@ -30,6 +30,11 @@ ADR-0004 regression (fail-closed coverage, calendar encode, kernel claims-lint
 on that SHA). KI-N12 stays closed; this is a new pin, not a reopen. Not the
 diverged local 0.1.10 tree.
 
+World practice (Hydro-Québec TMS split, SOGL OPI vs plan proposal, Goel
+downtime hull, Energies 2025 combinatorial mutex/windows — not their
+power-flow): [PRACTICE.md](PRACTICE.md). CLI: `python -m synaps_gridplan
+practice`. Electrical security remains out of scope.
+
 The checked campaign-shaped demo is synthetic РЭС «Северный» (55 jobs).
 Generic feeder modes `medium` (200) and `stress` (600) are packed so GREED
 verifies; calendar FIFO does not. 50k/500k runs in the SynAPS README are a
@@ -46,6 +51,7 @@ called `optimal`, and only when the solver proves it.
 | CP-SAT proves optimal makespan on that instance (dual bound = achieved) | `test_res_cpsat_proves_optimal_makespan` (pytest marker `slow`) |
 | Local replan keeps frozen ПЛ rows | same tests, Scenario B |
 | Generation-shaped fixture (GRES-block) GREED-clean; FIFO is not | `tests/test_gres_block.py` |
+| Dual-feed hall (synthetic concurrent-maintainability mutex, not M9): GREED clean; overlapping both feeds is `SIMULTANEOUS_OUTAGE_BAN` | `tests/test_dual_feed_hall.py` |
 | Emergency-restoration day (synthetic узел «Восточный», СТО 17330282 / приказ № 289 chain): GREED clean, FIFO breaks 27 rules; frozen ПЛ row survives replan | `tests/test_emergency_day.py`, `benchmark/results/emergency_day_report.md` |
 | Generic 200/600-job feeder: GREED verified-clean; FIFO breaks windows | `tests/test_scale_feeder.py`, `benchmark/results/scale_report.md` |
 | Checker catches overlap, ЗИП, quals, short duration, unknown ops | `tests/test_adversarial_*.py` |
@@ -60,6 +66,7 @@ Python ≥ 3.12. SynAPS is pinned by commit, not by branch.
 ```bash
 python -m pip install -e ".[dev]" --force-reinstall
 python -m synaps_gridplan version
+python -m synaps_gridplan practice
 python -m pytest -q -m "not slow"
 ```
 
@@ -104,6 +111,12 @@ Generation-shaped fixture (synthetic, not a live plant):
 python -m synaps_gridplan synthesize --mode gres-block --seed 42 -o gres.json
 ```
 
+Dual-feed hall (synthetic concurrent-maintainability mutex, not M9):
+
+```bash
+python -m synaps_gridplan synthesize --mode dual-feed-hall --seed 42 -o hall.json
+```
+
 Optional Rust checker. For a verified plan use the Python jury command above.
 
 ```bash
@@ -111,8 +124,8 @@ cd native/synaps-gridplan-rs
 cargo test
 ```
 
-`gres-block` synthesis is Python-only. Native `synthesize --mode gres-block`
-exits with an error on purpose.
+`gres-block` and `dual-feed-hall` synthesis is Python-only. Native
+`synthesize` of those modes exits with an error on purpose.
 
 ### Exit codes and fail-closed
 
@@ -147,6 +160,7 @@ schemas/                    JSON Schema
 benchmark/                  synthetic РЭС / jury / emergency-day / scale runners
 tests/
 APPLICATION.md              MIK application brief (Russian)
+PRACTICE.md                 World-practice mapping (citations, honest limits)
 SynAPS-GridPlan.pdf         22-slide MIK pitch (Russian)
 requirements-lock.txt       Linux pin of Python deps + SynAPS SHA
 ```
