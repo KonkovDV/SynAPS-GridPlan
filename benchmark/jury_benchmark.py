@@ -49,7 +49,23 @@ def _snapshot(outcome, wall_s: float) -> dict:
 
 
 def _ok(snap: dict) -> bool:
-    return bool(snap.get("verified_feasible")) and int(snap.get("hard_violation_count", 0)) == 0
+    return (
+        snap.get("verified_feasible") is True
+        and type(snap.get("hard_violation_count")) is int
+        and snap["hard_violation_count"] == 0
+        and snap.get("status") in {"feasible", "optimal"}
+    )
+
+
+def claims_pass(results: dict) -> bool:
+    """Gate the positive demo claims, not just successful script execution."""
+    b = results["scenario_b"]
+    return (
+        _ok(results["scenario_a"]["greed"])
+        and _ok(b["repaired"])
+        and b["frozen_windows_moved"] == 0
+        and results["scenario_c"]["two_runs_identical"] is True
+    )
 
 
 def _mark(ok: bool) -> str:
@@ -157,12 +173,18 @@ def render_md(r: dict) -> str:
     a, b, c = r["scenario_a"], r["scenario_b"], r["scenario_c"]
     inst = r["instance"]
     fifo_ok, greed_ok = _ok(a["fifo"]), _ok(a["greed"])
-    repair_ok = _ok(b["repaired"])
+    repair_ok = _ok(b["repaired"]) and b["frozen_windows_moved"] == 0
     fifo_v = a["fifo"]["violations_ru"] or {"(нет расшифровки)": a["fifo"]["hard_violation_count"]}
     greed_v = a["greed"]["violations_ru"]
     fifo_rows = "\n".join(f"| {k} | {v} |" for k, v in fifo_v.items())
     greed_rows = "\n".join(f"| {k} | {v} |" for k, v in greed_v.items()) if greed_v else "| — | 0 |"
-    if greed_ok:
+    if greed_ok and fifo_ok:
+        a_verdict = (
+            "Оба алгоритма дали допустимые графики на этой синтетической постановке. "
+            "Преимущество по качеству из одного факта допустимости не следует. "
+            "Оптимальность GREED не утверждается."
+        )
+    elif greed_ok:
         a_verdict = (
             "На этом синтетическом РЭС календарный FIFO даёт недопустимый график. "
             "GREED даёт график без жёстких нарушений; независимая проверка "
@@ -170,9 +192,9 @@ def render_md(r: dict) -> str:
         )
     else:
         a_verdict = (
-            "GREED сократил число нарушений относительно FIFO, но независимая "
-            "проверка **не** пройдена (см. таблицу). Этот прогон нельзя показывать "
-            "как допустимый план."
+            "GREED не прошёл независимую проверку (см. таблицу). "
+            "Этот прогон нельзя показывать как допустимый план. "
+            "Улучшение относительно FIFO без сравнения результатов не утверждается."
         )
     if repair_ok:
         b_verdict = (
@@ -239,13 +261,13 @@ GREED, расшифровка:
 
 | Проверка | Результат |
 | --- | --- |
-| Два запуска GREED совпали | {_mark(bool(c["two_runs_identical"]))} |
+| Два запуска GREED совпали | {_mark(c["two_runs_identical"] is True)} |
 | Отпечаток (SHA-256) | `{c["plan_fingerprint"][:16]}…` |
 
 ## Границы
 
 Синтетика. Нет расчёта N-1 и SAIDI, нет живых данных ДЗО. Показатель риска в продукте — справочный.
-Доказательство оптимума makespan (CP-SAT, dual bound = факт) — `benchmark/res_severny_benchmark.py`, маркер pytest `slow`.
+Проверка оптимума makespan скомпилированной постановки (CP-SAT, dual bound = факт) — `benchmark/res_severny_benchmark.py`, маркер pytest `slow`.
 
 Контур — слой формализуемых ограничений (бригады, окна, явные запреты пар, заморозка ПЛ),
 как слой 1 TMS Hydro-Québec (CP 2022). Потокораспределение вне продукта. Таблица: `PRACTICE.md`.
@@ -267,3 +289,4 @@ if __name__ == "__main__":
             indent=2,
         )
     )
+    raise SystemExit(0 if claims_pass(out) else 2)
