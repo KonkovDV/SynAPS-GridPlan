@@ -42,6 +42,8 @@ VIOLATION_KIND_RU: dict[str, str] = {
     "UNKNOWN_OPERATION": "назначение на неизвестную операцию",
     "UNKNOWN_WORK_CENTER": "назначение на неизвестный рабочий центр",
     "UNKNOWN_CREW": "назначение на неизвестную бригаду",
+    "INVALID_ID_MAP": "карта идентификаторов неполна или неоднозначна",
+    "INVALID_PROBLEM": "некорректная постановка задачи",
 }
 
 
@@ -78,6 +80,7 @@ def _as_dict(outcome: PlanOutcome) -> dict[str, Any]:
         "status": outcome.status,
         "claim_status": meta.get("claim_status", outcome.status),
         "verified_feasible": outcome.verified_feasible,
+        "verification_origin": meta.get("verification_origin", "in_memory_result"),
         "hard_violation_count": outcome.hard_violation_count,
         "claim_level": meta.get("claim_level", "experiment"),
         "iso16290_trl": meta.get("iso16290_trl", ISO16290_TRL),
@@ -109,7 +112,7 @@ def _as_dict(outcome: PlanOutcome) -> dict[str, Any]:
             }
             for a in outcome.schedule.assignments
         ],
-        "frozen_assignment_count": len(outcome.frozen_assignments),
+        "frozen_assignment_count": sum(fr.immutable for fr in outcome.frozen_assignments),
         "metadata": meta,
         "id_map_size": len(outcome.id_map),
         "practice": meta.get("practice"),
@@ -117,24 +120,44 @@ def _as_dict(outcome: PlanOutcome) -> dict[str, Any]:
     }
 
 
+def _csv_cell(value: Any) -> Any:
+    """Keep formula-like text inert on common spreadsheet imports.
+
+    CSV quoting handles separators/newlines, but does not stop formulas. Raw
+    machine-readable values remain available in JSON; CSV is a display export.
+    """
+    if isinstance(value, str) and (
+        value.startswith(("\t", "\r", "\n"))
+        or value.lstrip(" \t\r\n\ufeff").startswith(("=", "+", "-", "@"))
+    ):
+        return "'" + value
+    return value
+
+
 def _as_csv(outcome: PlanOutcome) -> str:
     buf = io.StringIO()
     meta = outcome.metadata or {}
-    # Preamble rows (comment-style) so provenance survives spreadsheet import.
-    buf.write(f"# claim_level,{meta.get('claim_level', 'experiment')}\n")
-    buf.write(f"# iso16290_trl,{meta.get('iso16290_trl', ISO16290_TRL)}\n")
-    buf.write(f"# data_provenance,{meta.get('data_provenance', 'experiment')}\n")
-    buf.write(f"# input_hash,{meta.get('input_hash', '')}\n")
-    buf.write(f"# config_hash,{meta.get('config_hash', '')}\n")
-    buf.write(f"# gridplan_version,{meta.get('gridplan_version', GRIDPLAN_VERSION)}\n")
-    buf.write(f"# synaps_commit,{meta.get('synaps_commit', SYNAPS_COMMIT)}\n")
-    buf.write(f"# status,{outcome.status}\n")
-    buf.write(f"# verified_feasible,{outcome.verified_feasible}\n")
+    # Use the CSV encoder for preamble rows too: metadata can contain newlines.
+    preamble = {
+        "claim_level": meta.get("claim_level", "experiment"),
+        "iso16290_trl": meta.get("iso16290_trl", ISO16290_TRL),
+        "data_provenance": meta.get("data_provenance", "experiment"),
+        "input_hash": meta.get("input_hash", ""),
+        "config_hash": meta.get("config_hash", ""),
+        "gridplan_version": meta.get("gridplan_version", GRIDPLAN_VERSION),
+        "synaps_commit": meta.get("synaps_commit", SYNAPS_COMMIT),
+        "status": outcome.status,
+        "verified_feasible": outcome.verified_feasible,
+        "verification_origin": meta.get("verification_origin", "in_memory_result"),
+    }
+    preamble_writer = csv.writer(buf, lineterminator="\n")
+    for key, value in preamble.items():
+        preamble_writer.writerow([f"# {key}", _csv_cell(value)])
 
     frozen_ops: set[str] = set()
     for fr in outcome.frozen_assignments:
         op = outcome.id_map.get(f"job:{fr.job_id}")
-        if op is not None:
+        if fr.immutable and op is not None:
             frozen_ops.add(str(op))
 
     writer = csv.DictWriter(
@@ -149,6 +172,7 @@ def _as_csv(outcome: PlanOutcome) -> str:
             "status",
             "source",
         ],
+        lineterminator="\n",
     )
     writer.writeheader()
     for a in outcome.schedule.assignments:
@@ -160,8 +184,8 @@ def _as_csv(outcome: PlanOutcome) -> str:
                 "end_time": a.end_time.isoformat(),
                 "setup_minutes": a.setup_minutes,
                 "frozen": str(a.operation_id) in frozen_ops,
-                "status": outcome.status,
-                "source": outcome.solver_config,
+                "status": _csv_cell(outcome.status),
+                "source": _csv_cell(outcome.solver_config),
             }
         )
     return buf.getvalue()
@@ -181,13 +205,14 @@ def _as_markdown(outcome: PlanOutcome) -> str:
         f"- status: **{outcome.status}**",
         f"- claim_status: `{meta.get('claim_status', outcome.status)}`",
         f"- verified_feasible: **{outcome.verified_feasible}**",
+        f"- verification_origin: `{meta.get('verification_origin', 'in_memory_result')}`",
         f"- hard_violations: {outcome.hard_violation_count}",
         f"- claim_level: `{meta.get('claim_level', 'experiment')}`",
         f"- iso16290_trl: `{meta.get('iso16290_trl', ISO16290_TRL)}`",
         f"- data_provenance: `{meta.get('data_provenance', 'experiment')}`",
         f"- input_hash: `{meta.get('input_hash', '')}`",
         f"- config_hash: `{meta.get('config_hash', '')}`",
-        f"- frozen_assignments: {len(outcome.frozen_assignments)}",
+        f"- frozen_assignments: {sum(fr.immutable for fr in outcome.frozen_assignments)}",
         f"- assignments: {len(outcome.schedule.assignments)}",
         f"- unscheduled_operations: {obj.unscheduled_operations}",
         "",
@@ -215,6 +240,11 @@ def _as_markdown(outcome: PlanOutcome) -> str:
         "## Violations",
         "",
     ]
+    if meta.get("verification_origin") == "imported_snapshot_not_rechecked":
+        lines[2:2] = [
+            "> Saved snapshot: verification flags were not rechecked against a GridPlan problem.",
+            "",
+        ]
     gp = meta.get("gridplan_violations") or []
     engine = meta.get("engine_violations") or []
     for v in gp[:20]:
