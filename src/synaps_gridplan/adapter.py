@@ -47,10 +47,10 @@ def _lookup_travel_minutes(
     to_loc: str,
     home: str,
 ) -> int:
-    """Travel minutes for a state pair. Empty matrix means zero, not a phantom 30.
+    """Travel minutes for a state pair. Empty matrix explicitly means zero.
 
-    A partial matrix missing ``from|to`` (and the home fallback) raises;
-    an empty matrix is zero travel.
+    Only the initial idle leg starts at home. A missing site-to-site leg must
+    not be replaced by a potentially shorter home-to-site leg.
     """
     if from_loc == to_loc:
         return 0
@@ -65,9 +65,6 @@ def _lookup_travel_minutes(
             return 0
     if to_loc == "idle":
         return 0
-    home_leg = problem.travel_minutes.get(_travel_key(home, to_loc))
-    if home_leg is not None:
-        return int(home_leg)
     if not problem.travel_minutes:
         return 0
     raise ValueError(f"travel_minutes missing for {from_loc}|{to_loc} (crew home {home})")
@@ -243,6 +240,8 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
     sequenced operations — SynAPS forbids ``predecessor_op_id`` across orders.
     """
 
+    # Pydantic model_copy/update and mutable lists bypass construction validation.
+    problem = GridPlanProblem.model_validate(problem.model_dump(mode="python"))
     id_map: dict[str, UUID] = {}
     assets_by_id = {asset.id: asset for asset in problem.assets}
     crews_by_id = {crew.id: crew for crew in problem.crews}
