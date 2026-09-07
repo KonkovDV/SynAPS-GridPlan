@@ -37,8 +37,10 @@ class PlanOutcome:
 
     @property
     def ok(self) -> bool:
-        return self.status in {SolverStatus.OPTIMAL.value, SolverStatus.FEASIBLE.value} and (
-            self.verified_feasible
+        return (
+            self.status in {SolverStatus.OPTIMAL.value, SolverStatus.FEASIBLE.value}
+            and self.verified_feasible
+            and self.hard_violation_count == 0
         )
 
 
@@ -102,7 +104,7 @@ def replan_after_disruption(
     radius: int | None = None,
     preserve_frozen: list[FrozenAssignment] | None = None,
 ) -> PlanOutcome:
-    """Local repair after disruption; reuses the base compiled problem + id map."""
+    """Local repair against current constraints; the base is an immutable snapshot."""
 
     compiled_job_ids = {
         UUID(key.removeprefix("job:")) for key in base_outcome.id_map if key.startswith("job:")
@@ -126,10 +128,9 @@ def replan_after_disruption(
             ),
         )
 
-    # Deep-copy: SynAPS repair mutates assignments/problem in place; the base
-    # outcome must stay immutable (audit trail + "plan didn't move" proofs).
-    schedule_problem = base_outcome.schedule_problem.model_copy(deep=True)
-    id_map = base_outcome.id_map
+    # Durations, resources, clearances and travel may change without changing IDs.
+    # Recompile instead of verifying the new plan against stale base constraints.
+    schedule_problem, id_map = to_schedule_problem(problem)
     expected_frozen = list(
         preserve_frozen
         if preserve_frozen is not None
@@ -142,7 +143,8 @@ def replan_after_disruption(
         if op_id is not None:
             disrupted_op_ids.append(op_id)
 
-    if not disrupted_op_ids:
+    unknown_disrupted = set(disrupted_job_ids) - live_job_ids
+    if not disrupted_op_ids or unknown_disrupted:
         return PlanOutcome(
             schema_version=SCHEMA_VERSION,
             solver_config=f"repair:{solver_config}",
@@ -152,12 +154,19 @@ def replan_after_disruption(
             schedule_problem=schedule_problem,
             id_map=id_map,
             hard_violation_count=0,
-            metadata={"error": "no disrupted jobs mapped to operations"},
+            metadata={
+                "error": (
+                    "unknown disrupted jobs"
+                    if unknown_disrupted
+                    else "no disrupted jobs mapped to operations"
+                ),
+                "unknown_disrupted_job_ids": sorted(str(j) for j in unknown_disrupted),
+            },
             frozen_assignments=tuple(expected_frozen),
         )
 
     # Default: freeze the rest of the base plan so repair stays local.
-    # Explicit ПЛ rows are a subset of that freeze. Pass preserve_frozen=[] to disable.
+    # preserve_frozen=[] disables this automatic locality lock, not declared ПЛ.
     if preserve_frozen is None:
         from synaps_gridplan.adapter import extract_frozen_from_result
 
@@ -172,14 +181,22 @@ def replan_after_disruption(
             and job_of_op[a.operation_id] not in disrupted_set
         ]
         if keep:
-            expected_frozen = list(
-                extract_frozen_from_result(
-                    problem,
-                    result_assignments=keep,
-                    id_map=id_map,
-                    reason="disruption_freeze_rest",
-                )
+            locked_ids = {fr.job_id for fr in expected_frozen if fr.immutable}
+            additional = extract_frozen_from_result(
+                problem,
+                result_assignments=keep,
+                id_map=id_map,
+                reason="disruption_freeze_rest",
             )
+            expected_frozen.extend(fr for fr in additional if fr.job_id not in locked_ids)
+
+    # An affected job can still have an immutable approved placement. Never drop
+    # that obligation. Distinct conflicting placements survive for fail-closed checks.
+    frozen_by_placement = {
+        (fr.job_id, fr.crew_id, fr.start, fr.end, fr.immutable): fr
+        for fr in [*problem.frozen_assignments, *expected_frozen]
+    }
+    expected_frozen = list(frozen_by_placement.values())
 
     # Pass immutable frozen rows into SynAPS so repair cannot silently move them.
     frozen_kwargs: dict[str, Any] = {}
@@ -278,6 +295,9 @@ def _wrap(
             "synaps_commit": SYNAPS_COMMIT,
             "solve_kwargs": kwargs_for_hash,
             "frozen_job_ids": sorted(str(f.job_id) for f in expected_frozen),
+            "frozen_assignments": [
+                f.model_dump(mode="json") for f in sorted(expected_frozen, key=lambda f: str(f.job_id))
+            ],
         }
     )
     risk = compute_risk_metrics(problem, result, id_map)
