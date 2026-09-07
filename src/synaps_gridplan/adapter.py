@@ -84,15 +84,27 @@ def _approved_outage_windows(job: MaintenanceJob, windows: list) -> list:
 
 
 def _job_clearance_bounds(job: MaintenanceJob, windows: list) -> tuple:
-    """Hard per-op window. Due date is tardiness, not a finish ceiling.
+    """Intersect a clearance with the job's hard bounds; due date stays soft.
 
-    Interruption jobs use the earliest approved clearance. A union of windows
-    would leave a gap the checker still treats as out-of-window.
+    Choose the earliest individually fitting approved window. This is a
+    deterministic single-window heuristic, not search over a union of windows.
+    Inconsistent bounds remain inconsistent so the compiler cannot invent room.
     """
     allowed = _approved_outage_windows(job, windows)
     if job.interruption_required and allowed:
-        chosen = min(allowed, key=lambda window: window.start)
-        return chosen.start, chosen.end
+        bounds = [
+            (
+                max(window.start, job.release_date or window.start),
+                min(window.end, job.latest_finish or window.end),
+            )
+            for window in allowed
+        ]
+        fitting = [
+            (start, end)
+            for start, end in bounds
+            if (end - start).total_seconds() >= job.duration_min * 60
+        ]
+        return min(fitting or bounds, key=lambda span: span[0])
     return job.release_date, job.latest_finish
 
 
@@ -108,6 +120,8 @@ def compile_frozen_assignments(
     seen_ops: set[UUID] = set()
 
     for fr in problem.frozen_assignments:
+        if not fr.immutable:
+            continue
         op_id = id_map.get(f"job:{fr.job_id}")
         wc_id = id_map.get(f"crew:{fr.crew_id}")
         if op_id is None or wc_id is None:
@@ -133,6 +147,7 @@ def compile_frozen_assignments(
     for asn in frozen_assignments_from_windows(problem, schedule, id_map):
         if asn.operation_id not in seen_ops:
             frozen.append(asn)
+            seen_ops.add(asn.operation_id)
     return frozen
 
 
@@ -146,7 +161,7 @@ def frozen_assignments_from_windows(
     Prefer explicit ``FrozenAssignment`` rows. This path is retained for v1 inputs.
     """
 
-    windows = [w for w in problem.outage_windows if w.frozen]
+    windows = [w for w in problem.outage_windows if w.frozen and w.approved]
     if not windows:
         return []
 
@@ -158,6 +173,8 @@ def frozen_assignments_from_windows(
     frozen: list[Assignment] = []
     for window in windows:
         for job in jobs_by_asset.get(window.asset_id, []):
+            if not job.interruption_required or not _approved_outage_windows(job, [window]):
+                continue
             op_id = id_map.get(f"job:{job.id}")
             if op_id is None:
                 continue
