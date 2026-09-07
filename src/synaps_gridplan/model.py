@@ -288,6 +288,25 @@ class GridPlanProblem(BaseModel):
         job_ids = {j.id for j in self.jobs}
         spare_ids = {s.id for s in self.spare_parts}
         issues: list[str] = []
+        if self.schema_version not in {SCHEMA_VERSION, SCHEMA_VERSION_V2}:
+            issues.append(f"unsupported schema_version: {self.schema_version}")
+        # Identity must be checked before dictionaries can collapse catalog rows.
+        for name, rows in (
+            ("assets", self.assets),
+            ("crews", self.crews),
+            ("jobs", self.jobs),
+            ("spare_parts", self.spare_parts),
+            ("outage_windows", self.outage_windows),
+            ("simultaneous_outage_bans", self.simultaneous_outage_bans),
+        ):
+            if len({row.id for row in rows}) != len(rows):
+                issues.append(f"duplicate id in {name}")
+        frozen_ids = [row.job_id for row in self.frozen_assignments]
+        if len(set(frozen_ids)) != len(frozen_ids):
+            issues.append("duplicate job_id in frozen_assignments")
+        for route, minutes in self.travel_minutes.items():
+            if minutes < 0:
+                issues.append(f"travel_minutes must be non-negative: {route}")
         for job in self.jobs:
             if job.asset_id not in asset_ids:
                 issues.append(f"job {job.external_ref} references unknown asset")
