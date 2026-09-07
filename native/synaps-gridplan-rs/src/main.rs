@@ -12,7 +12,8 @@ use synaps_gridplan_rs::fifo::plan_fifo;
 use synaps_gridplan_rs::model::{FrozenAssignment, GridPlanProblem};
 use synaps_gridplan_rs::report::{render_csv, render_markdown};
 use synaps_gridplan_rs::schedule::{
-    assignments_from_python_cli, looks_like_python_cli_result, Assignment, PlanResult,
+    assignments_from_python_cli, frozen_from_payload, looks_like_python_cli_result, Assignment,
+    PlanResult,
 };
 use synaps_gridplan_rs::synthetic::synthesize_feeder;
 use synaps_gridplan_rs::VERSION;
@@ -116,14 +117,10 @@ fn run(cli: Cli) -> Result<ExitCode, String> {
             let problem: GridPlanProblem =
                 serde_json::from_str(&fs::read_to_string(&problem).map_err(|e| e.to_string())?)
                     .map_err(|e| e.to_string())?;
+            problem.validate_refs()?;
             let (assignments, plan_frozen) = load_assignments_flexible(&plan)?;
-            // Problem freeze always applies; plan freeze is additive
-            // (plan wins on the same job_id). Empty plan freeze keeps the problem list.
-            let frozen = synaps_gridplan_rs::constraints::merge_expected_frozen(
-                &problem.frozen_assignments,
-                &plan_frozen,
-            );
-            let violations = check_plan(&problem, &assignments, &frozen);
+            // The checker always includes mandatory problem commitments.
+            let violations = check_plan(&problem, &assignments, &plan_frozen);
             let payload = serde_json::json!({
                 "verified_feasible": violations.is_empty(),
                 "hard_violation_count": violations.len(),
@@ -165,8 +162,9 @@ fn load_assignments_flexible(
     if looks_like_python_cli_result(&v) {
         return assignments_from_python_cli(&v);
     }
+    let frozen = frozen_from_payload(&v)?;
     if let Ok(plan) = serde_json::from_value::<PlanResult>(v.clone()) {
-        return Ok((plan.assignments, vec![]));
+        return Ok((plan.assignments, frozen));
     }
     if let Some(arr) = v.get("assignments").and_then(|a| a.as_array()) {
         let mut out = Vec::new();
@@ -180,11 +178,6 @@ fn load_assignments_flexible(
                     .into(),
             );
         }
-        let frozen = v
-            .pointer("/outcome/frozen_assignments")
-            .cloned()
-            .and_then(|x| serde_json::from_value::<Vec<FrozenAssignment>>(x).ok())
-            .unwrap_or_default();
         return Ok((out, frozen));
     }
     Err("unsupported plan JSON for check".into())
