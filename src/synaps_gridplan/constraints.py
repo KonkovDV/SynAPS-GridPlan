@@ -34,6 +34,27 @@ def check_gridplan_constraints(
 ) -> list[ConstraintViolation]:
     """Return hard GridPlan-domain violations (fail-closed callers must escalate)."""
 
+    # The adapter is a trust boundary too: missing/aliased IDs must not erase work.
+    for prefix, rows, compiled_ids in (
+        ("job", problem.jobs, {op.id for op in schedule_problem.operations}),
+        ("crew", problem.crews, {wc.id for wc in schedule_problem.work_centers}),
+    ):
+        keys = {f"{prefix}:{row.id}" for row in rows}
+        mapped = [id_map.get(f"{prefix}:{row.id}") for row in rows]
+        supplied_keys = {key for key in id_map if key.startswith(f"{prefix}:")}
+        if (
+            keys != supplied_keys
+            or None in mapped
+            or len(set(mapped)) != len(rows)
+            or set(mapped) != compiled_ids
+        ):
+            return [
+                ConstraintViolation(
+                    kind="INVALID_ID_MAP",
+                    message=f"{prefix} mapping must be complete, injective and match compilation",
+                )
+            ]
+
     violations: list[ConstraintViolation] = []
     jobs_by_id = {j.id: j for j in problem.jobs}
     crews_by_id = {c.id: c for c in problem.crews}
@@ -163,15 +184,23 @@ def check_gridplan_constraints(
     )
     violations.extend(_simultaneous_outage_ban_violations(problem, result, op_to_job, jobs_by_id))
 
-    frozen = expected_frozen if expected_frozen is not None else list(problem.frozen_assignments)
-    violations.extend(_frozen_violations(frozen, result, id_map, op_to_job, crew_of_wc, jobs_by_id))
+    # Caller-provided repair locks may add obligations, never remove declared ПЛ locks.
+    frozen_by_placement = {
+        (fr.job_id, fr.crew_id, fr.start, fr.end, fr.immutable): fr
+        for fr in [*problem.frozen_assignments, *(expected_frozen or [])]
+    }
+    violations.extend(
+        _frozen_violations(
+            list(frozen_by_placement.values()), result, id_map, op_to_job, crew_of_wc, jobs_by_id
+        )
+    )
 
     # Completeness: a dropped job must not yield verified_feasible.
-    all_op_ids = [id_map[f"job:{j.id}"] for j in problem.jobs if f"job:{j.id}" in id_map]
+    all_op_ids = {id_map[f"job:{j.id}"] for j in problem.jobs}
     assigned_op_ids = [a.operation_id for a in result.assignments]
     seen_ops: set[UUID] = set()
     for op_id in assigned_op_ids:
-        if op_id in seen_ops and op_id in set(all_op_ids):
+        if op_id in seen_ops and op_id in all_op_ids:
             violations.append(
                 ConstraintViolation(
                     kind="DUPLICATE_ASSIGNMENT",
@@ -213,14 +242,18 @@ def _calendar_covers(rows: list[dict[str, Any]], start: datetime, end: datetime)
     if not rows:
         return None
     parsed: list[tuple[datetime, datetime]] = []
-    for row in rows:
-        window_start = _parse_calendar_instant(row.get("start"))
-        window_end = _parse_calendar_instant(row.get("end"))
-        if window_start is None or window_end is None or window_end <= window_start:
-            return "MALFORMED"
-        parsed.append((window_start, window_end))
-    if any(start >= window_start and end <= window_end for window_start, window_end in parsed):
-        return None
+    try:
+        for row in rows:
+            window_start = _parse_calendar_instant(row.get("start"))
+            window_end = _parse_calendar_instant(row.get("end"))
+            if window_start is None or window_end is None or window_end <= window_start:
+                return "MALFORMED"
+            parsed.append((window_start, window_end))
+        if any(start >= window_start and end <= window_end for window_start, window_end in parsed):
+            return None
+    except TypeError:
+        # Incompatible timezone awareness is invalid input, not an uncaught crash.
+        return "MALFORMED"
     return "OUTSIDE"
 
 
@@ -590,13 +623,15 @@ def _spare_violations(
     """Consumable stock post-check (SynAPS aux = concurrent pool only)."""
 
     consumption: dict[UUID, int] = {s.id: 0 for s in problem.spare_parts}
-    assigned_ops = {a.operation_id for a in result.assignments}
+    assignments_by_op: dict[UUID, Assignment] = {}
+    for asn in result.assignments:
+        assignments_by_op.setdefault(asn.operation_id, asn)
     out: list[ConstraintViolation] = []
     for job in problem.jobs:
         op_id = id_map.get(f"job:{job.id}")
-        if op_id is None or op_id not in assigned_ops:
+        if op_id is None or op_id not in assignments_by_op:
             continue
-        asn = next(a for a in result.assignments if a.operation_id == op_id)
+        asn = assignments_by_op[op_id]
         for spare_id in job.spare_part_ids:
             spare = spares_by_id.get(spare_id)
             if spare is None:
