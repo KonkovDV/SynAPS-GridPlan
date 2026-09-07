@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import AfterValidator, AwareDatetime, BaseModel, Field, model_validator
 
 SCHEMA_VERSION = "gridplan.v1"
 SCHEMA_VERSION_V2 = "gridplan.v2"
@@ -20,6 +20,14 @@ DataProvenance = Literal[
     "production_verified",
 ]
 ClaimLevel = Literal["experiment", "benchmark", "pilot_candidate", "production_verified"]
+
+
+def _as_utc(value: datetime) -> datetime:
+    return value.astimezone(UTC)
+
+
+# Reject ambiguous local timestamps; use elapsed-time arithmetic across DST folds.
+UTCInstant = Annotated[AwareDatetime, AfterValidator(_as_utc)]
 
 
 class Criticality(StrEnum):
@@ -53,7 +61,7 @@ class RiskProfile(BaseModel):
     probability_of_failure: float = Field(ge=0.0, le=1.0, default=0.0)
     consequence_score: float = Field(ge=0.0, le=1.0, default=0.0)
     criticality: Criticality = Criticality.MEDIUM
-    assessment_timestamp: datetime | None = None
+    assessment_timestamp: UTCInstant | None = None
     assessment_method: str = "unspecified"
     confidence: float = Field(ge=0.0, le=1.0, default=0.0)
     source_ref: str = ""
@@ -133,7 +141,7 @@ class SparePart(BaseModel):
     stock_qty: int = Field(default=0, ge=0, description="legacy alias of available_quantity")
     available_quantity: int | None = Field(default=None, ge=0)
     reserved_quantity: int = Field(default=0, ge=0)
-    replenishment_date: datetime | None = None
+    replenishment_date: UTCInstant | None = None
     lead_time_min: int = Field(default=0, ge=0)
     warehouse_location: str = ""
     data_provenance: DataProvenance | str = "experiment"
@@ -159,8 +167,8 @@ class OutageWindow(BaseModel):
 
     id: UUID = Field(default_factory=uuid4)
     asset_id: UUID
-    start: datetime
-    end: datetime
+    start: UTCInstant
+    end: UTCInstant
     approved: bool = True
     frozen: bool = False
     allowed_job_ids: list[UUID] = Field(default_factory=list)
@@ -187,9 +195,9 @@ class MaintenanceJob(BaseModel):
     required_qualifications: list[str] = Field(default_factory=list)
     spare_part_ids: list[UUID] = Field(default_factory=list)
     predecessor_job_ids: list[UUID] = Field(default_factory=list)
-    due_date: datetime | None = None
-    release_date: datetime | None = None
-    latest_finish: datetime | None = None
+    due_date: UTCInstant | None = None
+    release_date: UTCInstant | None = None
+    latest_finish: UTCInstant | None = None
     priority: int | None = Field(default=None, ge=1, le=999)
     interruption_required: bool = False
     safety_constraints: list[str] = Field(default_factory=list)
@@ -204,12 +212,18 @@ class FrozenAssignment(BaseModel):
 
     job_id: UUID
     crew_id: UUID
-    start: datetime
-    end: datetime
+    start: UTCInstant
+    end: UTCInstant
     source: str = "base_plan"
     frozen_reason: str = ""
     immutable: bool = True
     data_provenance: DataProvenance | str = "experiment"
+
+    @model_validator(mode="after")
+    def _validate_interval(self) -> Self:
+        if self.end <= self.start:
+            raise ValueError("frozen assignment end must be after start")
+        return self
 
 
 class DisruptionEvent(BaseModel):
@@ -217,7 +231,7 @@ class DisruptionEvent(BaseModel):
 
     id: UUID = Field(default_factory=uuid4)
     event_type: str
-    occurred_at: datetime
+    occurred_at: UTCInstant
     affected_asset_ids: list[UUID] = Field(default_factory=list)
     affected_job_ids: list[UUID] = Field(default_factory=list)
     unavailable_crew_ids: list[UUID] = Field(default_factory=list)
@@ -277,8 +291,8 @@ class GridPlanProblem(BaseModel):
         default_factory=dict,
         description="key = '{from_location}|{to_location}' → setup minutes",
     )
-    planning_horizon_start: datetime
-    planning_horizon_end: datetime
+    planning_horizon_start: UTCInstant
+    planning_horizon_end: UTCInstant
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
