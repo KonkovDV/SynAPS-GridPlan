@@ -127,12 +127,16 @@ def test_replan_freezes_rest_even_with_pl_frozen_rows() -> None:
     )
     base = plan_maintenance(p, solver_config="GREED")
     assert base.verified_feasible
+    # Solver output order is not job order. The first row can be a 60-minute
+    # KEEP/GONE slot; binding it to the 120-minute ПЛ job creates an invalid lock.
+    frozen_op = base.id_map[f"job:{frozen_job.id}"]
+    frozen_asn = next(a for a in base.schedule.assignments if a.operation_id == frozen_op)
     frozen_row = FrozenAssignment(
         job_id=frozen_job.id,
         crew_id=c.id,
-        start=base.schedule.assignments[0].start_time,
-        end=base.schedule.assignments[0].end_time,
-        reason="ПЛ",
+        start=frozen_asn.start_time,
+        end=frozen_asn.end_time,
+        frozen_reason="ПЛ",
     )
     # repair with explicit ПЛ row present — the old code skipped freeze-rest
     p_frozen = p.model_copy(update={"frozen_assignments": [frozen_row]})
@@ -172,7 +176,7 @@ def test_diff_does_not_call_crew_swapped_frozen_unchanged() -> None:
             start=asn.start_time,
             end=asn.end_time,
             frozen_reason="ПЛ",
-        )
+        ),
     ]
     diff = diff_plans(
         base=base.schedule,
@@ -212,7 +216,7 @@ def test_latest_finish_is_hard() -> None:
                     work_center_id=id_map[f"crew:{c.id}"],
                     start_time=T0,
                     end_time=T0 + timedelta(minutes=600),
-                )
+                ),
             ]
         },
     )()
