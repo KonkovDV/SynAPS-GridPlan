@@ -34,10 +34,24 @@ def check_gridplan_constraints(
 ) -> list[ConstraintViolation]:
     """Return hard GridPlan-domain violations (fail-closed callers must escalate)."""
 
+    # Public callers can supply model_copy/update results or mutate nested lists.
+    # Validation at construction alone is therefore not a sufficient boundary.
+    try:
+        problem = GridPlanProblem.model_validate(problem.model_dump(mode="python"))
+        if expected_frozen is not None:
+            expected_frozen = [
+                FrozenAssignment.model_validate(fr.model_dump(mode="python"))
+                for fr in expected_frozen
+            ]
+    except (ValueError, TypeError):
+        return [
+            ConstraintViolation(kind="INVALID_PROBLEM", message="problem failed domain validation")
+        ]
+
     # The adapter is a trust boundary too: missing/aliased IDs must not erase work.
     for prefix, rows, compiled_ids in (
-        ("job", problem.jobs, {op.id for op in schedule_problem.operations}),
-        ("crew", problem.crews, {wc.id for wc in schedule_problem.work_centers}),
+        ("job", problem.jobs, [op.id for op in schedule_problem.operations]),
+        ("crew", problem.crews, [wc.id for wc in schedule_problem.work_centers]),
     ):
         keys = {f"{prefix}:{row.id}" for row in rows}
         mapped = [id_map.get(f"{prefix}:{row.id}") for row in rows]
@@ -46,7 +60,8 @@ def check_gridplan_constraints(
             keys != supplied_keys
             or None in mapped
             or len(set(mapped)) != len(rows)
-            or set(mapped) != compiled_ids
+            or len(compiled_ids) != len(rows)
+            or set(mapped) != set(compiled_ids)
         ):
             return [
                 ConstraintViolation(
