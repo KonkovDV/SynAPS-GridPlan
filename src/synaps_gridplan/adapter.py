@@ -7,6 +7,7 @@ from datetime import timedelta
 from uuid import UUID, uuid5
 
 from synaps.model import (
+    MAX_SCHEDULE_SETUP_ENTRIES,
     Assignment,
     AuxiliaryResource,
     Operation,
@@ -253,6 +254,13 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
             "idle",
         }
     )
+    # The pinned engine checks this too, but only after the quadratic list exists.
+    setup_count = len(problem.crews) * len(location_codes) ** 2
+    if setup_count > MAX_SCHEDULE_SETUP_ENTRIES:
+        raise ValueError(
+            f"setup matrix requires {setup_count} entries; "
+            f"limit is {MAX_SCHEDULE_SETUP_ENTRIES} (rejected before allocation)"
+        )
     states: list[State] = []
     state_by_loc: dict[str, UUID] = {}
     for loc in location_codes:
