@@ -104,7 +104,14 @@ def replan_after_disruption(
     radius: int | None = None,
     preserve_frozen: list[FrozenAssignment] | None = None,
 ) -> PlanOutcome:
-    """Local repair against current constraints; the base is an immutable snapshot."""
+    """Repair current constraints without mutating the base snapshot.
+
+    The pinned upstream uses INCREMENTAL_REPAIR, not a configurable portfolio
+    solver. GREED is retained only as the legacy public label for this path.
+    """
+
+    if solver_config not in {"GREED", "INCREMENTAL_REPAIR"}:
+        raise ValueError("repair uses INCREMENTAL_REPAIR; custom repair solvers are not supported")
 
     compiled_job_ids = {
         UUID(key.removeprefix("job:")) for key in base_outcome.id_map if key.startswith("job:")
@@ -233,7 +240,12 @@ def replan_after_disruption(
             frozen_assignments=tuple(expected_frozen),
         )
 
-    tagged = result.model_copy(update={"solver_name": f"repair:{solver_config}"})
+    tagged = result.model_copy(
+        update={
+            "solver_name": f"repair:{solver_config}",
+            "metadata": {**result.metadata, "repair_engine": "INCREMENTAL_REPAIR"},
+        }
+    )
     return _wrap(
         tagged,
         id_map,
@@ -242,6 +254,7 @@ def replan_after_disruption(
         problem,
         expected_frozen=expected_frozen,
         kwargs_for_hash={
+            "repair_engine": "INCREMENTAL_REPAIR",
             "radius": radius,
             "disrupted_job_ids": [str(x) for x in disrupted_job_ids],
         },
@@ -296,7 +309,8 @@ def _wrap(
             "solve_kwargs": kwargs_for_hash,
             "frozen_job_ids": sorted(str(f.job_id) for f in expected_frozen),
             "frozen_assignments": [
-                f.model_dump(mode="json") for f in sorted(expected_frozen, key=lambda f: str(f.job_id))
+                f.model_dump(mode="json")
+                for f in sorted(expected_frozen, key=lambda f: str(f.job_id))
             ],
         }
     )
