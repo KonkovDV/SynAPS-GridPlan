@@ -51,23 +51,26 @@ def diff_plans(
         ):
             moved.append({"before": _row(b, job_of_op), "after": _row(a, job_of_op)})
 
-    frozen_job_ids = {f.job_id for f in frozen if f.immutable}
-    unchanged_frozen = []
+    frozen_by_job: dict[UUID, list[FrozenAssignment]] = {}
     for fr in frozen:
-        if not fr.immutable:
+        if fr.immutable:
+            frozen_by_job.setdefault(fr.job_id, []).append(fr)
+    unchanged_frozen = []
+    for job_id, obligations in frozen_by_job.items():
+        mapped_op = id_map.get(f"job:{job_id}")
+        if mapped_op is None:
             continue
-        op = id_map.get(f"job:{fr.job_id}")
-        if op is None:
-            continue
-        a = new_map.get(op)
-        expected_wc = id_map.get(f"crew:{fr.crew_id}")
-        if (
-            a is not None
-            and a.start_time == fr.start
-            and a.end_time == fr.end
-            and (expected_wc is None or a.work_center_id == expected_wc)
+        placed = new_map.get(mapped_op)
+        # A missing crew mapping is not proof of equality. Conflicting placements
+        # must not be hidden by counting only the one matching obligation.
+        if placed is not None and all(
+            placed.start_time == fr.start
+            and placed.end_time == fr.end
+            and id_map.get(f"crew:{fr.crew_id}") is not None
+            and placed.work_center_id == id_map[f"crew:{fr.crew_id}"]
+            for fr in obligations
         ):
-            unchanged_frozen.append(_row(a, job_of_op))
+            unchanged_frozen.append(_row(placed, job_of_op))
 
     late_ids = newly_late_job_ids
     unassigned_ids = newly_unassigned_job_ids
@@ -89,7 +92,7 @@ def diff_plans(
         "removed_assignments": [_row(a, job_of_op) for a in removed],
         "moved_assignments": moved,
         "unchanged_frozen_assignments": unchanged_frozen,
-        "frozen_job_count": len(frozen_job_ids),
+        "frozen_job_count": len(frozen_by_job),
         "newly_late_jobs": [str(x) for x in (late_ids or [])],
         "newly_unassigned_jobs": [str(x) for x in (unassigned_ids or [])],
         "changed_metrics": metrics or {},
@@ -113,10 +116,8 @@ def _auto_metrics(
     jobs_by_id = {j.id: j for j in problem.jobs}
     base_ops = {a.operation_id for a in base.assignments}
     repaired_ops = {a.operation_id for a in repaired.assignments}
-    base_assigned = {_job_uuid(op, job_of_op) for op in base_ops}
-    new_assigned = {_job_uuid(op, job_of_op) for op in repaired_ops}
-    base_assigned.discard(None)
-    new_assigned.discard(None)
+    base_assigned = {jid for op in base_ops if (jid := _job_uuid(op, job_of_op)) is not None}
+    new_assigned = {jid for op in repaired_ops if (jid := _job_uuid(op, job_of_op)) is not None}
 
     newly_unassigned = sorted(base_assigned - new_assigned, key=str)
 

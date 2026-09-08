@@ -656,7 +656,23 @@ def _snapshot(o: PlanOutcome, wall_s: float) -> dict[str, Any]:
 
 
 def _ok(s: dict[str, Any]) -> bool:
-    return bool(s["verified_feasible"]) and s["hard_violation_count"] == 0
+    return (
+        s.get("verified_feasible") is True
+        and type(s.get("hard_violation_count")) is int
+        and s["hard_violation_count"] == 0
+        and s.get("status") in {"feasible", "optimal"}
+    )
+
+
+def claims_pass(results: dict[str, Any]) -> bool:
+    """Gate the positive emergency-day claims, not just successful script execution."""
+    b = results["scenario_b"]
+    return (
+        _ok(results["scenario_a"]["greed"])
+        and _ok(b["repaired"])
+        and b["frozen_windows_moved"] == 0
+        and results["scenario_c"]["two_runs_identical"] is True
+    )
 
 
 def _mark(flag: bool) -> str:
@@ -915,6 +931,7 @@ def main() -> None:
         f"deterministic={r['scenario_c']['two_runs_identical']}"
     )
     print(f"[emergency-day] report -> {RESULTS / 'emergency_day_report.md'}")
+    raise SystemExit(0 if claims_pass(r) else 2)
 
 
 if __name__ == "__main__":

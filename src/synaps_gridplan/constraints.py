@@ -13,7 +13,7 @@ from uuid import UUID
 
 from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
-from synaps_gridplan.model import FrozenAssignment, GridPlanProblem, MaintenanceJob
+from synaps_gridplan.model import FrozenAssignment, GridPlanProblem, MaintenanceJob, SparePart
 
 
 @dataclass(frozen=True)
@@ -33,6 +33,42 @@ def check_gridplan_constraints(
     expected_frozen: list[FrozenAssignment] | None = None,
 ) -> list[ConstraintViolation]:
     """Return hard GridPlan-domain violations (fail-closed callers must escalate)."""
+
+    # Public callers can supply model_copy/update results or mutate nested lists.
+    # Validation at construction alone is therefore not a sufficient boundary.
+    try:
+        problem = GridPlanProblem.model_validate(problem.model_dump(mode="python"))
+        if expected_frozen is not None:
+            expected_frozen = [
+                FrozenAssignment.model_validate(fr.model_dump(mode="python"))
+                for fr in expected_frozen
+            ]
+    except (ValueError, TypeError):
+        return [
+            ConstraintViolation(kind="INVALID_PROBLEM", message="problem failed domain validation")
+        ]
+
+    # The adapter is a trust boundary too: missing/aliased IDs must not erase work.
+    for prefix, rows, compiled_ids in (
+        ("job", problem.jobs, [op.id for op in schedule_problem.operations]),
+        ("crew", problem.crews, [wc.id for wc in schedule_problem.work_centers]),
+    ):
+        keys = {f"{prefix}:{row.id}" for row in rows}
+        mapped = [id_map.get(f"{prefix}:{row.id}") for row in rows]
+        supplied_keys = {key for key in id_map if key.startswith(f"{prefix}:")}
+        if (
+            keys != supplied_keys
+            or None in mapped
+            or len(set(mapped)) != len(rows)
+            or len(compiled_ids) != len(rows)
+            or set(mapped) != set(compiled_ids)
+        ):
+            return [
+                ConstraintViolation(
+                    kind="INVALID_ID_MAP",
+                    message=f"{prefix} mapping must be complete, injective and match compilation",
+                )
+            ]
 
     violations: list[ConstraintViolation] = []
     jobs_by_id = {j.id: j for j in problem.jobs}
@@ -163,15 +199,23 @@ def check_gridplan_constraints(
     )
     violations.extend(_simultaneous_outage_ban_violations(problem, result, op_to_job, jobs_by_id))
 
-    frozen = expected_frozen if expected_frozen is not None else list(problem.frozen_assignments)
-    violations.extend(_frozen_violations(frozen, result, id_map, op_to_job, crew_of_wc, jobs_by_id))
+    # Caller-provided repair locks may add obligations, never remove declared ПЛ locks.
+    frozen_by_placement = {
+        (fr.job_id, fr.crew_id, fr.start, fr.end, fr.immutable): fr
+        for fr in [*problem.frozen_assignments, *(expected_frozen or [])]
+    }
+    violations.extend(
+        _frozen_violations(
+            list(frozen_by_placement.values()), result, id_map, op_to_job, crew_of_wc, jobs_by_id
+        )
+    )
 
     # Completeness: a dropped job must not yield verified_feasible.
-    all_op_ids = [id_map[f"job:{j.id}"] for j in problem.jobs if f"job:{j.id}" in id_map]
+    all_op_ids = {id_map[f"job:{j.id}"] for j in problem.jobs}
     assigned_op_ids = [a.operation_id for a in result.assignments]
     seen_ops: set[UUID] = set()
     for op_id in assigned_op_ids:
-        if op_id in seen_ops and op_id in set(all_op_ids):
+        if op_id in seen_ops and op_id in all_op_ids:
             violations.append(
                 ConstraintViolation(
                     kind="DUPLICATE_ASSIGNMENT",
@@ -181,8 +225,8 @@ def check_gridplan_constraints(
             )
         seen_ops.add(op_id)
     for job in problem.jobs:
-        op_id = id_map.get(f"job:{job.id}")
-        if op_id is not None and op_id not in seen_ops:
+        mapped_op = id_map.get(f"job:{job.id}")
+        if mapped_op is not None and mapped_op not in seen_ops:
             violations.append(
                 ConstraintViolation(
                     kind="UNSCHEDULED_JOB",
@@ -197,6 +241,12 @@ def check_gridplan_constraints(
     return violations
 
 
+def _calendar_row_bounds(row: Any) -> tuple[Any, Any]:
+    if isinstance(row, dict):
+        return row.get("start"), row.get("end")
+    return getattr(row, "start", None), getattr(row, "end", None)
+
+
 def _parse_calendar_instant(value: Any) -> datetime | None:
     if isinstance(value, datetime):
         return value
@@ -208,19 +258,23 @@ def _parse_calendar_instant(value: Any) -> datetime | None:
     return None
 
 
-def _calendar_covers(rows: list[dict[str, Any]], start: datetime, end: datetime) -> str | None:
+def _calendar_covers(rows: list[Any], start: datetime, end: datetime) -> str | None:
     """None = covered or unconstrained. Kind suffix when violated/malformed."""
     if not rows:
         return None
     parsed: list[tuple[datetime, datetime]] = []
-    for row in rows:
-        window_start = _parse_calendar_instant(row.get("start"))
-        window_end = _parse_calendar_instant(row.get("end"))
-        if window_start is None or window_end is None or window_end <= window_start:
-            return "MALFORMED"
-        parsed.append((window_start, window_end))
-    if any(start >= window_start and end <= window_end for window_start, window_end in parsed):
-        return None
+    try:
+        for row in rows:
+            window_start = _parse_calendar_instant(_calendar_row_bounds(row)[0])
+            window_end = _parse_calendar_instant(_calendar_row_bounds(row)[1])
+            if window_start is None or window_end is None or window_end <= window_start:
+                return "MALFORMED"
+            parsed.append((window_start, window_end))
+        if any(start >= window_start and end <= window_end for window_start, window_end in parsed):
+            return None
+    except TypeError:
+        # Incompatible timezone awareness is invalid input, not an uncaught crash.
+        return "MALFORMED"
     return "OUTSIDE"
 
 
@@ -557,13 +611,14 @@ def _precedence_violations(
         if job.id not in start_by_job:
             continue
         for pred in job.predecessor_job_ids:
+            pred_job = jobs_by_id.get(pred)
             if pred not in end_by_job:
                 out.append(
                     ConstraintViolation(
                         kind="PRECEDENCE_VIOLATION",
                         message=(
                             f"job {job.external_ref} starts without scheduled predecessor "
-                            f"{jobs_by_id.get(pred).external_ref if pred in jobs_by_id else pred}"
+                            f"{pred_job.external_ref if pred_job is not None else pred}"
                         ),
                         job_id=job.id,
                     )
@@ -585,18 +640,20 @@ def _spare_violations(
     result: ScheduleResult,
     id_map: dict[str, UUID],
     op_to_job: dict[UUID, UUID],
-    spares_by_id: dict,
+    spares_by_id: dict[UUID, SparePart],
 ) -> list[ConstraintViolation]:
     """Consumable stock post-check (SynAPS aux = concurrent pool only)."""
 
     consumption: dict[UUID, int] = {s.id: 0 for s in problem.spare_parts}
-    assigned_ops = {a.operation_id for a in result.assignments}
+    assignments_by_op: dict[UUID, Assignment] = {}
+    for asn in result.assignments:
+        assignments_by_op.setdefault(asn.operation_id, asn)
     out: list[ConstraintViolation] = []
     for job in problem.jobs:
         op_id = id_map.get(f"job:{job.id}")
-        if op_id is None or op_id not in assigned_ops:
+        if op_id is None or op_id not in assignments_by_op:
             continue
-        asn = next(a for a in result.assignments if a.operation_id == op_id)
+        asn = assignments_by_op[op_id]
         for spare_id in job.spare_part_ids:
             spare = spares_by_id.get(spare_id)
             if spare is None:
@@ -653,10 +710,10 @@ def _frozen_violations(
     for fr in frozen:
         if not fr.immutable:
             continue
-        asn = by_job.get(fr.job_id)
+        matched = by_job.get(fr.job_id)
         job = jobs_by_id.get(fr.job_id)
         label = job.external_ref if job else str(fr.job_id)
-        if asn is None:
+        if matched is None:
             out.append(
                 ConstraintViolation(
                     kind="FROZEN_ASSIGNMENT_CONFLICT",
@@ -665,8 +722,8 @@ def _frozen_violations(
                 )
             )
             continue
-        crew_id = crew_of_wc.get(asn.work_center_id)
-        if crew_id != fr.crew_id or asn.start_time != fr.start or asn.end_time != fr.end:
+        crew_id = crew_of_wc.get(matched.work_center_id)
+        if crew_id != fr.crew_id or matched.start_time != fr.start or matched.end_time != fr.end:
             out.append(
                 ConstraintViolation(
                     kind="FROZEN_ASSIGNMENT_CONFLICT",
@@ -674,7 +731,7 @@ def _frozen_violations(
                         f"frozen job {label} changed: expected crew={fr.crew_id} "
                         f"[{fr.start.isoformat()}..{fr.end.isoformat()}], "
                         f"got crew={crew_id} "
-                        f"[{asn.start_time.isoformat()}..{asn.end_time.isoformat()}]"
+                        f"[{matched.start_time.isoformat()}..{matched.end_time.isoformat()}]"
                     ),
                     job_id=fr.job_id,
                     details={

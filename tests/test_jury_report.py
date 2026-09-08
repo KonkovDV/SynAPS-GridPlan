@@ -14,7 +14,7 @@ from synaps_gridplan.versions import GRIDPLAN_VERSION, SYNAPS_COMMIT
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "benchmark"))
 
-from jury_benchmark import _ok, render_md  # noqa: E402
+from jury_benchmark import _ok, claims_pass, render_md  # noqa: E402
 
 
 def _payload(*, greed_verified: bool, greed_viol: int, repair_verified: bool) -> dict:
@@ -74,8 +74,42 @@ def test_render_passes_only_when_checker_is_clean() -> None:
     text = render_md(_payload(greed_verified=True, greed_viol=0, repair_verified=True))
     assert "| Проверка | нет | да |" in text
     assert "Оптимальность GREED не утверждается" in text
-    assert _ok({"verified_feasible": True, "hard_violation_count": 0}) is True
-    assert _ok({"verified_feasible": True, "hard_violation_count": 4}) is False
+    clean = {"status": "feasible", "verified_feasible": True, "hard_violation_count": 0}
+    assert _ok(clean) is True
+    assert _ok({**clean, "hard_violation_count": 4}) is False
+    assert _ok({"verified_feasible": True, "hard_violation_count": 0}) is False
+
+
+def test_renderer_does_not_invent_fifo_failure_or_greed_improvement() -> None:
+    both = _payload(greed_verified=True, greed_viol=0, repair_verified=True)
+    both["scenario_a"]["fifo"].update(
+        {"status": "feasible", "verified_feasible": True, "hard_violation_count": 0}
+    )
+    both["scenario_a"]["fifo"]["violations_ru"] = {}
+    text = render_md(both)
+    assert "Оба алгоритма дали допустимые" in text
+    assert "FIFO даёт недопустимый" not in text
+    worse = _payload(greed_verified=False, greed_viol=8, repair_verified=False)
+    assert "сократил" not in render_md(worse)
+
+
+def test_demo_gate_checks_status_freeze_and_determinism() -> None:
+    payload = _payload(greed_verified=True, greed_viol=0, repair_verified=True)
+    assert claims_pass(payload)
+    payload["scenario_b"]["frozen_windows_moved"] = 1
+    assert not claims_pass(payload)
+    assert "Замороженные заявки ПЛ не сдвинуты" not in render_md(payload)
+    payload["scenario_b"]["frozen_windows_moved"] = 0
+    payload["scenario_c"]["two_runs_identical"] = "false"
+    assert not claims_pass(payload)
+    payload["scenario_c"]["two_runs_identical"] = True
+    payload["scenario_a"]["greed"]["status"] = "error"
+    assert not claims_pass(payload)
+
+
+def test_snapshot_truthiness_is_not_verification() -> None:
+    assert not _ok({"status": "feasible", "verified_feasible": "false", "hard_violation_count": 0})
+    assert not _ok({"status": "feasible", "verified_feasible": True, "hard_violation_count": False})
 
 
 def _section_count_sum(section: str) -> int:

@@ -1,4 +1,4 @@
-"""Python CLI JSON → native ``check``: GridPlan-layer kind multisets match."""
+"""Python CLI JSON → native ``check``: domain kinds match; coverage is explicit."""
 
 from __future__ import annotations
 
@@ -69,4 +69,11 @@ def test_native_check_kind_multiset_matches_python(tmp_path: Path, seed: int, so
     payload = _native_check(feeder, result)
     rust_kinds = [canonicalize_rust_kind(row["kind"]) for row in payload.get("violations") or []]
     assert kind_multiset(rust_kinds) == kind_multiset(py_kinds)
-    assert payload["verified_feasible"] is (len(rust_kinds) == 0)
+    problem = json.loads(feeder.read_text(encoding="utf-8"))
+    requires_travel = bool(problem["jobs"] and problem["travel_minutes"])
+    assert payload["verification_scope"] == "gridplan_domain"
+    assert payload["engine_checked"] is False
+    assert payload["unsupported_constraints"] == (["travel_minutes"] if requires_travel else [])
+    assert payload["hard_violation_count"] == len(rust_kinds)
+    assert payload["domain_verified_feasible"] is (len(rust_kinds) == 0)
+    assert payload["verified_feasible"] is (len(rust_kinds) == 0 and not requires_travel)

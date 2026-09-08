@@ -16,7 +16,12 @@ from synaps_gridplan.model import (
     SimultaneousOutageBan,
     SparePart,
 )
-from synaps_gridplan.planner import PlanOutcome, plan_maintenance, replan_after_disruption
+from synaps_gridplan.planner import (
+    PlanOutcome,
+    plan_maintenance,
+    recheck_plan,
+    replan_after_disruption,
+)
 from synaps_gridplan.report import render_report
 from synaps_gridplan.versions import GRIDPLAN_VERSION as __version__
 
@@ -38,5 +43,6 @@ __all__ = [
     "plan_maintenance",
     "plan_with_config",
     "render_report",
+    "recheck_plan",
     "replan_after_disruption",
 ]

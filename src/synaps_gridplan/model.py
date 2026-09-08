@@ -2,12 +2,32 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import (
+    AfterValidator,
+    AwareDatetime,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    model_validator,
+)
+
+from synaps_gridplan.limits import (
+    MAX_ASSETS,
+    MAX_BANS,
+    MAX_CALENDAR_ROWS,
+    MAX_CREWS,
+    MAX_FROZEN,
+    MAX_JOBS,
+    MAX_SPARES,
+    MAX_TRAVEL_ENTRIES,
+    MAX_WINDOWS,
+)
 
 SCHEMA_VERSION = "gridplan.v1"
 SCHEMA_VERSION_V2 = "gridplan.v2"
@@ -20,6 +40,38 @@ DataProvenance = Literal[
     "production_verified",
 ]
 ClaimLevel = Literal["experiment", "benchmark", "pilot_candidate", "production_verified"]
+
+
+def _as_utc(value: datetime) -> datetime:
+    return value.astimezone(UTC)
+
+
+def _reject_unix_timestamp(value: Any) -> Any:
+    """Instants are ISO-8601 with offset, not Unix seconds or boolean flags."""
+
+    if isinstance(value, bool):
+        raise ValueError("boolean is not an instant; use ISO-8601 with offset")
+    if isinstance(value, int | float):
+        raise ValueError("unix timestamps are not accepted; use ISO-8601 with offset")
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.isdigit() or (stripped.startswith("-") and stripped[1:].isdigit()):
+            raise ValueError("unix timestamps are not accepted; use ISO-8601 with offset")
+    return value
+
+
+# Reject ambiguous local timestamps; use elapsed-time arithmetic across DST folds.
+UTCInstant = Annotated[
+    AwareDatetime,
+    BeforeValidator(_reject_unix_timestamp),
+    AfterValidator(_as_utc),
+]
+
+
+class GridPlanModel(BaseModel):
+    """Public GridPlan documents reject unknown fields; extensions go in domain_attributes."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
 
 class Criticality(StrEnum):
@@ -36,7 +88,7 @@ class JobKind(StrEnum):
     EMERGENCY = "emergency"
 
 
-class FailureMode(BaseModel):
+class FailureMode(GridPlanModel):
     """Failure mode with advisory probability — never an engineering certificate."""
 
     id: UUID = Field(default_factory=uuid4)
@@ -47,13 +99,13 @@ class FailureMode(BaseModel):
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
 
 
-class RiskProfile(BaseModel):
+class RiskProfile(GridPlanModel):
     """Composite risk proxy used for prioritisation / reporting (advisory)."""
 
     probability_of_failure: float = Field(ge=0.0, le=1.0, default=0.0)
     consequence_score: float = Field(ge=0.0, le=1.0, default=0.0)
     criticality: Criticality = Criticality.MEDIUM
-    assessment_timestamp: datetime | None = None
+    assessment_timestamp: UTCInstant | None = None
     assessment_method: str = "unspecified"
     confidence: float = Field(ge=0.0, le=1.0, default=0.0)
     source_ref: str = ""
@@ -71,7 +123,7 @@ class RiskProfile(BaseModel):
         return self.probability_of_failure * self.consequence_score * weights[self.criticality]
 
 
-class Asset(BaseModel):
+class Asset(GridPlanModel):
     """Energetic asset / equipment unit (GridAsset alias fields optional for v2)."""
 
     id: UUID = Field(default_factory=uuid4)
@@ -94,7 +146,20 @@ class Asset(BaseModel):
         return self.risk.criticality
 
 
-class Crew(BaseModel):
+class CrewCalendarWindow(GridPlanModel):
+    """Crew shift or availability interval. Instants must carry an offset."""
+
+    start: UTCInstant
+    end: UTCInstant
+
+    @model_validator(mode="after")
+    def _validate_interval(self) -> Self:
+        if self.end <= self.start:
+            raise ValueError("calendar window end must be after start")
+        return self
+
+
+class Crew(GridPlanModel):
     """Field crew / work center with qualifications."""
 
     id: UUID = Field(default_factory=uuid4)
@@ -102,9 +167,9 @@ class Crew(BaseModel):
     qualifications: list[str] = Field(default_factory=list)
     max_parallel: int = Field(default=1, ge=1)
     home_location_code: str = ""
-    shift_calendar: list[dict[str, Any]] = Field(default_factory=list)
+    shift_calendar: list[CrewCalendarWindow] = Field(default_factory=list)
     service_area: str = ""
-    availability: list[dict[str, Any]] = Field(default_factory=list)
+    availability: list[CrewCalendarWindow] = Field(default_factory=list)
     data_provenance: DataProvenance | str = "experiment"
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
 
@@ -114,13 +179,12 @@ class Crew(BaseModel):
             ("shift_calendar", self.shift_calendar),
             ("availability", self.availability),
         ):
-            for index, row in enumerate(rows):
-                if not isinstance(row, dict) or "start" not in row or "end" not in row:
-                    raise ValueError(f"crew {self.code}: {name}[{index}] must have start and end")
+            if len(rows) > MAX_CALENDAR_ROWS:
+                raise ValueError(f"crew {self.code}: {name} exceeds {MAX_CALENDAR_ROWS} rows")
         return self
 
 
-class SparePart(BaseModel):
+class SparePart(GridPlanModel):
     """Spare part stock.
 
     Semantic note: SynAPS ``AuxiliaryResource.pool_size`` models *concurrent*
@@ -133,7 +197,7 @@ class SparePart(BaseModel):
     stock_qty: int = Field(default=0, ge=0, description="legacy alias of available_quantity")
     available_quantity: int | None = Field(default=None, ge=0)
     reserved_quantity: int = Field(default=0, ge=0)
-    replenishment_date: datetime | None = None
+    replenishment_date: UTCInstant | None = None
     lead_time_min: int = Field(default=0, ge=0)
     warehouse_location: str = ""
     data_provenance: DataProvenance | str = "experiment"
@@ -154,13 +218,13 @@ class SparePart(BaseModel):
         return max(0, (self.available_quantity or 0) - self.reserved_quantity)
 
 
-class OutageWindow(BaseModel):
+class OutageWindow(GridPlanModel):
     """Allowed outage / clearance interval for an asset."""
 
     id: UUID = Field(default_factory=uuid4)
     asset_id: UUID
-    start: datetime
-    end: datetime
+    start: UTCInstant
+    end: UTCInstant
     approved: bool = True
     frozen: bool = False
     allowed_job_ids: list[UUID] = Field(default_factory=list)
@@ -176,7 +240,7 @@ class OutageWindow(BaseModel):
         return self
 
 
-class MaintenanceJob(BaseModel):
+class MaintenanceJob(GridPlanModel):
     """One maintenance / repair work item."""
 
     id: UUID = Field(default_factory=uuid4)
@@ -187,9 +251,9 @@ class MaintenanceJob(BaseModel):
     required_qualifications: list[str] = Field(default_factory=list)
     spare_part_ids: list[UUID] = Field(default_factory=list)
     predecessor_job_ids: list[UUID] = Field(default_factory=list)
-    due_date: datetime | None = None
-    release_date: datetime | None = None
-    latest_finish: datetime | None = None
+    due_date: UTCInstant | None = None
+    release_date: UTCInstant | None = None
+    latest_finish: UTCInstant | None = None
     priority: int | None = Field(default=None, ge=1, le=999)
     interruption_required: bool = False
     safety_constraints: list[str] = Field(default_factory=list)
@@ -199,25 +263,31 @@ class MaintenanceJob(BaseModel):
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
 
 
-class FrozenAssignment(BaseModel):
+class FrozenAssignment(GridPlanModel):
     """Immutable job placement that must survive replan when ``immutable``."""
 
     job_id: UUID
     crew_id: UUID
-    start: datetime
-    end: datetime
+    start: UTCInstant
+    end: UTCInstant
     source: str = "base_plan"
     frozen_reason: str = ""
     immutable: bool = True
     data_provenance: DataProvenance | str = "experiment"
 
+    @model_validator(mode="after")
+    def _validate_interval(self) -> Self:
+        if self.end <= self.start:
+            raise ValueError("frozen assignment end must be after start")
+        return self
 
-class DisruptionEvent(BaseModel):
+
+class DisruptionEvent(GridPlanModel):
     """External change triggering local repair."""
 
     id: UUID = Field(default_factory=uuid4)
     event_type: str
-    occurred_at: datetime
+    occurred_at: UTCInstant
     affected_asset_ids: list[UUID] = Field(default_factory=list)
     affected_job_ids: list[UUID] = Field(default_factory=list)
     unavailable_crew_ids: list[UUID] = Field(default_factory=list)
@@ -227,7 +297,7 @@ class DisruptionEvent(BaseModel):
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
 
 
-class SimultaneousOutageBan(BaseModel):
+class SimultaneousOutageBan(GridPlanModel):
     """Explicit customer-declared ban on overlapping interruption occupancy.
 
     Combinatorial ``network_constraints`` — not N-1 / power-flow / topology.
@@ -256,7 +326,7 @@ class SimultaneousOutageBan(BaseModel):
         return self
 
 
-class GridPlanProblem(BaseModel):
+class GridPlanProblem(GridPlanModel):
     """Complete GridPlan input (schema gridplan.v1 compatible; v2 fields optional)."""
 
     schema_version: str = SCHEMA_VERSION
@@ -277,8 +347,8 @@ class GridPlanProblem(BaseModel):
         default_factory=dict,
         description="key = '{from_location}|{to_location}' → setup minutes",
     )
-    planning_horizon_start: datetime
-    planning_horizon_end: datetime
+    planning_horizon_start: UTCInstant
+    planning_horizon_end: UTCInstant
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
@@ -288,6 +358,41 @@ class GridPlanProblem(BaseModel):
         job_ids = {j.id for j in self.jobs}
         spare_ids = {s.id for s in self.spare_parts}
         issues: list[str] = []
+        if self.schema_version not in {SCHEMA_VERSION, SCHEMA_VERSION_V2}:
+            issues.append(f"unsupported schema_version: {self.schema_version}")
+        for name, rows, limit in (
+            ("assets", self.assets, MAX_ASSETS),
+            ("crews", self.crews, MAX_CREWS),
+            ("jobs", self.jobs, MAX_JOBS),
+            ("outage_windows", self.outage_windows, MAX_WINDOWS),
+            ("spare_parts", self.spare_parts, MAX_SPARES),
+            ("frozen_assignments", self.frozen_assignments, MAX_FROZEN),
+            ("simultaneous_outage_bans", self.simultaneous_outage_bans, MAX_BANS),
+        ):
+            if len(rows) > limit:
+                issues.append(f"{name} count {len(rows)} exceeds lab limit {limit}")
+        if len(self.travel_minutes) > MAX_TRAVEL_ENTRIES:
+            issues.append(
+                f"travel_minutes has {len(self.travel_minutes)} entries; "
+                f"limit is {MAX_TRAVEL_ENTRIES}"
+            )
+        # Identity must be checked before dictionaries can collapse catalog rows.
+        for name, rows in (
+            ("assets", self.assets),
+            ("crews", self.crews),
+            ("jobs", self.jobs),
+            ("spare_parts", self.spare_parts),
+            ("outage_windows", self.outage_windows),
+            ("simultaneous_outage_bans", self.simultaneous_outage_bans),
+        ):
+            if len({row.id for row in rows}) != len(rows):
+                issues.append(f"duplicate id in {name}")
+        frozen_ids = [row.job_id for row in self.frozen_assignments]
+        if len(set(frozen_ids)) != len(frozen_ids):
+            issues.append("duplicate job_id in frozen_assignments")
+        for route, minutes in self.travel_minutes.items():
+            if minutes < 0:
+                issues.append(f"travel_minutes must be non-negative: {route}")
         for job in self.jobs:
             if job.asset_id not in asset_ids:
                 issues.append(f"job {job.external_ref} references unknown asset")

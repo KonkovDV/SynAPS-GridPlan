@@ -8,13 +8,37 @@ use serde_json::json;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
-use crate::constraints::check_plan;
+use crate::constraints::{check_plan, Violation};
 use crate::fingerprint::fingerprint_payload;
 use crate::model::GridPlanProblem;
 use crate::schedule::{Assignment, ObjectiveSnapshot, PlanResult};
-use crate::{CLAIM_LEVEL, SCHEMA_VERSION, VERSION};
+use crate::{unsupported_native_constraints, CLAIM_LEVEL, SCHEMA_VERSION, VERSION};
 
 pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
+    if let Err(message) = problem.validate_refs() {
+        return PlanResult {
+            schema_version: SCHEMA_VERSION.into(),
+            solver_config: "FIFO".into(),
+            status: "error".into(),
+            claim_status: "error".into(),
+            verified_feasible: false,
+            hard_violation_count: 1,
+            assignments: vec![],
+            objective: ObjectiveSnapshot {
+                makespan_minutes: 0.0,
+                total_tardiness_minutes: 0.0,
+                coverage: 0.0,
+                unscheduled_operations: i32::try_from(problem.jobs.len()).unwrap_or(i32::MAX),
+            },
+            violations: vec![Violation {
+                kind: "INVALID_PROBLEM".into(),
+                message,
+                job_id: None,
+            }],
+            metadata: json!({"claim_level": CLAIM_LEVEL}),
+        }
+        .with_claim_defaults();
+    }
     let mut crew_free: HashMap<Uuid, DateTime<Utc>> = problem
         .crews
         .iter()
@@ -33,7 +57,7 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
     let mut assignments: Vec<Assignment> = Vec::new();
     let mut frozen_job_ids: HashSet<Uuid> = HashSet::new();
     for fr in &problem.frozen_assignments {
-        if !frozen_job_ids.insert(fr.job_id) {
+        if !fr.immutable || !frozen_job_ids.insert(fr.job_id) {
             continue;
         }
         assignments.push(Assignment {
@@ -91,7 +115,11 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
                 .unwrap_or(&problem.planning_horizon_start);
             let release = job.release_date.unwrap_or(problem.planning_horizon_start);
             let start = free_at.max(release).max(problem.planning_horizon_start);
-            let end = start + Duration::minutes(job.duration_min as i64);
+            let Some(end) =
+                start.checked_add_signed(Duration::minutes(i64::from(job.duration_min)))
+            else {
+                continue;
+            };
             if end > problem.planning_horizon_end {
                 continue;
             }
@@ -110,10 +138,11 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
             }
         }
         if let Some((crew_id, start)) = best {
-            let end = start
-                .checked_add_signed(Duration::minutes(job.duration_min as i64))
-                .ok_or(0)
-                .unwrap_or(problem.planning_horizon_end);
+            let Some(end) =
+                start.checked_add_signed(Duration::minutes(i64::from(job.duration_min)))
+            else {
+                continue;
+            };
             assignments.push(Assignment {
                 job_id: job.id,
                 crew_id,
@@ -125,7 +154,8 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
         }
     }
 
-    let unscheduled = (problem.jobs.len() as i32) - (assignments.len() as i32);
+    let unscheduled =
+        i32::try_from(problem.jobs.len().saturating_sub(assignments.len())).unwrap_or(i32::MAX);
     let coverage = if problem.jobs.is_empty() {
         1.0
     } else {
@@ -151,10 +181,12 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
     }
 
     let violations = check_plan(problem, &assignments, &problem.frozen_assignments);
+    let domain_verified_feasible = violations.is_empty();
+    let unsupported_constraints = unsupported_native_constraints(problem);
     // Empty instance (zero jobs) is vacuously feasible, not a solver failure.
     let status = if assignments.is_empty() && !problem.jobs.is_empty() {
         "infeasible"
-    } else if violations.is_empty() {
+    } else if domain_verified_feasible && unsupported_constraints.is_empty() {
         "feasible"
     } else {
         "error"
@@ -197,6 +229,10 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
                 .unwrap_or(json!("synthetic")),
             "gridplan_rs_version": VERSION,
             "baseline": "calendar_fifo_earliest_due",
+            "verification_scope": "gridplan_domain",
+            "engine_checked": false,
+            "domain_verified_feasible": domain_verified_feasible,
+            "unsupported_constraints": unsupported_constraints,
             "metric_tag": "synthetic_experiment",
             "input_hash": input_hash,
             "config_hash": config_hash,

@@ -18,6 +18,7 @@ from synaps_gridplan.constraints import check_gridplan_constraints
 from synaps_gridplan.model import (
     Asset,
     Crew,
+    CrewCalendarWindow,
     FrozenAssignment,
     GridPlanProblem,
     JobKind,
@@ -357,10 +358,7 @@ def test_shift_calendar_and_safety_and_service_area_are_hard() -> None:
         update={
             "service_area": "south",
             "shift_calendar": [
-                {
-                    "start": T0.isoformat(),
-                    "end": (T0 + timedelta(hours=2)).isoformat(),
-                }
+                CrewCalendarWindow(start=T0, end=T0 + timedelta(hours=2)),
             ],
         }
     )

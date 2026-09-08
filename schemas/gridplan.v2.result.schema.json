@@ -46,7 +46,8 @@
     "schedule": { "type": "object" },
     "schedule_problem": { "type": "object" },
     "report": { "type": "object" },
-    "diff": { "type": "object" }
+    "diff": { "type": "object" },
+    "problem": { "type": "object" }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

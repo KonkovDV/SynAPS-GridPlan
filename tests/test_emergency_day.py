@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmark"))
 from emergency_day_benchmark import (  # noqa: E402
     DISRUPTED_REFS,
     build_emergency_problem,
+    claims_pass,
     render_md,
     run,
 )
@@ -133,6 +134,7 @@ def test_emergency_report_renders_verified() -> None:
     assert "Реальный день" not in md
     fp = results["scenario_c"]["plan_fingerprint"]
     assert isinstance(fp, str) and len(fp) == 64 and fp[:16] in md
+    assert claims_pass(results)
 
 
 def test_benchmark_console_prints_encode_as_cp1251() -> None:

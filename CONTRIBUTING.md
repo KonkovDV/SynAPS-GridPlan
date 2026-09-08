@@ -13,6 +13,8 @@ python -m pip install -e ".[dev]" --force-reinstall
 python -m pytest -q -m "not slow"
 python -m ruff check src tests
 python -m ruff format --check src tests
+python -m mypy src/synaps_gridplan
+python scripts/export_sbom.py
 ```
 
 Native contour:
