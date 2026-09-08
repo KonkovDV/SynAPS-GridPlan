@@ -4,7 +4,8 @@
 
 | Version | Supported |
 | --- | --- |
-| 0.1.6 | best effort |
+| 0.1.7 | best effort |
+| 0.1.6 | historical |
 | 0.1.5 | historical |
 | 0.1.4 | historical contest tree |
 

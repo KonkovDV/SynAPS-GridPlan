@@ -13,12 +13,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKIP_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".lock"}
+# Constructed at runtime in tests so this file is the only tracked pattern list.
 PATTERNS = (
     (re.compile(r"BEGIN [A-Z ]{0,20}PRIVATE KEY"), "private-key"),
     (re.compile(r"AKIA[0-9A-Z]{16}"), "aws-access-key-id"),
     (re.compile(r"ghp_[A-Za-z0-9]{36}"), "github-pat"),
     (re.compile(r"github_pat_[A-Za-z0-9_]{22,}"), "github-fine-grained-pat"),
+    (re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}"), "slack-token"),
+    (re.compile(r"sk_live_[A-Za-z0-9]{24,}"), "stripe-live-secret"),
+    (re.compile(r"AIza[0-9A-Za-z_-]{35}"), "google-api-key"),
 )
+
+
+def find_hits(text: str) -> list[str]:
+    """Return pattern labels that match ``text``. Empty if none fire."""
+
+    return [label for compiled, label in PATTERNS if compiled.search(text)]
 
 
 def _tracked_files() -> list[Path]:
@@ -37,9 +47,8 @@ def main() -> int:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        for compiled, label in PATTERNS:
-            if compiled.search(text):
-                hits.append(f"{path.relative_to(ROOT)}: {label}")
+        for label in find_hits(text):
+            hits.append(f"{path.relative_to(ROOT)}: {label}")
     if hits:
         sys.stderr.write("secret-pattern hits:\n")
         sys.stderr.write("\n".join(hits) + "\n")

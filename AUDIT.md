@@ -6,7 +6,7 @@
 
 - Исходная ревизия `main` до пакета 0.1.5: `94b50483d0afa73f41d2d1f75991ad953a44e890`.
 - Публичный пакет 0.1.5 на `main`: merge [`6cd9a6e`](https://github.com/KonkovDV/SynAPS-GridPlan/commit/6cd9a6e2b8127015bfb87d46f9d8ceca62c2bb4f) / [PR #14](https://github.com/KonkovDV/SynAPS-GridPlan/pull/14), тег `v0.1.5`.
-- Этот документ дополнен пакетом **0.1.6** (Red Team 8 сентября 2026 после выкладки 0.1.5).
+- Этот документ дополнен пакетом **0.1.7** (закрытие лабораторных пунктов 0.1.6: native nested deny_unknown, квота чтения, sanitizer, jsonschema-инвентарь).
 - Движок закреплён на [SynAPS `6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169). Полный аудит его ядра не проводился.
 - Историческая аудиторская поставка: [PR #12](https://github.com/KonkovDV/SynAPS-GridPlan/pull/12) и дочерний [PR #13](https://github.com/KonkovDV/SynAPS-GridPlan/pull/13); их коммиты вошли в `main` через PR #14.
 - Рассмотрены модель, компиляция ограничений, постпроверка, перепланирование, CLI/import/export, тесты, доказательность демо и публичные материалы Академии. Код менялся малыми логическими коммитами; тесты добавлялись к исправлениям, а не заменялись обещаниями.
@@ -100,13 +100,14 @@ Rust: 3 lib + 6 CLI + 5 FIFO + 16 integration + 3 report + 6 schedule + 2 travel
 
 ## 6. Открытые границы и выпускной gate
 
-Закрыто в 0.1.5–0.1.6 (лабораторный контракт, не промышленный допуск):
+Закрыто в 0.1.5–0.1.7 (лабораторный контракт, не промышленный допуск):
 
-- [x] Неизвестные поля GridPlan-документов отвергаются (`extra=forbid`); Unix/naive instants, включая календари бригад, отвергаются на входе. Committed JSON Schema — конверт верхнего уровня плюс вложенный Pydantic-инвентарь `schemas/gridplan.pydantic.problem.json`. Round-trip байт-в-байт не обещан.
-- [x] Лабораторные квоты JSON (по фактически прочитанным байтам) и размеров каталогов. Setup cap по-прежнему закрывает конкретную dense-аллокацию. CI `timeout-minutes` и pytest 120s — лабораторный deadline процесса, не cgroup/SLA.
-- [x] Публичный Python `check PROBLEM RESULT` (и native `check`) пересобирает модель и игнорирует сохранённый `verified_feasible`. Legacy `outage_windows[].frozen` — обязательство независимой проверки.
-- [x] Mypy пакета, pip-audit установленного дерева, cargo-audit, CycloneDX-инвентарь lockfile, pattern secret scan и schema drift в CI/`sbom/`/`schemas/`.
+- [x] Неизвестные поля GridPlan-документов отвергаются (`extra=forbid` / native `deny_unknown_fields` на корне и вложенных каталогах; лишние ключи календаря — на разборе). Unix/naive instants, включая календари бригад, отвергаются на входе. Committed JSON Schema — конверт верхнего уровня плюс вложенный Pydantic-инвентарь `schemas/gridplan.pydantic.problem.json`, проверяемый jsonschema на синтетических дампах. Round-trip байт-в-байт не обещан.
+- [x] Лабораторные квоты JSON (по фактически прочитанным байтам, Python и native) и размеров каталогов. Setup cap по-прежнему закрывает конкретную dense-аллокацию. CI `timeout-minutes` и pytest 120s — лабораторный deadline процесса, не cgroup/SLA.
+- [x] Публичный Python `check PROBLEM RESULT` (и native `check`) пересобирает модель и игнорирует сохранённый `verified_feasible`. Legacy `outage_windows[].frozen` — обязательство независимой проверки. Синтетический `small` не ставит `window.frozen` сам.
+- [x] Mypy пакета, pip-audit установленного дерева, cargo-audit, CycloneDX-инвентарь lockfile, расширенный pattern secret scan и schema drift в CI/`sbom/`/`schemas/`. Ruff покрывает `scripts`.
 - [x] Claim gates jury / emergency-day / scale. About репозитория уточняет самооценку TRL. `iso16290_trl` в outcome — константа пакета, не поле входного JSON.
+- [x] Интерполяция Markdown сплющивает перевод строки, backticks и угловые скобки (отдельный модуль Python/native). Это не общий HTML-sanitizer с allow-list.
 
 По-прежнему отдельно:
 
@@ -114,7 +115,7 @@ Rust: 3 lib + 6 CLI + 5 FIFO + 16 integration + 3 report + 6 schedule + 2 travel
 - [ ] Квоты CPU/памяти процесса (cgroup). Upstream Assignment/календари ядра SynAPS не переведены на UTCInstant.
 - [ ] Полный upstream solver/kernel review, расширенная модель альтернативных окон/маршрутов, проверка сравнимости objective/метрик. Универсальная оптимальность и эквивалентность Python/Rust не доказаны.
 - [ ] Аутентифицированные approvals/provenance, права доступа и журнал событий для внешних данных.
-- [ ] Полный secret scan (энтропия/лицензионный продукт), лицензионная экспертиза и Markdown/HTML sanitization как отдельный renderer. pip-audit/cargo-audit/SBOM/pattern scan не заменяют их.
+- [ ] Полный secret scan (энтропия/лицензионный продукт) и лицензионная экспертиза. pip-audit/cargo-audit/SBOM/pattern scan не заменяют их.
 - [ ] Актуальные условия Академии и фактическая команда/доступность; обновление `SynAPS-GridPlan.pdf` по проверенным данным.
 - [ ] Shadow-пилот без управления оборудованием: согласованный обезличенный набор, baseline диспетчера/FIFO, одинаковый бюджет времени, доля проверенных работ, hard violations, churn замороженных строк и время подготовки плана. Электрический эксперт отдельно подтверждает допустимость отключений. Измерения и согласия пока отсутствуют.
 

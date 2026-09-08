@@ -3,7 +3,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use uuid::Uuid;
 
 use crate::SCHEMA_VERSION;
@@ -40,6 +40,7 @@ pub enum JobKind {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RiskProfile {
     #[serde(default)]
     pub probability_of_failure: f64,
@@ -47,6 +48,8 @@ pub struct RiskProfile {
     pub consequence_score: f64,
     #[serde(default)]
     pub criticality: Criticality,
+    #[serde(default)]
+    pub assessment_timestamp: Option<DateTime<Utc>>,
     #[serde(default)]
     pub assessment_method: String,
     #[serde(default)]
@@ -63,6 +66,7 @@ impl Default for RiskProfile {
             probability_of_failure: 0.0,
             consequence_score: 0.0,
             criticality: Criticality::Medium,
+            assessment_timestamp: None,
             assessment_method: "unspecified".into(),
             confidence: 0.0,
             source_ref: String::new(),
@@ -75,7 +79,28 @@ fn default_true() -> bool {
     true
 }
 
+fn default_object() -> Value {
+    serde_json::json!({})
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FailureMode {
+    #[serde(default)]
+    pub id: Uuid,
+    pub code: String,
+    #[serde(default)]
+    pub label: String,
+    #[serde(default)]
+    pub probability_of_failure: f64,
+    #[serde(default)]
+    pub consequence_score: f64,
+    #[serde(default = "default_object")]
+    pub domain_attributes: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Asset {
     pub id: Uuid,
     #[serde(default)]
@@ -90,12 +115,18 @@ pub struct Asset {
     #[serde(default)]
     pub location_code: String,
     #[serde(default)]
+    pub parent_asset_id: Option<Uuid>,
+    #[serde(default)]
     pub service_area: String,
     #[serde(default)]
+    pub coordinates: Option<BTreeMap<String, f64>>,
+    #[serde(default)]
     pub risk: RiskProfile,
+    #[serde(default)]
+    pub failure_modes: Vec<FailureMode>,
     #[serde(default = "default_experiment")]
     pub data_provenance: String,
-    #[serde(default)]
+    #[serde(default = "default_object")]
     pub domain_attributes: Value,
 }
 
@@ -107,6 +138,14 @@ fn default_experiment() -> String {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CrewCalendarWindow {
+    pub start: DateTime<Utc>,
+    pub end: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Crew {
     pub id: Uuid,
     pub code: String,
@@ -119,12 +158,12 @@ pub struct Crew {
     #[serde(default)]
     pub service_area: String,
     #[serde(default)]
-    pub shift_calendar: Vec<Value>,
+    pub shift_calendar: Vec<CrewCalendarWindow>,
     #[serde(default)]
-    pub availability: Vec<Value>,
+    pub availability: Vec<CrewCalendarWindow>,
     #[serde(default = "default_experiment")]
     pub data_provenance: String,
-    #[serde(default)]
+    #[serde(default = "default_object")]
     pub domain_attributes: Value,
 }
 
@@ -133,6 +172,7 @@ fn default_one() -> i32 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SparePart {
     pub id: Uuid,
     pub code: String,
@@ -144,8 +184,14 @@ pub struct SparePart {
     pub reserved_quantity: i32,
     #[serde(default)]
     pub replenishment_date: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub lead_time_min: i32,
+    #[serde(default)]
+    pub warehouse_location: String,
     #[serde(default = "default_experiment")]
     pub data_provenance: String,
+    #[serde(default = "default_object")]
+    pub domain_attributes: Value,
 }
 
 impl SparePart {
@@ -159,6 +205,7 @@ impl SparePart {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct OutageWindow {
     pub id: Uuid,
     pub asset_id: Uuid,
@@ -176,9 +223,12 @@ pub struct OutageWindow {
     pub external_ref: String,
     #[serde(default = "default_experiment")]
     pub data_provenance: String,
+    #[serde(default = "default_object")]
+    pub domain_attributes: Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MaintenanceJob {
     pub id: Uuid,
     pub external_ref: String,
@@ -199,16 +249,23 @@ pub struct MaintenanceJob {
     #[serde(default)]
     pub latest_finish: Option<DateTime<Utc>>,
     #[serde(default)]
+    pub priority: Option<i32>,
+    #[serde(default)]
     pub eligible_crew_ids: Vec<Uuid>,
     #[serde(default)]
     pub safety_constraints: Vec<String>,
     #[serde(default)]
     pub interruption_required: bool,
+    #[serde(default)]
+    pub risk_override: Option<RiskProfile>,
     #[serde(default = "default_experiment")]
     pub data_provenance: String,
+    #[serde(default = "default_object")]
+    pub domain_attributes: Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FrozenAssignment {
     pub job_id: Uuid,
     pub crew_id: Uuid,
@@ -231,6 +288,7 @@ fn default_base_plan() -> String {
 /// Customer-declared anti-coincidence of interruption occupancy.
 /// Combinatorial mutex (not N-1 / power-flow). Occupancy uses the Goel hull.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SimultaneousOutageBan {
     pub id: Uuid,
     pub asset_id_a: Uuid,
@@ -241,6 +299,8 @@ pub struct SimultaneousOutageBan {
     pub external_ref: String,
     #[serde(default = "default_experiment")]
     pub data_provenance: String,
+    #[serde(default = "default_object")]
+    pub domain_attributes: Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -432,7 +492,12 @@ impl GridPlanProblem {
     }
 }
 
-fn validate_calendar_rows(rows: &[Value], crew: &str, name: &str, issues: &mut Vec<String>) {
+fn validate_calendar_rows(
+    rows: &[CrewCalendarWindow],
+    crew: &str,
+    name: &str,
+    issues: &mut Vec<String>,
+) {
     if rows.len() > MAX_CALENDAR_ROWS {
         issues.push(format!(
             "crew {crew} {name} exceeds {MAX_CALENDAR_ROWS} rows"
@@ -440,28 +505,10 @@ fn validate_calendar_rows(rows: &[Value], crew: &str, name: &str, issues: &mut V
         return;
     }
     for (index, row) in rows.iter().enumerate() {
-        let Some(obj) = row.as_object() else {
-            issues.push(format!("crew {crew} {name}[{index}] must be an object"));
-            continue;
-        };
-        for key in obj.keys() {
-            if key != "start" && key != "end" {
-                issues.push(format!("crew {crew} {name}[{index}] unknown field {key}"));
-            }
-        }
-        let start = obj
-            .get("start")
-            .and_then(Value::as_str)
-            .and_then(|text| DateTime::parse_from_rfc3339(text).ok());
-        let end = obj
-            .get("end")
-            .and_then(Value::as_str)
-            .and_then(|text| DateTime::parse_from_rfc3339(text).ok());
-        match (start, end) {
-            (Some(start), Some(end)) if end > start => {}
-            _ => issues.push(format!(
+        if row.end <= row.start {
+            issues.push(format!(
                 "crew {crew} {name}[{index}] needs RFC3339 start/end with offset"
-            )),
+            ));
         }
     }
 }

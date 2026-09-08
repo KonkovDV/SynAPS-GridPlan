@@ -86,7 +86,7 @@ pub fn synthesize_feeder(
             shift_calendar: Vec::new(),
             availability: Vec::new(),
             data_provenance: "synthetic".into(),
-            domain_attributes: serde_json::Value::Null,
+            domain_attributes: json!({}),
         });
     }
 
@@ -109,15 +109,19 @@ pub fn synthesize_feeder(
             voltage_level: if i % 2 == 0 { "10kV" } else { "0.4kV" }.into(),
             location_code: format!("LOC-{}", (i % 5) + 1),
             service_area: String::new(),
+            parent_asset_id: None,
+            coordinates: None,
             risk: RiskProfile {
                 probability_of_failure: pof,
                 consequence_score: 0.3 + (i % 5) as f64 * 0.1,
                 criticality: crit,
+                assessment_timestamp: None,
                 assessment_method: "synthetic_proxy".into(),
                 confidence: 0.5,
                 source_ref: "synthesize_feeder".into(),
                 is_advisory: true,
             },
+            failure_modes: vec![],
             data_provenance: "synthetic".into(),
             domain_attributes: json!({}),
         });
@@ -132,7 +136,10 @@ pub fn synthesize_feeder(
             available_quantity: Some(8),
             reserved_quantity: 0,
             replenishment_date: None,
+            lead_time_min: 0,
+            warehouse_location: String::new(),
             data_provenance: "synthetic".into(),
+            domain_attributes: json!({}),
         });
     }
 
@@ -151,6 +158,7 @@ pub fn synthesize_feeder(
             forbidden_job_ids: vec![],
             external_ref: format!("OW-{i:03}"),
             data_provenance: "synthetic".into(),
+            domain_attributes: json!({}),
         });
     }
 
@@ -189,7 +197,10 @@ pub fn synthesize_feeder(
             eligible_crew_ids: vec![],
             safety_constraints: vec![],
             interruption_required: needs_outage,
+            priority: None,
+            risk_override: None,
             data_provenance: "synthetic".into(),
+            domain_attributes: json!({}),
         });
     }
 

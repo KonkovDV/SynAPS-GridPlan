@@ -5,7 +5,7 @@ type: software
 authors:
   - family-names: Konkov
     given-names: D.V.
-version: "0.1.6"
+version: "0.1.7"
 date-released: "2026-09-08"
 url: "https://github.com/KonkovDV/SynAPS-GridPlan"
 repository-code: "https://github.com/KonkovDV/SynAPS-GridPlan"

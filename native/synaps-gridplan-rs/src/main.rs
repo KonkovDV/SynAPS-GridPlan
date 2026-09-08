@@ -1,7 +1,7 @@
 //! CLI: synthesize | solve | check | report | greed-bridge
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
@@ -16,7 +16,9 @@ use synaps_gridplan_rs::schedule::{
     PlanResult,
 };
 use synaps_gridplan_rs::synthetic::synthesize_feeder;
-use synaps_gridplan_rs::{unsupported_native_constraints, MAX_JSON_BYTES, VERSION};
+use synaps_gridplan_rs::{
+    read_text_limited, unsupported_native_constraints, MAX_JSON_BYTES, VERSION,
+};
 
 #[derive(Parser, Debug)]
 #[command(name = "synaps-gridplan-rs", version = VERSION)]
@@ -79,15 +81,8 @@ fn main() -> ExitCode {
     }
 }
 
-fn read_json_text(path: &PathBuf) -> Result<String, String> {
-    let size = fs::metadata(path).map_err(|e| e.to_string())?.len();
-    if size > MAX_JSON_BYTES {
-        return Err(format!(
-            "{} is {size} bytes; limit is {MAX_JSON_BYTES}",
-            path.display()
-        ));
-    }
-    fs::read_to_string(path).map_err(|e| e.to_string())
+fn read_json_text(path: &Path) -> Result<String, String> {
+    read_text_limited(path, MAX_JSON_BYTES)
 }
 
 fn run(cli: Cli) -> Result<ExitCode, String> {
@@ -186,7 +181,7 @@ fn run(cli: Cli) -> Result<ExitCode, String> {
 }
 
 fn load_assignments_flexible(
-    path: &PathBuf,
+    path: &Path,
 ) -> Result<(Vec<Assignment>, Vec<FrozenAssignment>), String> {
     let raw = read_json_text(path)?;
     let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;

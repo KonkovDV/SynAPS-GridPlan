@@ -79,6 +79,23 @@ fn csv_protects_preamble_and_assignment_cells() {
 }
 
 #[test]
+fn markdown_flattens_html_newlines_and_backticks() {
+    let mut p = plan();
+    p.solver_config = "see <img src=x> and `code`\nnext".into();
+    p.violations.push(synaps_gridplan_rs::Violation {
+        kind: "PROBE".into(),
+        message: "line1\n<script>".into(),
+        job_id: None,
+    });
+    let text = render_markdown(&p);
+    assert!(!text.contains("<img src=x>"));
+    assert!(text.contains("&lt;img src=x&gt;"));
+    assert!(!text.contains("`code`"));
+    assert!(!text.contains("line1\n<script>"));
+    assert!(text.contains("&lt;script&gt;"));
+}
+
+#[test]
 fn renderers_disclose_that_they_do_not_reverify() {
     let p = plan();
     assert!(render_csv(&p).contains("does not recheck the plan"));

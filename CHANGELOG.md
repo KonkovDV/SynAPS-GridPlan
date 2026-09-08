@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.7 — 2026-09-08
+
+Completes the laboratory closures named in 0.1.6. SynAPS pin remains
+[`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169).
+Self-assessed ISO 16290 TRL 4. Not a plant pilot.
+
+- Native CLI reads apply the byte quota to bytes actually read (same TOCTOU
+  bound as Python). Nested native catalogs use ``deny_unknown_fields`` after
+  accepting the optional Python-parity fields; extra crew-calendar keys fail
+  at parse.
+- Markdown interpolation is a dedicated flattener (newlines, backticks, ``<``
+  / ``>``). That is not a general HTML sanitizer.
+- Committed Pydantic nested schema is checked with ``jsonschema`` against
+  synthesized dumps, plus an unknown-field matrix. Not a byte-for-byte
+  round-trip or a standalone Draft 2020-12 norm for arbitrary future v2.
+- Pattern secret scan covers additional high-risk shapes. Still not entropy
+  analysis or a licensed product. Ruff in CI includes ``scripts``.
+- Synthetic ``small`` still does not set ``window.frozen``; seed 12 is a
+  regression, not a decorative flag.
+
 ## 0.1.6 — 2026-09-08
 
 Second fail-closed pass on the published 0.1.5 tree. SynAPS pin remains
