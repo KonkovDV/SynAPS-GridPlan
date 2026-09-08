@@ -51,21 +51,24 @@ def diff_plans(
         ):
             moved.append({"before": _row(b, job_of_op), "after": _row(a, job_of_op)})
 
-    frozen_job_ids = {f.job_id for f in frozen if f.immutable}
-    unchanged_frozen = []
+    frozen_by_job: dict[UUID, list[FrozenAssignment]] = {}
     for fr in frozen:
-        if not fr.immutable:
-            continue
-        op = id_map.get(f"job:{fr.job_id}")
+        if fr.immutable:
+            frozen_by_job.setdefault(fr.job_id, []).append(fr)
+    unchanged_frozen = []
+    for job_id, obligations in frozen_by_job.items():
+        op = id_map.get(f"job:{job_id}")
         if op is None:
             continue
         a = new_map.get(op)
-        expected_wc = id_map.get(f"crew:{fr.crew_id}")
-        if (
-            a is not None
-            and a.start_time == fr.start
+        # A missing crew mapping is not proof of equality. Conflicting placements
+        # must not be hidden by counting only the one matching obligation.
+        if a is not None and all(
+            a.start_time == fr.start
             and a.end_time == fr.end
-            and (expected_wc is None or a.work_center_id == expected_wc)
+            and id_map.get(f"crew:{fr.crew_id}") is not None
+            and a.work_center_id == id_map[f"crew:{fr.crew_id}"]
+            for fr in obligations
         ):
             unchanged_frozen.append(_row(a, job_of_op))
 
@@ -89,7 +92,7 @@ def diff_plans(
         "removed_assignments": [_row(a, job_of_op) for a in removed],
         "moved_assignments": moved,
         "unchanged_frozen_assignments": unchanged_frozen,
-        "frozen_job_count": len(frozen_job_ids),
+        "frozen_job_count": len(frozen_by_job),
         "newly_late_jobs": [str(x) for x in (late_ids or [])],
         "newly_unassigned_jobs": [str(x) for x in (unassigned_ids or [])],
         "changed_metrics": metrics or {},

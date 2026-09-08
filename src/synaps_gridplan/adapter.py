@@ -7,6 +7,7 @@ from datetime import timedelta
 from uuid import UUID, uuid5
 
 from synaps.model import (
+    MAX_SCHEDULE_SETUP_ENTRIES,
     Assignment,
     AuxiliaryResource,
     Operation,
@@ -47,10 +48,10 @@ def _lookup_travel_minutes(
     to_loc: str,
     home: str,
 ) -> int:
-    """Travel minutes for a state pair. Empty matrix means zero, not a phantom 30.
+    """Travel minutes for a state pair. Empty matrix explicitly means zero.
 
-    A partial matrix missing ``from|to`` (and the home fallback) raises;
-    an empty matrix is zero travel.
+    Only the initial idle leg starts at home. A missing site-to-site leg must
+    not be replaced by a potentially shorter home-to-site leg.
     """
     if from_loc == to_loc:
         return 0
@@ -65,9 +66,6 @@ def _lookup_travel_minutes(
             return 0
     if to_loc == "idle":
         return 0
-    home_leg = problem.travel_minutes.get(_travel_key(home, to_loc))
-    if home_leg is not None:
-        return int(home_leg)
     if not problem.travel_minutes:
         return 0
     raise ValueError(f"travel_minutes missing for {from_loc}|{to_loc} (crew home {home})")
@@ -84,15 +82,27 @@ def _approved_outage_windows(job: MaintenanceJob, windows: list) -> list:
 
 
 def _job_clearance_bounds(job: MaintenanceJob, windows: list) -> tuple:
-    """Hard per-op window. Due date is tardiness, not a finish ceiling.
+    """Intersect a clearance with the job's hard bounds; due date stays soft.
 
-    Interruption jobs use the earliest approved clearance. A union of windows
-    would leave a gap the checker still treats as out-of-window.
+    Choose the earliest individually fitting approved window. This is a
+    deterministic single-window heuristic, not search over a union of windows.
+    Inconsistent bounds remain inconsistent so the compiler cannot invent room.
     """
     allowed = _approved_outage_windows(job, windows)
     if job.interruption_required and allowed:
-        chosen = min(allowed, key=lambda window: window.start)
-        return chosen.start, chosen.end
+        bounds = [
+            (
+                max(window.start, job.release_date or window.start),
+                min(window.end, job.latest_finish or window.end),
+            )
+            for window in allowed
+        ]
+        fitting = [
+            (start, end)
+            for start, end in bounds
+            if (end - start).total_seconds() >= job.duration_min * 60
+        ]
+        return min(fitting or bounds, key=lambda span: span[0])
     return job.release_date, job.latest_finish
 
 
@@ -108,6 +118,8 @@ def compile_frozen_assignments(
     seen_ops: set[UUID] = set()
 
     for fr in problem.frozen_assignments:
+        if not fr.immutable:
+            continue
         op_id = id_map.get(f"job:{fr.job_id}")
         wc_id = id_map.get(f"crew:{fr.crew_id}")
         if op_id is None or wc_id is None:
@@ -133,6 +145,7 @@ def compile_frozen_assignments(
     for asn in frozen_assignments_from_windows(problem, schedule, id_map):
         if asn.operation_id not in seen_ops:
             frozen.append(asn)
+            seen_ops.add(asn.operation_id)
     return frozen
 
 
@@ -146,7 +159,7 @@ def frozen_assignments_from_windows(
     Prefer explicit ``FrozenAssignment`` rows. This path is retained for v1 inputs.
     """
 
-    windows = [w for w in problem.outage_windows if w.frozen]
+    windows = [w for w in problem.outage_windows if w.frozen and w.approved]
     if not windows:
         return []
 
@@ -158,6 +171,8 @@ def frozen_assignments_from_windows(
     frozen: list[Assignment] = []
     for window in windows:
         for job in jobs_by_asset.get(window.asset_id, []):
+            if not job.interruption_required or not _approved_outage_windows(job, [window]):
+                continue
             op_id = id_map.get(f"job:{job.id}")
             if op_id is None:
                 continue
@@ -226,6 +241,8 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
     sequenced operations — SynAPS forbids ``predecessor_op_id`` across orders.
     """
 
+    # Pydantic model_copy/update and mutable lists bypass construction validation.
+    problem = GridPlanProblem.model_validate(problem.model_dump(mode="python"))
     id_map: dict[str, UUID] = {}
     assets_by_id = {asset.id: asset for asset in problem.assets}
     crews_by_id = {crew.id: crew for crew in problem.crews}
@@ -237,6 +254,13 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
             "idle",
         }
     )
+    # The pinned engine checks this too, but only after the quadratic list exists.
+    setup_count = len(problem.crews) * len(location_codes) ** 2
+    if setup_count > MAX_SCHEDULE_SETUP_ENTRIES:
+        raise ValueError(
+            f"setup matrix requires {setup_count} entries; "
+            f"limit is {MAX_SCHEDULE_SETUP_ENTRIES} (rejected before allocation)"
+        )
     states: list[State] = []
     state_by_loc: dict[str, UUID] = {}
     for loc in location_codes:

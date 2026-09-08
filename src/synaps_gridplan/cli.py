@@ -9,7 +9,7 @@ from collections.abc import Callable
 from pathlib import Path
 from uuid import UUID
 
-from synaps.model import ScheduleProblem, ScheduleResult
+from synaps.model import ScheduleProblem, ScheduleResult, SolverStatus
 
 from synaps_gridplan.baselines import plan_with_config
 from synaps_gridplan.diff import diff_plans
@@ -55,6 +55,15 @@ def _synthesize_problem(args: argparse.Namespace) -> GridPlanProblem:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Return a non-success exit code for malformed or unreadable input."""
+    try:
+        return _run(argv)
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        sys.stderr.write(f"error: {exc}\n")
+        return 2
+
+
+def _run(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="synaps-gridplan")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -106,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_solve.add_argument("-o", "--output", type=Path, required=True)
 
-    p_rep = sub.add_parser("report", help="Render a plan outcome JSON")
+    p_rep = sub.add_parser("report", help="Render a saved plan snapshot (does not reverify)")
     p_rep.add_argument("input", type=Path)
     p_rep.add_argument("--format", choices=["json", "csv", "markdown"], default="markdown")
 
@@ -211,23 +220,45 @@ def _payload(outcome: PlanOutcome) -> dict:
 
 
 def _outcome_from_payload(raw: dict) -> PlanOutcome:
+    if not isinstance(raw, dict) or not isinstance(raw.get("outcome", raw), dict):
+        raise ValueError("result and outcome must be JSON objects")
     schedule = ScheduleResult.model_validate(raw.get("schedule", raw))
     oc = raw.get("outcome", raw)
     sp_raw = raw.get("schedule_problem")
     if sp_raw is None:
-        raise SystemExit("result JSON missing schedule_problem (required for report/disrupt)")
+        raise ValueError("result JSON missing schedule_problem (required for report/disrupt)")
     schedule_problem = ScheduleProblem.model_validate(sp_raw)
+    verified = oc.get("verified_feasible", False)
+    hard_count = oc.get("hard_violation_count", 0)
+    if not isinstance(verified, bool):
+        raise ValueError("verified_feasible must be a JSON boolean")
+    if type(hard_count) is not int or hard_count < 0:
+        raise ValueError("hard_violation_count must be a non-negative JSON integer")
+    status = SolverStatus(oc.get("status", schedule.status.value)).value
+    metadata = oc.get("metadata", {})
+    if not isinstance(metadata, dict):
+        raise ValueError("outcome metadata must be a JSON object")
+    if verified and (
+        status not in {"feasible", "optimal"}
+        or schedule.status.value not in {"feasible", "optimal"}
+        or hard_count != 0
+        or metadata.get("gridplan_violations")
+        or metadata.get("engine_violations")
+    ):
+        raise ValueError("verified_feasible contradicts status or recorded violations")
+    # Saved flags are claims, not a new domain check or an authenticated certificate.
+    metadata = {**metadata, "verification_origin": "imported_snapshot_not_rechecked"}
     frozen = tuple(FrozenAssignment.model_validate(x) for x in oc.get("frozen_assignments", []))
     return PlanOutcome(
         schema_version=oc.get("schema_version", "gridplan.v1"),
         solver_config=oc.get("solver_config", schedule.solver_name),
-        status=oc.get("status", schedule.status.value),
-        verified_feasible=bool(oc.get("verified_feasible", False)),
+        status=status,
+        verified_feasible=verified,
         schedule=schedule,
         schedule_problem=schedule_problem,
         id_map={k: UUID(v) for k, v in oc.get("id_map", {}).items()},
-        hard_violation_count=int(oc.get("hard_violation_count", 0)),
-        metadata=oc.get("metadata", {}),
+        hard_violation_count=hard_count,
+        metadata=metadata,
         frozen_assignments=frozen,
     )
 

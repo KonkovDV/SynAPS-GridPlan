@@ -136,8 +136,68 @@ def test_disruption_does_not_unlock_explicit_immutable_row(monkeypatch: pytest.M
         }
     )
     monkeypatch.setattr("synaps_gridplan.planner.repair_schedule", lambda *a, **kw: moved)
-    repaired = replan_after_disruption(
-        problem, base_outcome=base, disrupted_job_ids=[row.job_id]
-    )
+    repaired = replan_after_disruption(problem, base_outcome=base, disrupted_job_ids=[row.job_id])
     assert not repaired.verified_feasible
     assert "FROZEN_ASSIGNMENT_CONFLICT" in repaired.metadata["gridplan_violation_kinds"]
+
+
+@pytest.mark.parametrize("catalog", ["assets", "crews", "jobs"])
+def test_duplicate_catalog_ids_are_rejected(catalog: str) -> None:
+    raw = problem_fixture().model_dump(mode="json")
+    raw[catalog].append(dict(raw[catalog][0]))
+    with pytest.raises(ValueError, match="duplicate"):
+        GridPlanProblem.model_validate(raw)
+
+
+@pytest.mark.parametrize(
+    "update", [{"schema_version": "gridplan.v999"}, {"travel_minutes": {"L|X": -1}}]
+)
+def test_invalid_input_semantics_are_rejected(update: dict) -> None:
+    raw = problem_fixture().model_dump(mode="json")
+    raw.update(update)
+    with pytest.raises(ValueError):
+        GridPlanProblem.model_validate(raw)
+
+
+def test_aliased_job_mapping_fails_closed() -> None:
+    problem = problem_fixture()
+    schedule, mapping = to_schedule_problem(problem)
+    mapping[f"job:{problem.jobs[1].id}"] = mapping[f"job:{problem.jobs[0].id}"]
+    violations = check_gridplan_constraints(
+        problem,
+        schedule_problem=schedule,
+        result=SimpleNamespace(assignments=[]),
+        id_map=mapping,
+    )
+    assert any(v.kind == "INVALID_ID_MAP" for v in violations)
+
+
+def test_empty_expected_freeze_cannot_override_declared_lock() -> None:
+    problem = problem_fixture()
+    row = FrozenAssignment(
+        job_id=problem.jobs[0].id,
+        crew_id=problem.crews[0].id,
+        start=T0 + timedelta(hours=2),
+        end=T0 + timedelta(hours=3),
+    )
+    problem = problem.model_copy(update={"frozen_assignments": [row]})
+    candidate = plan_fifo(problem, apply_frozen=False)
+    violations = check_gridplan_constraints(
+        problem,
+        schedule_problem=candidate.schedule_problem,
+        result=candidate.schedule,
+        id_map=candidate.id_map,
+        expected_frozen=[],
+    )
+    assert any(v.kind == "FROZEN_ASSIGNMENT_CONFLICT" for v in violations)
+
+
+def test_mixed_calendar_timezone_is_a_violation_not_a_crash() -> None:
+    problem = problem_fixture()
+    crew = problem.crews[0].model_copy(
+        update={"availability": [{"start": "2026-09-01T06:00:00", "end": "2026-09-02T06:00:00"}]}
+    )
+    problem = problem.model_copy(update={"crews": [crew]})
+    outcome = plan_fifo(problem)
+    assert not outcome.verified_feasible
+    assert "AVAILABILITY_MALFORMED" in outcome.metadata["gridplan_violation_kinds"]
