@@ -120,17 +120,20 @@ fn fifo_pins_immutable_frozen() {
 }
 
 #[test]
-fn merge_frozen_is_additive_plan_wins() {
+fn merge_frozen_keeps_conflicting_problem_commitment() {
     let p = synthesize_feeder("frozen-conflict", 9, None, None, None).unwrap();
     let problem_row = p.frozen_assignments[0].clone();
     let mut plan_row = problem_row.clone();
     plan_row.start = p.planning_horizon_start;
     plan_row.end = p.planning_horizon_start + Duration::minutes(30);
     let merged = merge_expected_frozen(&p.frozen_assignments, &[plan_row.clone()]);
-    assert_eq!(merged.len(), 1);
-    assert_eq!(merged[0].start, plan_row.start);
+    assert_eq!(merged.len(), 2);
+    assert_eq!(merged[0].start, problem_row.start);
+    assert_eq!(merged[1].start, plan_row.start);
     let keep_problem = merge_expected_frozen(&p.frozen_assignments, &[]);
     assert_eq!(keep_problem[0].start, problem_row.start);
+    let same = merge_expected_frozen(&p.frozen_assignments, &p.frozen_assignments);
+    assert_eq!(same.len(), 1);
 }
 
 #[test]
@@ -270,4 +273,99 @@ fn python_cli_json_maps_operation_id_via_id_map() {
     assert_eq!(assignments[0].job_id, job);
     assert_eq!(assignments[0].crew_id, crew);
     assert_eq!(assignments[0].setup_minutes, 5);
+}
+
+fn single_job_problem() -> GridPlanProblem {
+    let mut p = synthesize_feeder("small", 42, None, None, None).unwrap();
+    p.jobs.truncate(1);
+    p.jobs[0].duration_min = 60;
+    p.jobs[0].interruption_required = false;
+    p.jobs[0].spare_part_ids.clear();
+    p.jobs[0].required_qualifications.clear();
+    p
+}
+
+fn pinned_row(p: &GridPlanProblem) -> FrozenAssignment {
+    FrozenAssignment {
+        job_id: p.jobs[0].id,
+        crew_id: p.crews[0].id,
+        start: p.planning_horizon_start,
+        end: p.planning_horizon_start + Duration::hours(1),
+        source: "test".into(),
+        frozen_reason: "mandatory".into(),
+        immutable: true,
+        data_provenance: "synthetic".into(),
+    }
+}
+
+#[test]
+fn plan_cannot_remove_or_redefine_problem_freeze() {
+    let mut p = single_job_problem();
+    let fr = pinned_row(&p);
+    p.frozen_assignments = vec![fr.clone()];
+    let a = Assignment {
+        job_id: fr.job_id,
+        crew_id: fr.crew_id,
+        start: fr.start + Duration::hours(1),
+        end: fr.end + Duration::hours(1),
+        setup_minutes: 0,
+    };
+    let mut moved = fr.clone();
+    moved.start = a.start;
+    moved.end = a.end;
+    let mut downgraded = moved.clone();
+    downgraded.immutable = false;
+    for expected in [vec![], vec![moved], vec![downgraded], vec![fr]] {
+        let violations = check_plan(&p, std::slice::from_ref(&a), &expected);
+        assert_eq!(violations.len(), 1, "{violations:?}");
+        assert_eq!(violations[0].kind, "FROZEN_ASSIGNMENT_CONFLICT");
+    }
+    let violations = check_plan(&p, &[], &[]);
+    assert!(violations
+        .iter()
+        .any(|v| v.kind == "FROZEN_ASSIGNMENT_CONFLICT"));
+}
+
+#[test]
+fn direct_checker_rejects_unknown_assets_and_spares() {
+    for missing_spare in [false, true] {
+        let mut p = single_job_problem();
+        let fr = pinned_row(&p);
+        let a = Assignment {
+            job_id: fr.job_id,
+            crew_id: fr.crew_id,
+            start: fr.start,
+            end: fr.end,
+            setup_minutes: 0,
+        };
+        if missing_spare {
+            p.jobs[0].spare_part_ids = vec![Uuid::nil()];
+        } else {
+            p.jobs[0].asset_id = Uuid::nil();
+        }
+        let violations = check_plan(&p, &[a], &[]);
+        assert_eq!(violations[0].kind, "INVALID_PROBLEM");
+    }
+}
+
+#[test]
+fn direct_checker_rejects_negative_setup_and_invalid_extra_freeze() {
+    let p = single_job_problem();
+    let mut fr = pinned_row(&p);
+    let mut a = Assignment {
+        job_id: fr.job_id,
+        crew_id: fr.crew_id,
+        start: fr.start,
+        end: fr.end,
+        setup_minutes: -1,
+    };
+    let violations = check_plan(&p, std::slice::from_ref(&a), &[]);
+    assert!(violations.iter().any(|v| v.kind == "INVALID_SETUP_MINUTES"));
+    a.setup_minutes = 0;
+    fr.immutable = false;
+    fr.crew_id = Uuid::nil();
+    let violations = check_plan(&p, &[a], &[fr]);
+    assert!(violations
+        .iter()
+        .any(|v| v.kind == "INVALID_FROZEN_ASSIGNMENT"));
 }

@@ -20,23 +20,19 @@ pub struct Violation {
 type OccupancySpan = (DateTime<Utc>, DateTime<Utc>, Uuid, String);
 type ScheduledSpan<'a> = (DateTime<Utc>, DateTime<Utc>, &'a MaintenanceJob);
 
-/// Union problem frozen rows with plan-supplied freeze. Plan wins on the same
-/// ``job_id``. Empty plan freeze keeps the problem list (does not wipe it).
+/// Union commitments without letting a plan replace a problem commitment.
+/// Conflicting rows are retained; equivalent constraints are checked once.
 pub fn merge_expected_frozen(
     problem_frozen: &[FrozenAssignment],
     plan_frozen: &[FrozenAssignment],
 ) -> Vec<FrozenAssignment> {
-    if plan_frozen.is_empty() {
-        return problem_frozen.to_vec();
-    }
-    let extra: HashSet<Uuid> = plan_frozen.iter().map(|f| f.job_id).collect();
-    let mut out: Vec<FrozenAssignment> = problem_frozen
+    let mut seen = HashSet::new();
+    problem_frozen
         .iter()
-        .filter(|f| !extra.contains(&f.job_id))
+        .chain(plan_frozen)
+        .filter(|f| seen.insert((f.job_id, f.crew_id, f.start, f.end, f.immutable)))
         .cloned()
-        .collect();
-    out.extend(plan_frozen.iter().cloned());
-    out
+        .collect()
 }
 
 pub fn check_plan(
@@ -44,11 +40,30 @@ pub fn check_plan(
     assignments: &[Assignment],
     expected_frozen: &[FrozenAssignment],
 ) -> Vec<Violation> {
+    if let Err(message) = problem.validate_refs() {
+        return vec![Violation {
+            kind: "INVALID_PROBLEM".into(),
+            message,
+            job_id: None,
+        }];
+    }
     let mut out = Vec::new();
     let jobs_by_id: HashMap<_, _> = problem.jobs.iter().map(|j| (j.id, j)).collect();
     let crews_by_id: HashMap<_, _> = problem.crews.iter().map(|c| (c.id, c)).collect();
     let assets_by_id: HashMap<_, _> = problem.assets.iter().map(|a| (a.id, a)).collect();
     let spares_by_id: HashMap<_, _> = problem.spare_parts.iter().map(|s| (s.id, s)).collect();
+    for fr in expected_frozen {
+        if !jobs_by_id.contains_key(&fr.job_id)
+            || !crews_by_id.contains_key(&fr.crew_id)
+            || fr.end <= fr.start
+        {
+            out.push(Violation {
+                kind: "INVALID_FROZEN_ASSIGNMENT".into(),
+                message: "plan freeze has unknown references or an invalid interval".into(),
+                job_id: Some(fr.job_id),
+            });
+        }
+    }
 
     let mut by_job: HashMap<Uuid, &Assignment> = HashMap::new();
     for a in assignments {
@@ -56,6 +71,13 @@ pub fn check_plan(
             out.push(Violation {
                 kind: "DUPLICATE_JOB_ASSIGNMENT".into(),
                 message: format!("job {} assigned more than once", a.job_id),
+                job_id: Some(a.job_id),
+            });
+        }
+        if a.setup_minutes < 0 {
+            out.push(Violation {
+                kind: "INVALID_SETUP_MINUTES".into(),
+                message: "setup_minutes must be non-negative".into(),
                 job_id: Some(a.job_id),
             });
         }
@@ -154,7 +176,8 @@ pub fn check_plan(
 
     out.extend(precedence_violations(problem, &by_job));
     out.extend(spare_violations(problem, assignments, &spares_by_id));
-    out.extend(frozen_violations(expected_frozen, &by_job, &jobs_by_id));
+    let frozen = merge_expected_frozen(&problem.frozen_assignments, expected_frozen);
+    out.extend(frozen_violations(&frozen, &by_job, &jobs_by_id));
     out.extend(crew_overlap_violations(assignments, &crews_by_id));
     out.extend(asset_overlap_violations(problem, assignments));
     out.extend(simultaneous_outage_ban_violations(problem, assignments));
@@ -188,7 +211,7 @@ fn crew_overlap_violations(
         // pairwise overlap (crews may field several technicians at once).
         let max_parallel = crews_by_id
             .get(&crew_id)
-            .map(|c| c.max_parallel.max(1))
+            .map(|c| c.max_parallel)
             .unwrap_or(1);
         let mut events: Vec<(DateTime<Utc>, i64, Uuid)> = Vec::new();
         for a in &rows {
@@ -205,7 +228,7 @@ fn crew_overlap_violations(
             } else {
                 active.retain(|j| *j != job_id);
             }
-            if active.len() as i32 > max_parallel && !reported {
+            if active.len() > max_parallel as usize && !reported {
                 out.push(Violation {
                     kind: "CREW_OVERLAP".into(),
                     message: format!(
@@ -483,7 +506,7 @@ fn spare_violations(
 ) -> Vec<Violation> {
     let assigned: HashSet<_> = assignments.iter().map(|a| a.job_id).collect();
     let start_by_job: HashMap<_, _> = assignments.iter().map(|a| (a.job_id, a.start)).collect();
-    let mut consumption: HashMap<Uuid, i32> =
+    let mut consumption: HashMap<Uuid, u64> =
         problem.spare_parts.iter().map(|s| (s.id, 0)).collect();
 
     // A replenishment-date miss must not hide the shortage count.
@@ -509,13 +532,14 @@ fn spare_violations(
                     });
                 }
             }
-            *consumption.entry(*spare_id).or_insert(0) += 1;
+            let used = consumption.entry(*spare_id).or_insert(0);
+            *used = used.saturating_add(1);
         }
     }
 
     for spare in &problem.spare_parts {
         let used = *consumption.get(&spare.id).unwrap_or(&0);
-        if used > spare.usable_quantity() {
+        if used > spare.usable_quantity() as u64 {
             out.push(Violation {
                 kind: "SPARE_PART_SHORTAGE".into(),
                 message: format!(

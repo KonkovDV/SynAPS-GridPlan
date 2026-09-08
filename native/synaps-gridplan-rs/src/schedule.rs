@@ -1,6 +1,6 @@
 //! Schedule result types for the native contour (job/crew domain IDs).
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -46,7 +46,10 @@ pub struct PlanResult {
 
 impl PlanResult {
     pub fn ok(&self) -> bool {
-        self.verified_feasible && matches!(self.status.as_str(), "feasible" | "optimal")
+        self.verified_feasible
+            && matches!(self.status.as_str(), "feasible" | "optimal")
+            && self.hard_violation_count == 0
+            && self.violations.is_empty()
     }
 
     pub fn with_claim_defaults(mut self) -> Self {
@@ -88,6 +91,8 @@ pub fn invert_python_id_map(id_map: &Value) -> Result<(OpToJob, WcToCrew), Strin
         .ok_or_else(|| "id_map must be an object".to_string())?;
     let mut op_to_job = HashMap::new();
     let mut wc_to_crew = HashMap::new();
+    let mut job_ids = HashSet::new();
+    let mut crew_ids = HashSet::new();
     for (key, value) in obj {
         let mapped: Uuid = value
             .as_str()
@@ -96,13 +101,40 @@ pub fn invert_python_id_map(id_map: &Value) -> Result<(OpToJob, WcToCrew), Strin
             .map_err(|e| format!("id_map[{key}]: {e}"))?;
         if let Some(rest) = key.strip_prefix("job:") {
             let job: Uuid = rest.parse().map_err(|e| format!("job key {key}: {e}"))?;
-            op_to_job.insert(mapped, job);
+            if !job_ids.insert(job) || op_to_job.insert(mapped, job).is_some() {
+                return Err(format!("duplicate job/operation mapping: {key}"));
+            }
         } else if let Some(rest) = key.strip_prefix("crew:") {
             let crew: Uuid = rest.parse().map_err(|e| format!("crew key {key}: {e}"))?;
-            wc_to_crew.insert(mapped, crew);
+            if !crew_ids.insert(crew) || wc_to_crew.insert(mapped, crew).is_some() {
+                return Err(format!("duplicate crew/work-center mapping: {key}"));
+            }
         }
     }
     Ok((op_to_job, wc_to_crew))
+}
+
+/// Missing freeze is optional; malformed or contradictory structure is not.
+pub fn frozen_from_payload(root: &Value) -> Result<Vec<FrozenAssignment>, String> {
+    let Some(outcome) = root.get("outcome") else {
+        return Ok(vec![]);
+    };
+    let outcome = outcome
+        .as_object()
+        .ok_or_else(|| "outcome must be an object".to_string())?;
+    let rows: Vec<FrozenAssignment> = outcome
+        .get("frozen_assignments")
+        .map(|value| serde_json::from_value(value.clone()))
+        .transpose()
+        .map_err(|e| format!("invalid outcome.frozen_assignments: {e}"))?
+        .unwrap_or_default();
+    let mut seen = HashSet::new();
+    for row in &rows {
+        if row.end <= row.start || !seen.insert(row.job_id) {
+            return Err("invalid or duplicate outcome.frozen_assignments row".into());
+        }
+    }
+    Ok(rows)
 }
 
 /// Map Python CLI solve JSON (`operation_id` + `id_map`) onto native assignments.
@@ -137,10 +169,18 @@ pub fn assignments_from_python_cli(
                 .and_then(Value::as_str)
                 .ok_or_else(|| "assignment missing end_time".to_string())?,
         )?;
-        let setup_minutes = item
-            .get("setup_minutes")
-            .and_then(Value::as_i64)
-            .unwrap_or(0) as i32;
+        let setup_minutes = match item.get("setup_minutes") {
+            None => 0,
+            Some(value) => {
+                let minutes = value
+                    .as_i64()
+                    .ok_or_else(|| "setup_minutes must be an integer".to_string())?;
+                if minutes < 0 {
+                    return Err("setup_minutes must be non-negative".into());
+                }
+                i32::try_from(minutes).map_err(|_| "setup_minutes overflow".to_string())?
+            }
+        };
         out.push(Assignment {
             job_id,
             crew_id,
@@ -149,12 +189,7 @@ pub fn assignments_from_python_cli(
             setup_minutes,
         });
     }
-    let frozen = root
-        .pointer("/outcome/frozen_assignments")
-        .cloned()
-        .and_then(|x| serde_json::from_value::<Vec<FrozenAssignment>>(x).ok())
-        .unwrap_or_default();
-    Ok((out, frozen))
+    Ok((out, frozen_from_payload(root)?))
 }
 
 pub fn looks_like_python_cli_result(root: &Value) -> bool {

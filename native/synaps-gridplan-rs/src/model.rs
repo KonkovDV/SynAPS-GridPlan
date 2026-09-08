@@ -3,6 +3,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashSet;
 use uuid::Uuid;
 
 use crate::SCHEMA_VERSION;
@@ -139,7 +140,10 @@ pub struct SparePart {
 impl SparePart {
     pub fn usable_quantity(&self) -> i32 {
         let avail = self.available_quantity.unwrap_or(self.stock_qty);
-        (avail - self.reserved_quantity).max(0)
+        if self.stock_qty < 0 || avail < 0 || self.reserved_quantity < 0 {
+            return 0;
+        }
+        avail.saturating_sub(self.reserved_quantity).max(0)
     }
 }
 
@@ -257,12 +261,70 @@ fn default_schema() -> String {
 
 impl GridPlanProblem {
     pub fn validate_refs(&self) -> Result<(), String> {
-        let asset_ids: std::collections::HashSet<_> = self.assets.iter().map(|a| a.id).collect();
-        let crew_ids: std::collections::HashSet<_> = self.crews.iter().map(|c| c.id).collect();
-        let job_ids: std::collections::HashSet<_> = self.jobs.iter().map(|j| j.id).collect();
-        let spare_ids: std::collections::HashSet<_> =
-            self.spare_parts.iter().map(|s| s.id).collect();
+        let asset_ids: HashSet<_> = self.assets.iter().map(|a| a.id).collect();
+        let crew_ids: HashSet<_> = self.crews.iter().map(|c| c.id).collect();
+        let job_ids: HashSet<_> = self.jobs.iter().map(|j| j.id).collect();
+        let spare_ids: HashSet<_> = self.spare_parts.iter().map(|s| s.id).collect();
+        let window_ids: HashSet<_> = self.outage_windows.iter().map(|w| w.id).collect();
+        let ban_ids: HashSet<_> = self.simultaneous_outage_bans.iter().map(|b| b.id).collect();
+        let frozen_ids: HashSet<_> = self.frozen_assignments.iter().map(|f| f.job_id).collect();
         let mut issues = Vec::new();
+        if !matches!(self.schema_version.as_str(), "gridplan.v1" | "gridplan.v2") {
+            issues.push(format!(
+                "unsupported schema_version {}",
+                self.schema_version
+            ));
+        }
+        for (kind, total, unique) in [
+            ("asset", self.assets.len(), asset_ids.len()),
+            ("crew", self.crews.len(), crew_ids.len()),
+            ("job", self.jobs.len(), job_ids.len()),
+            ("spare", self.spare_parts.len(), spare_ids.len()),
+            ("outage window", self.outage_windows.len(), window_ids.len()),
+            (
+                "outage ban",
+                self.simultaneous_outage_bans.len(),
+                ban_ids.len(),
+            ),
+            (
+                "frozen job",
+                self.frozen_assignments.len(),
+                frozen_ids.len(),
+            ),
+        ] {
+            if total != unique {
+                issues.push(format!("duplicate {kind} id"));
+            }
+        }
+        for asset in &self.assets {
+            for value in [
+                asset.risk.probability_of_failure,
+                asset.risk.consequence_score,
+                asset.risk.confidence,
+            ] {
+                if !value.is_finite() || !(0.0..=1.0).contains(&value) {
+                    issues.push(format!("asset {} invalid risk value", asset.code));
+                }
+            }
+        }
+        for crew in &self.crews {
+            if crew.max_parallel < 1 {
+                issues.push(format!("crew {} invalid max_parallel", crew.code));
+            }
+        }
+        for spare in &self.spare_parts {
+            let available = spare.available_quantity.unwrap_or(spare.stock_qty);
+            if spare.stock_qty < 0
+                || available < 0
+                || spare.reserved_quantity < 0
+                || spare.reserved_quantity > available
+            {
+                issues.push(format!("spare {} invalid quantities", spare.code));
+            }
+        }
+        if self.travel_minutes.values().any(|minutes| *minutes < 0) {
+            issues.push("negative travel_minutes".into());
+        }
         for job in &self.jobs {
             if !asset_ids.contains(&job.asset_id) {
                 issues.push(format!("job {} unknown asset", job.external_ref));
@@ -286,6 +348,23 @@ impl GridPlanProblem {
                 }
             }
         }
+        for window in &self.outage_windows {
+            if !asset_ids.contains(&window.asset_id) {
+                issues.push("outage window unknown asset".into());
+            }
+            if window.end <= window.start {
+                issues.push("outage window invalid interval".into());
+            }
+            for id in window
+                .allowed_job_ids
+                .iter()
+                .chain(&window.forbidden_job_ids)
+            {
+                if !job_ids.contains(id) {
+                    issues.push("outage window unknown job".into());
+                }
+            }
+        }
         for fr in &self.frozen_assignments {
             if !job_ids.contains(&fr.job_id) {
                 issues.push("frozen unknown job".into());
@@ -295,6 +374,14 @@ impl GridPlanProblem {
             }
             if fr.end <= fr.start {
                 issues.push("frozen invalid interval".into());
+            }
+        }
+        for ban in &self.simultaneous_outage_bans {
+            if !asset_ids.contains(&ban.asset_id_a) || !asset_ids.contains(&ban.asset_id_b) {
+                issues.push("outage ban unknown asset".into());
+            }
+            if ban.asset_id_a == ban.asset_id_b {
+                issues.push("outage ban requires distinct assets".into());
             }
         }
         if self.planning_horizon_end <= self.planning_horizon_start {
