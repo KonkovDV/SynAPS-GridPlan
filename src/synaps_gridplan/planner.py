@@ -377,6 +377,7 @@ def _wrap(
     )
     risk = compute_risk_metrics(problem, result, id_map)
 
+    claimed_trl = problem.domain_attributes.get("iso16290_trl")
     meta = dict(result.metadata or {})
     meta.update(
         {
@@ -387,7 +388,7 @@ def _wrap(
             "config_hash": config_hash,
             "data_provenance": problem.domain_attributes.get("data_provenance", "experiment"),
             "claim_level": problem.domain_attributes.get("claim_level", "experiment"),
-            "iso16290_trl": int(problem.domain_attributes.get("iso16290_trl", ISO16290_TRL)),
+            "iso16290_trl": ISO16290_TRL,
             "hard_violation_kinds": sorted({v.kind for v in hard}),
             "gridplan_violation_kinds": sorted({v.kind for v in gp_violations}),
             "engine_violations": [{"kind": v.kind, "message": v.message} for v in hard],
@@ -409,6 +410,8 @@ def _wrap(
             "practice": practice_snapshot(),
         }
     )
+    if claimed_trl is not None and claimed_trl != ISO16290_TRL:
+        meta["claimed_iso16290_trl"] = claimed_trl
 
     return PlanOutcome(
         schema_version=problem.schema_version,

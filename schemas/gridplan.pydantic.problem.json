@@ -1,0 +1,913 @@
+{
+  "$defs": {
+    "Asset": {
+      "additionalProperties": false,
+      "description": "Energetic asset / equipment unit (GridAsset alias fields optional for v2).",
+      "properties": {
+        "asset_class": {
+          "default": "equipment",
+          "title": "Asset Class",
+          "type": "string"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "coordinates": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Coordinates"
+        },
+        "data_provenance": {
+          "anyOf": [
+            {
+              "enum": [
+                "synthetic",
+                "open_data",
+                "customer_data",
+                "experiment",
+                "production_verified"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "experiment",
+          "title": "Data Provenance"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        },
+        "external_ref": {
+          "default": "",
+          "title": "External Ref",
+          "type": "string"
+        },
+        "failure_modes": {
+          "items": {
+            "$ref": "#/$defs/FailureMode"
+          },
+          "title": "Failure Modes",
+          "type": "array"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "location_code": {
+          "default": "",
+          "title": "Location Code",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        },
+        "parent_asset_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Asset Id"
+        },
+        "risk": {
+          "$ref": "#/$defs/RiskProfile"
+        },
+        "service_area": {
+          "default": "",
+          "title": "Service Area",
+          "type": "string"
+        },
+        "voltage_level": {
+          "default": "",
+          "title": "Voltage Level",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "Asset",
+      "type": "object"
+    },
+    "Crew": {
+      "additionalProperties": false,
+      "description": "Field crew / work center with qualifications.",
+      "properties": {
+        "availability": {
+          "items": {
+            "$ref": "#/$defs/CrewCalendarWindow"
+          },
+          "title": "Availability",
+          "type": "array"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "data_provenance": {
+          "anyOf": [
+            {
+              "enum": [
+                "synthetic",
+                "open_data",
+                "customer_data",
+                "experiment",
+                "production_verified"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "experiment",
+          "title": "Data Provenance"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        },
+        "home_location_code": {
+          "default": "",
+          "title": "Home Location Code",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "max_parallel": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Max Parallel",
+          "type": "integer"
+        },
+        "qualifications": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Qualifications",
+          "type": "array"
+        },
+        "service_area": {
+          "default": "",
+          "title": "Service Area",
+          "type": "string"
+        },
+        "shift_calendar": {
+          "items": {
+            "$ref": "#/$defs/CrewCalendarWindow"
+          },
+          "title": "Shift Calendar",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "Crew",
+      "type": "object"
+    },
+    "CrewCalendarWindow": {
+      "additionalProperties": false,
+      "description": "Crew shift or availability interval. Instants must carry an offset.",
+      "properties": {
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "CrewCalendarWindow",
+      "type": "object"
+    },
+    "Criticality": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Criticality",
+      "type": "string"
+    },
+    "FailureMode": {
+      "additionalProperties": false,
+      "description": "Failure mode with advisory probability \u2014 never an engineering certificate.",
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "consequence_score": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Consequence Score",
+          "type": "number"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "default": "",
+          "title": "Label",
+          "type": "string"
+        },
+        "probability_of_failure": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Probability Of Failure",
+          "type": "number"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "FailureMode",
+      "type": "object"
+    },
+    "FrozenAssignment": {
+      "additionalProperties": false,
+      "description": "Immutable job placement that must survive replan when ``immutable``.",
+      "properties": {
+        "crew_id": {
+          "format": "uuid",
+          "title": "Crew Id",
+          "type": "string"
+        },
+        "data_provenance": {
+          "anyOf": [
+            {
+              "enum": [
+                "synthetic",
+                "open_data",
+                "customer_data",
+                "experiment",
+                "production_verified"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "experiment",
+          "title": "Data Provenance"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "frozen_reason": {
+          "default": "",
+          "title": "Frozen Reason",
+          "type": "string"
+        },
+        "immutable": {
+          "default": true,
+          "title": "Immutable",
+          "type": "boolean"
+        },
+        "job_id": {
+          "format": "uuid",
+          "title": "Job Id",
+          "type": "string"
+        },
+        "source": {
+          "default": "base_plan",
+          "title": "Source",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "crew_id",
+        "start",
+        "end"
+      ],
+      "title": "FrozenAssignment",
+      "type": "object"
+    },
+    "JobKind": {
+      "enum": [
+        "preventive",
+        "corrective",
+        "inspection",
+        "emergency"
+      ],
+      "title": "JobKind",
+      "type": "string"
+    },
+    "MaintenanceJob": {
+      "additionalProperties": false,
+      "description": "One maintenance / repair work item.",
+      "properties": {
+        "asset_id": {
+          "format": "uuid",
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "data_provenance": {
+          "anyOf": [
+            {
+              "enum": [
+                "synthetic",
+                "open_data",
+                "customer_data",
+                "experiment",
+                "production_verified"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "experiment",
+          "title": "Data Provenance"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        },
+        "due_date": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Due Date"
+        },
+        "duration_min": {
+          "minimum": 1,
+          "title": "Duration Min",
+          "type": "integer"
+        },
+        "eligible_crew_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Eligible Crew Ids",
+          "type": "array"
+        },
+        "external_ref": {
+          "title": "External Ref",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "interruption_required": {
+          "default": false,
+          "title": "Interruption Required",
+          "type": "boolean"
+        },
+        "kind": {
+          "$ref": "#/$defs/JobKind",
+          "default": "preventive"
+        },
+        "latest_finish": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latest Finish"
+        },
+        "predecessor_job_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Predecessor Job Ids",
+          "type": "array"
+        },
+        "priority": {
+          "anyOf": [
+            {
+              "maximum": 999,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Priority"
+        },
+        "release_date": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Release Date"
+        },
+        "required_qualifications": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Qualifications",
+          "type": "array"
+        },
+        "risk_override": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RiskProfile"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "safety_constraints": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Safety Constraints",
+          "type": "array"
+        },
+        "spare_part_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Spare Part Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "external_ref",
+        "asset_id",
+        "duration_min"
+      ],
+      "title": "MaintenanceJob",
+      "type": "object"
+    },
+    "OutageWindow": {
+      "additionalProperties": false,
+      "description": "Allowed outage / clearance interval for an asset.",
+      "properties": {
+        "allowed_job_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Allowed Job Ids",
+          "type": "array"
+        },
+        "approved": {
+          "default": true,
+          "title": "Approved",
+          "type": "boolean"
+        },
+        "asset_id": {
+          "format": "uuid",
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "data_provenance": {
+          "anyOf": [
+            {
+              "enum": [
+                "synthetic",
+                "open_data",
+                "customer_data",
+                "experiment",
+                "production_verified"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "experiment",
+          "title": "Data Provenance"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "external_ref": {
+          "default": "",
+          "title": "External Ref",
+          "type": "string"
+        },
+        "forbidden_job_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Forbidden Job Ids",
+          "type": "array"
+        },
+        "frozen": {
+          "default": false,
+          "title": "Frozen",
+          "type": "boolean"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_id",
+        "start",
+        "end"
+      ],
+      "title": "OutageWindow",
+      "type": "object"
+    },
+    "RiskProfile": {
+      "additionalProperties": false,
+      "description": "Composite risk proxy used for prioritisation / reporting (advisory).",
+      "properties": {
+        "assessment_method": {
+          "default": "unspecified",
+          "title": "Assessment Method",
+          "type": "string"
+        },
+        "assessment_timestamp": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment Timestamp"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "consequence_score": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Consequence Score",
+          "type": "number"
+        },
+        "criticality": {
+          "$ref": "#/$defs/Criticality",
+          "default": "medium"
+        },
+        "is_advisory": {
+          "default": true,
+          "title": "Is Advisory",
+          "type": "boolean"
+        },
+        "probability_of_failure": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Probability Of Failure",
+          "type": "number"
+        },
+        "source_ref": {
+          "default": "",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "title": "RiskProfile",
+      "type": "object"
+    },
+    "SimultaneousOutageBan": {
+      "additionalProperties": false,
+      "description": "Explicit customer-declared ban on overlapping interruption occupancy.\n\nCombinatorial ``network_constraints`` \u2014 not N-1 / power-flow / topology.\nOccupancy of a precedence-connected interruption chain is the hull\n[first start, last end] (Goel & Meisel, EJOR 231:210\u2013228, 2013,\ndoi:10.1016/j.ejor.2013.05.021: downtime from disconnect to reconnect).\nIndependent interruption jobs (no precedence) stay separate.\n\nPairwise declared mutex is the combinatorial family listed by Tang et al.,\nEnergies 18(20):5454 (2025). Their power-flow / voltage objectives are\nout of scope here.",
+      "properties": {
+        "asset_id_a": {
+          "format": "uuid",
+          "title": "Asset Id A",
+          "type": "string"
+        },
+        "asset_id_b": {
+          "format": "uuid",
+          "title": "Asset Id B",
+          "type": "string"
+        },
+        "data_provenance": {
+          "anyOf": [
+            {
+              "enum": [
+                "synthetic",
+                "open_data",
+                "customer_data",
+                "experiment",
+                "production_verified"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "experiment",
+          "title": "Data Provenance"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        },
+        "external_ref": {
+          "default": "",
+          "title": "External Ref",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_id_a",
+        "asset_id_b"
+      ],
+      "title": "SimultaneousOutageBan",
+      "type": "object"
+    },
+    "SparePart": {
+      "additionalProperties": false,
+      "description": "Spare part stock.\n\nSemantic note: SynAPS ``AuxiliaryResource.pool_size`` models *concurrent*\ncapacity. Consumable stock accounting is enforced by GridPlan post-checks\nusing ``available_quantity`` / ``reserved_quantity``.",
+      "properties": {
+        "available_quantity": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Available Quantity"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "data_provenance": {
+          "anyOf": [
+            {
+              "enum": [
+                "synthetic",
+                "open_data",
+                "customer_data",
+                "experiment",
+                "production_verified"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "experiment",
+          "title": "Data Provenance"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "lead_time_min": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Lead Time Min",
+          "type": "integer"
+        },
+        "replenishment_date": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Replenishment Date"
+        },
+        "reserved_quantity": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Reserved Quantity",
+          "type": "integer"
+        },
+        "stock_qty": {
+          "default": 0,
+          "description": "legacy alias of available_quantity",
+          "minimum": 0,
+          "title": "Stock Qty",
+          "type": "integer"
+        },
+        "warehouse_location": {
+          "default": "",
+          "title": "Warehouse Location",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "SparePart",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Complete GridPlan input (schema gridplan.v1 compatible; v2 fields optional).",
+  "properties": {
+    "assets": {
+      "items": {
+        "$ref": "#/$defs/Asset"
+      },
+      "title": "Assets",
+      "type": "array"
+    },
+    "crews": {
+      "items": {
+        "$ref": "#/$defs/Crew"
+      },
+      "title": "Crews",
+      "type": "array"
+    },
+    "domain_attributes": {
+      "additionalProperties": true,
+      "title": "Domain Attributes",
+      "type": "object"
+    },
+    "frozen_assignments": {
+      "items": {
+        "$ref": "#/$defs/FrozenAssignment"
+      },
+      "title": "Frozen Assignments",
+      "type": "array"
+    },
+    "jobs": {
+      "items": {
+        "$ref": "#/$defs/MaintenanceJob"
+      },
+      "title": "Jobs",
+      "type": "array"
+    },
+    "outage_windows": {
+      "items": {
+        "$ref": "#/$defs/OutageWindow"
+      },
+      "title": "Outage Windows",
+      "type": "array"
+    },
+    "planning_horizon_end": {
+      "format": "date-time",
+      "title": "Planning Horizon End",
+      "type": "string"
+    },
+    "planning_horizon_start": {
+      "format": "date-time",
+      "title": "Planning Horizon Start",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "gridplan.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "simultaneous_outage_bans": {
+      "description": "network_constraints: explicit anti-coincidence of interruption jobs. Not N-1 / load-flow.",
+      "items": {
+        "$ref": "#/$defs/SimultaneousOutageBan"
+      },
+      "title": "Simultaneous Outage Bans",
+      "type": "array"
+    },
+    "spare_parts": {
+      "items": {
+        "$ref": "#/$defs/SparePart"
+      },
+      "title": "Spare Parts",
+      "type": "array"
+    },
+    "travel_minutes": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "description": "key = '{from_location}|{to_location}' \u2192 setup minutes",
+      "title": "Travel Minutes",
+      "type": "object"
+    }
+  },
+  "required": [
+    "assets",
+    "crews",
+    "jobs",
+    "planning_horizon_start",
+    "planning_horizon_end"
+  ],
+  "title": "GridPlanProblem",
+  "type": "object"
+}

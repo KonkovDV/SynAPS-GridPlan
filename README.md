@@ -12,7 +12,7 @@
 
 | | |
 | --- | --- |
-| Базовая версия | **0.1.5** |
+| Базовая версия | **0.1.6** |
 | Базовая ветка | `main` |
 | Пин SynAPS | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
 | Зрелость | **Самооценка** ISO 16290 TRL 4, синтетические фикстуры. Не сертификат и **не пилот на объекте**. |
@@ -21,7 +21,8 @@
 | Практика | [PRACTICE.md](PRACTICE.md) |
 | Аудит и риски | [AUDIT.md](AUDIT.md): воспроизведения, CI, границы модели и оставшиеся gate |
 
-[Аудит fail-closed вошёл в 0.1.5](https://github.com/KonkovDV/SynAPS-GridPlan/pull/12).
+[Аудит fail-closed вошёл в 0.1.5](https://github.com/KonkovDV/SynAPS-GridPlan/pull/14).
+0.1.6 продолжает тот же контракт: независимый `check` держит legacy `window.frozen`.
 Badge относится к `main`. Доказательства аудита привязаны к commit в `AUDIT.md`,
 а не к номеру версии или старой картинке отчёта.
 
@@ -78,7 +79,7 @@ python benchmark/jury_benchmark.py
 перепланировании, сохранении заморозки или детерминизме не подтверждены.
 Успешное создание Markdown не считается успешным экспериментом.
 
-`version` должен напечатать `0.1.5` и пин `6178c93…`. Если `source` указывает
+`version` должен напечатать `0.1.6` и пин `6178c93…`. Если `source` указывает
 в `site-packages`, а не в `<репо>/src/synaps_gridplan`:
 
 ```bash
@@ -120,7 +121,7 @@ python -m synaps_gridplan practice
 python -m pytest -q -m "not slow"
 ```
 
-## Контракт входа (0.1.5)
+## Контракт входа (0.1.6)
 
 - ISO-даты передавайте с `Z` или явным смещением, например
   `2026-09-01T09:00:00+03:00`. Unix-время, boolean и naive datetime без зоны

@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.1.6 — 2026-09-08
+
+Second fail-closed pass on the published 0.1.5 tree. SynAPS pin remains
+[`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169).
+Self-assessed ISO 16290 TRL 4. Not a plant pilot.
+
+### Verification
+
+- Legacy ``outage_windows[].frozen`` is a domain obligation on independent
+  ``check`` (Python and native), not only a compile-time pin for solve.
+- Naive assignment timestamps are ``INVALID_ASSIGNMENT_TIME``, not a
+  ``TypeError``. Native ``check`` no longer appends ``Z`` to naive Python
+  assignment instants.
+- Outcome ``iso16290_trl`` is the package self-assessment. A different value
+  in ``domain_attributes`` is recorded as ``claimed_iso16290_trl`` only.
+- CLI reads apply the byte quota to bytes actually read. Markdown reports
+  flatten newlines and backticks in interpolated text.
+- Native documents reject unknown top-level fields and extra calendar keys.
+- Synthetic ``small`` feeders no longer set ``outage_windows[].frozen``;
+  that flag is a real lock on independent check. Use ``frozen-conflict`` or
+  explicit ``FrozenAssignment`` rows when the demo is about ПЛ.
+
+### Lab gates
+
+- Committed Pydantic nested schema inventory, pattern secret scan, pytest
+  120s timeout and CI ``timeout-minutes``. These are laboratory controls, not
+  SSDF attestation, cgroup memory quotas or a licensed secret-scanning product.
+
 ## 0.1.5 — 2026-09-08
 
 Fail-closed audit from [PR #12](https://github.com/KonkovDV/SynAPS-GridPlan/pull/12) /

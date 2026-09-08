@@ -176,3 +176,42 @@ fn check_empty_workload_is_vacuously_feasible() {
     let output = check(&p, &json!({"assignments": []}));
     assert!(output.status.success(), "{output:?}");
 }
+
+#[test]
+fn check_rejects_naive_python_assignment_timestamps() {
+    let mut plan = python_result();
+    plan["schedule"]["assignments"][0]["start_time"] = json!("2026-09-01T06:00:00");
+    assert_rejected(&check(&problem(), &plan), 1);
+}
+
+#[test]
+fn check_treats_frozen_outage_window_as_lock() {
+    let mut p = problem();
+    p["jobs"][0]["interruption_required"] = json!(true);
+    p["outage_windows"] = json!([{
+        "id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        "asset_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "start": "2026-09-01T06:00:00Z",
+        "end": "2026-09-01T10:00:00Z",
+        "frozen": true,
+        "approved": true
+    }]);
+    let mut moved = assignment();
+    moved["start"] = json!("2026-09-01T08:00:00Z");
+    moved["end"] = json!("2026-09-01T09:00:00Z");
+    let output = check(&p, &json!({"assignments": [moved]}));
+    assert_rejected(&output, 2);
+    let payload: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let kinds: Vec<_> = payload["violations"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|row| row["kind"].as_str().unwrap().to_string())
+        .collect();
+    assert!(
+        kinds
+            .iter()
+            .any(|kind| kind == "FROZEN_ASSIGNMENT_CONFLICT"),
+        "{payload:?}"
+    );
+}

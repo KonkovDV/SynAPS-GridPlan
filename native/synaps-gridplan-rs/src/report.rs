@@ -2,6 +2,10 @@
 
 use crate::schedule::PlanResult;
 
+fn md_inline(value: &str) -> String {
+    value.replace(['\r', '\n'], " ").replace('`', "'")
+}
+
 pub fn render_markdown(plan: &PlanResult) -> String {
     let meta = &plan.metadata;
     let mut lines = vec![
@@ -16,9 +20,9 @@ pub fn render_markdown(plan: &PlanResult) -> String {
                 .and_then(|v| v.as_str())
                 .unwrap_or("?")
         ),
-        format!("- solver: `{}`", plan.solver_config),
-        format!("- status: **{}**", plan.status),
-        format!("- claim_status: `{}`", plan.claim_status),
+        format!("- solver: `{}`", md_inline(&plan.solver_config)),
+        format!("- status: **{}**", md_inline(&plan.status)),
+        format!("- claim_status: `{}`", md_inline(&plan.claim_status)),
         format!("- verified_feasible: **{}**", plan.verified_feasible),
         format!("- hard_violations: {}", plan.hard_violation_count),
         format!(
@@ -71,7 +75,11 @@ pub fn render_markdown(plan: &PlanResult) -> String {
         lines.push("- none recorded at GridPlan-rs layer".into());
     } else {
         for v in plan.violations.iter().take(20) {
-            lines.push(format!("- `{}`: {}", v.kind, v.message));
+            lines.push(format!(
+                "- `{}`: {}",
+                md_inline(&v.kind),
+                md_inline(&v.message)
+            ));
         }
     }
     lines.extend([

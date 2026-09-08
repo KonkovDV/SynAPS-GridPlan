@@ -4,11 +4,11 @@
 
 ## 1. Объект и границы
 
-- Исходная ревизия `main` до этого пакета: `94b50483d0afa73f41d2d1f75991ad953a44e890`.
-- Публичный пакет этой работы — **0.1.5**. Аудиторские исправления PR #12/#13 в него входят.
+- Исходная ревизия `main` до пакета 0.1.5: `94b50483d0afa73f41d2d1f75991ad953a44e890`.
+- Публичный пакет 0.1.5 на `main`: merge [`6cd9a6e`](https://github.com/KonkovDV/SynAPS-GridPlan/commit/6cd9a6e2b8127015bfb87d46f9d8ceca62c2bb4f) / [PR #14](https://github.com/KonkovDV/SynAPS-GridPlan/pull/14), тег `v0.1.5`.
+- Этот документ дополнен пакетом **0.1.6** (Red Team 8 сентября 2026 после выкладки 0.1.5).
 - Движок закреплён на [SynAPS `6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169). Полный аудит его ядра не проводился.
-- Основная поставка: [PR #12](https://github.com/KonkovDV/SynAPS-GridPlan/pull/12), ветка `audit/gridplan-fail-closed-20260907`.
-- Дочерний Rust-аудит [PR #13](https://github.com/KonkovDV/SynAPS-GridPlan/pull/13) интегрирован **только в аудитную ветку**, merge commit `33f77aba1ec24779ac6eaa2757a98b1fb3732939`. Слияния PR #12 в `main` этим аудитом не выполнялось.
+- Историческая аудиторская поставка: [PR #12](https://github.com/KonkovDV/SynAPS-GridPlan/pull/12) и дочерний [PR #13](https://github.com/KonkovDV/SynAPS-GridPlan/pull/13); их коммиты вошли в `main` через PR #14.
 - Рассмотрены модель, компиляция ограничений, постпроверка, перепланирование, CLI/import/export, тесты, доказательность демо и публичные материалы Академии. Код менялся малыми логическими коммитами; тесты добавлялись к исправлениям, а не заменялись обещаниями.
 
 Положительный результат означает прохождение реализованного контракта на конкретных входных данных. Он не удостоверяет достоверность исходных нормативов, согласование отключения, электрическую безопасность или экономический эффект.
@@ -58,6 +58,9 @@ Rust: 3 lib + 6 CLI + 5 FIFO + 16 integration + 3 report + 6 schedule + 2 travel
 | P1: dense setup выделялся до проверки размера | `crews × location_codes²` проверяется до построения матрицы по лимиту upstream **2 000 000** | Отказ до `_sid` и принятие точной границы лимита |
 | P2: repair назывался произвольным решателем | Фактический `INCREMENTAL_REPAIR` раскрыт в metadata/hash; неподдерживаемые имена отвергаются | Import/export audit; legacy `repair:GREED` сохранён для совместимости |
 | P2: демо и документы переобещали | Положительные claims gated по реальным результатам; README/Academy отделяют синтетику, компилированный оптимум, самооценку TRL и пилот | `test_jury_report.py`, CI jury command; документальные поправки |
+| P0: legacy `window.frozen` не держал независимый `check` | Python/native постпроверка выводит обязательства `window.start`+duration; explicit FrozenAssignment по-прежнему главнее | `test_redteam_016.py`; native `cli_regressions.rs` |
+| P1: naive assignment ронял Python TypeError; native `check` дописывал `Z` | `INVALID_ASSIGNMENT_TIME`; RFC3339 без offset отвергается | `test_redteam_016.py`; native naive timestamp case |
+| P1: `iso16290_trl` в outcome брался из входа | Константа пакета; расхождение только как `claimed_iso16290_trl` | `test_redteam_016.py` |
 
 Компактность проверена по фактическим diff: preallocation guard — 8 добавленных строк; native FIFO boundary — 8 additions / 2 deletions в production-файле; CLI boundary — 24 / 6. CSV-изменение отдельное: 60 / 16 в renderer плюс новый файл тестов. Передача полного файла при сохранении не означает переписывание всей его логики.
 
@@ -69,7 +72,7 @@ Rust: 3 lib + 6 CLI + 5 FIFO + 16 integration + 3 report + 6 schedule + 2 travel
 4. **Отключение между операциями.** Hull от первого start до последнего end предполагает, что оборудование остаётся отключённым в промежутке. Это предметное допущение, а не электрический расчёт. Ссылка на Goel–Meisel — смежная литература; построчное воспроизведение их полной математической модели не проверено.
 5. **ЗИП и бригады.** Одна единица на перечисленную позицию — не полноценный BOM. `max_parallel` и crew calendar — комбинаторные ресурсы; маршруты отдельных исполнителей в параллельной бригаде требуют отдельной модели.
 6. **Переезды.** Пустая матрица означает zero travel по явному контракту, не реальную нулевую географию. Для непустой матрицы Python больше не подменяет фактическую дугу домашней. Полнота начальных/конечных поездок и полного VRP не доказана. Native не реализует travel/setup verification и консервативно отказывает даже для заполненной нулями матрицы. Данные нельзя обнулять ради зелёного verdict.
-7. **Обязательства.** Все immutable freeze должны выполняться одновременно. Конфликт двух обязательств нельзя скрыть выбором удобной строки; advisory freeze не является запретом. Пустая задача, в отличие от неполной карты непустой задачи, имеет корректную vacuous feasibility.
+7. **Обязательства.** Все immutable freeze должны выполняться одновременно, включая legacy `outage_windows[].frozen` на независимой проверке. Конфликт двух обязательств нельзя скрыть выбором удобной строки; advisory freeze не является запретом. Пустая задача, в отличие от неполной карты непустой задачи, имеет корректную vacuous feasibility.
 8. **Риск и оптимальность.** `risk_after` — прокси оставшегося backlog, не измерение вероятности аварии/SAIDI. Эвристически найденное FEASIBLE не означает OPTIMAL. Парный mutex отключений не доказывает N-1, Tier III или допустимость переключения.
 9. **Подтверждение и происхождение.** `outcome.ok`, новый native scope и отсутствие hard violations нужно читать совместно с моделью. `report` — рендеринг, не свежая проверка. Hash, `approved`, provenance и TRL не являются цифровой подписью или авторизацией. CSV-префиксы меняют экспортируемый текст; JSON не добавляет этих префиксов, но typed rendering не обещает побайтовый round trip.
 
@@ -97,21 +100,21 @@ Rust: 3 lib + 6 CLI + 5 FIFO + 16 integration + 3 report + 6 schedule + 2 travel
 
 ## 6. Открытые границы и выпускной gate
 
-Закрыто в 0.1.5 (лабораторный контракт, не промышленный допуск):
+Закрыто в 0.1.5–0.1.6 (лабораторный контракт, не промышленный допуск):
 
-- [x] Неизвестные поля GridPlan-документов отвергаются (`extra=forbid`); Unix/naive instants, включая календари бригад, отвергаются на входе. Committed JSON Schema — конверт верхнего уровня, не полная вложенная Draft 2020-12 схема каждого каталога. Round-trip байт-в-байт не обещан.
-- [x] Лабораторные квоты JSON и размеров каталогов. Setup cap по-прежнему закрывает конкретную dense-аллокацию.
-- [x] Публичный Python `check PROBLEM RESULT` (и native `check`) пересобирает модель и игнорирует сохранённый `verified_feasible`.
-- [x] Mypy пакета, pip-audit установленного дерева, cargo-audit и CycloneDX-инвентарь lockfile в CI/`sbom/`.
-- [x] Claim gates jury / emergency-day / scale. About репозитория уточняет самооценку TRL.
+- [x] Неизвестные поля GridPlan-документов отвергаются (`extra=forbid`); Unix/naive instants, включая календари бригад, отвергаются на входе. Committed JSON Schema — конверт верхнего уровня плюс вложенный Pydantic-инвентарь `schemas/gridplan.pydantic.problem.json`. Round-trip байт-в-байт не обещан.
+- [x] Лабораторные квоты JSON (по фактически прочитанным байтам) и размеров каталогов. Setup cap по-прежнему закрывает конкретную dense-аллокацию. CI `timeout-minutes` и pytest 120s — лабораторный deadline процесса, не cgroup/SLA.
+- [x] Публичный Python `check PROBLEM RESULT` (и native `check`) пересобирает модель и игнорирует сохранённый `verified_feasible`. Legacy `outage_windows[].frozen` — обязательство независимой проверки.
+- [x] Mypy пакета, pip-audit установленного дерева, cargo-audit, CycloneDX-инвентарь lockfile, pattern secret scan и schema drift в CI/`sbom/`/`schemas/`.
+- [x] Claim gates jury / emergency-day / scale. About репозитория уточняет самооценку TRL. `iso16290_trl` в outcome — константа пакета, не поле входного JSON.
 
 По-прежнему отдельно:
 
-- [ ] Полный nested JSON Schema v1/v2 со всеми полями каталогов, unknown-field matrix и байтовый round trip. Принятие version label не означает полную schema compatibility с произвольным будущим v2.
-- [ ] Квоты CPU/памяти и deadline процесса. Upstream Assignment/календари ядра SynAPS не переведены на UTCInstant.
+- [ ] Полный nested JSON Schema v1/v2 со всеми полями каталогов как отдельная Draft 2020-12 норма и байтовый round trip. Принятие version label не означает полную schema compatibility с произвольным будущим v2.
+- [ ] Квоты CPU/памяти процесса (cgroup). Upstream Assignment/календари ядра SynAPS не переведены на UTCInstant.
 - [ ] Полный upstream solver/kernel review, расширенная модель альтернативных окон/маршрутов, проверка сравнимости objective/метрик. Универсальная оптимальность и эквивалентность Python/Rust не доказаны.
 - [ ] Аутентифицированные approvals/provenance, права доступа и журнал событий для внешних данных.
-- [ ] Полный secret scan, лицензионная экспертиза и Markdown/HTML sanitization. pip-audit/cargo-audit/SBOM не заменяют их.
+- [ ] Полный secret scan (энтропия/лицензионный продукт), лицензионная экспертиза и Markdown/HTML sanitization как отдельный renderer. pip-audit/cargo-audit/SBOM/pattern scan не заменяют их.
 - [ ] Актуальные условия Академии и фактическая команда/доступность; обновление `SynAPS-GridPlan.pdf` по проверенным данным.
 - [ ] Shadow-пилот без управления оборудованием: согласованный обезличенный набор, baseline диспетчера/FIFO, одинаковый бюджет времени, доля проверенных работ, hard violations, churn замороженных строк и время подготовки плана. Электрический эксперт отдельно подтверждает допустимость отключений. Измерения и согласия пока отсутствуют.
 

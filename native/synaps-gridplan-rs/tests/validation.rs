@@ -169,3 +169,21 @@ fn naive_calendar_windows_are_rejected_at_validate() {
     })];
     p.validate_refs().unwrap();
 }
+
+#[test]
+fn extra_calendar_fields_are_rejected() {
+    let mut p = problem();
+    p.crews[0].availability = vec![json!({
+        "start": "2026-09-01T06:00:00Z",
+        "end": "2026-09-01T08:00:00Z",
+        "always": true
+    })];
+    assert!(p.validate_refs().unwrap_err().contains("unknown field"));
+}
+
+#[test]
+fn unknown_top_level_fields_are_rejected() {
+    let mut raw = serde_json::to_value(problem()).unwrap();
+    raw["unexpected"] = json!(true);
+    assert!(serde_json::from_value::<GridPlanProblem>(raw).is_err());
+}

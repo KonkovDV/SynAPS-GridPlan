@@ -146,7 +146,10 @@ fn run(cli: Cli) -> Result<ExitCode, String> {
                 "claim_level": "experiment",
                 "engine": "synaps_gridplan_rs"
             });
-            println!("{}", serde_json::to_string_pretty(&payload).unwrap());
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&payload).map_err(|e| e.to_string())?
+            );
             Ok(if verified_feasible {
                 ExitCode::SUCCESS
             } else {
