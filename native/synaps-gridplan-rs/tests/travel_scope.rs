@@ -85,6 +85,9 @@ fn cli_does_not_certify_back_to_back_jobs_at_different_sites() {
         assert_eq!(payload["violations"], json!([]));
         assert_eq!(payload["domain_verified_feasible"], json!(true));
         assert_eq!(payload["verified_feasible"], json!(false));
-        assert_eq!(payload["unsupported_constraints"], json!(["travel_minutes"]));
+        assert_eq!(
+            payload["unsupported_constraints"],
+            json!(["travel_minutes"])
+        );
     }
 }
