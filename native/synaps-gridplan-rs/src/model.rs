@@ -244,6 +244,7 @@ pub struct SimultaneousOutageBan {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct GridPlanProblem {
     #[serde(default = "default_schema")]
     pub schema_version: String,
@@ -443,6 +444,11 @@ fn validate_calendar_rows(rows: &[Value], crew: &str, name: &str, issues: &mut V
             issues.push(format!("crew {crew} {name}[{index}] must be an object"));
             continue;
         };
+        for key in obj.keys() {
+            if key != "start" && key != "end" {
+                issues.push(format!("crew {crew} {name}[{index}] unknown field {key}"));
+            }
+        }
         let start = obj
             .get("start")
             .and_then(Value::as_str)

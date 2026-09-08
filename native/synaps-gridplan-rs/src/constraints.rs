@@ -1,6 +1,6 @@
 //! Fail-closed GridPlan post-checks (domain layer).
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
@@ -33,6 +33,75 @@ pub fn merge_expected_frozen(
         .filter(|f| seen.insert((f.job_id, f.crew_id, f.start, f.end, f.immutable)))
         .cloned()
         .collect()
+}
+
+fn first_window_freeze_crew(job: &MaintenanceJob, problem: &GridPlanProblem) -> Option<Uuid> {
+    if let Some(crew_id) = job.eligible_crew_ids.first() {
+        return Some(*crew_id);
+    }
+    let required: HashSet<_> = job.required_qualifications.iter().cloned().collect();
+    let selected: Vec<Uuid> = problem
+        .crews
+        .iter()
+        .filter(|crew| {
+            let have: HashSet<_> = crew.qualifications.iter().cloned().collect();
+            required.is_subset(&have)
+        })
+        .map(|crew| crew.id)
+        .collect();
+    if selected.is_empty() && required.is_empty() {
+        return problem.crews.first().map(|crew| crew.id);
+    }
+    selected.into_iter().next()
+}
+
+/// Legacy ``outage_windows[].frozen`` pins: window.start + duration on first eligible crew.
+fn window_frozen_assignments(problem: &GridPlanProblem) -> Vec<FrozenAssignment> {
+    let mut out = Vec::new();
+    let mut seen = HashSet::new();
+    for window in &problem.outage_windows {
+        if !window.frozen || !window.approved {
+            continue;
+        }
+        for job in &problem.jobs {
+            if job.asset_id != window.asset_id || !job.interruption_required {
+                continue;
+            }
+            if seen.contains(&job.id) {
+                continue;
+            }
+            if window.forbidden_job_ids.contains(&job.id) {
+                continue;
+            }
+            if !window.allowed_job_ids.is_empty() && !window.allowed_job_ids.contains(&job.id) {
+                continue;
+            }
+            let Some(end) = window
+                .start
+                .checked_add_signed(Duration::minutes(i64::from(job.duration_min)))
+            else {
+                continue;
+            };
+            if end > window.end {
+                continue;
+            }
+            let Some(crew_id) = first_window_freeze_crew(job, problem) else {
+                continue;
+            };
+            seen.insert(job.id);
+            out.push(FrozenAssignment {
+                job_id: job.id,
+                crew_id,
+                start: window.start,
+                end,
+                source: "frozen_outage_window".into(),
+                frozen_reason: "legacy_window_freeze".into(),
+                immutable: true,
+                data_provenance: window.data_provenance.clone(),
+            });
+        }
+    }
+    out
 }
 
 pub fn check_plan(
@@ -176,7 +245,20 @@ pub fn check_plan(
 
     out.extend(precedence_violations(problem, &by_job));
     out.extend(spare_violations(problem, assignments, &spares_by_id));
-    let frozen = merge_expected_frozen(&problem.frozen_assignments, expected_frozen);
+    let mut plan_frozen = expected_frozen.to_vec();
+    let already: HashSet<Uuid> = problem
+        .frozen_assignments
+        .iter()
+        .chain(plan_frozen.iter())
+        .filter(|fr| fr.immutable)
+        .map(|fr| fr.job_id)
+        .collect();
+    plan_frozen.extend(
+        window_frozen_assignments(problem)
+            .into_iter()
+            .filter(|fr| !already.contains(&fr.job_id)),
+    );
+    let frozen = merge_expected_frozen(&problem.frozen_assignments, &plan_frozen);
     out.extend(frozen_violations(&frozen, &by_job, &jobs_by_id));
     out.extend(crew_overlap_violations(assignments, &crews_by_id));
     out.extend(asset_overlap_violations(problem, assignments));

@@ -159,6 +159,51 @@ def compile_frozen_assignments(
     return frozen
 
 
+def legacy_window_frozen_assignments(problem: GridPlanProblem) -> list[FrozenAssignment]:
+    """Domain locks implied by legacy ``outage_windows[].frozen``.
+
+    Explicit ``FrozenAssignment`` rows still win for the same job. Independent
+    check must honour these locks; otherwise a moved slot can look verified.
+    """
+
+    windows = [window for window in problem.outage_windows if window.frozen and window.approved]
+    if not windows:
+        return []
+
+    jobs_by_asset: dict[UUID, list[MaintenanceJob]] = defaultdict(list)
+    for job in problem.jobs:
+        jobs_by_asset[job.asset_id].append(job)
+
+    out: list[FrozenAssignment] = []
+    seen: set[UUID] = set()
+    for window in windows:
+        for job in jobs_by_asset.get(window.asset_id, []):
+            if job.id in seen:
+                continue
+            if not job.interruption_required or not _approved_outage_windows(job, [window]):
+                continue
+            eligible = list(job.eligible_crew_ids) or _eligible_crews(job, problem)
+            if not eligible:
+                continue
+            end = window.start + timedelta(minutes=job.duration_min)
+            if end > window.end:
+                continue
+            seen.add(job.id)
+            out.append(
+                FrozenAssignment(
+                    job_id=job.id,
+                    crew_id=eligible[0],
+                    start=window.start,
+                    end=end,
+                    source="frozen_outage_window",
+                    frozen_reason="legacy_window_freeze",
+                    immutable=True,
+                    data_provenance=window.data_provenance,
+                )
+            )
+    return out
+
+
 def frozen_assignments_from_windows(
     problem: GridPlanProblem,
     schedule: ScheduleProblem,

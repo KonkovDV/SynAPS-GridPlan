@@ -14,7 +14,9 @@ python -m pytest -q -m "not slow"
 python -m ruff check src tests
 python -m ruff format --check src tests
 python -m mypy src/synaps_gridplan
+python scripts/export_pydantic_schema.py
 python scripts/export_sbom.py
+python scripts/scan_secrets.py
 ```
 
 Native contour:

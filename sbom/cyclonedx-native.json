@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "synaps-gridplan-rs",
-      "version": "0.1.5"
+      "version": "0.1.6"
     }
   },
   "components": [
@@ -793,8 +793,8 @@
     {
       "type": "library",
       "name": "synaps_gridplan_rs",
-      "version": "0.1.5",
-      "purl": "pkg:cargo/synaps_gridplan_rs@0.1.5"
+      "version": "0.1.6",
+      "purl": "pkg:cargo/synaps_gridplan_rs@0.1.6"
     },
     {
       "type": "library",

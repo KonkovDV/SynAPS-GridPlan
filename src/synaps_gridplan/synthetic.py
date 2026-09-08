@@ -242,7 +242,8 @@ def _legacy_feeder(
 
     Several interruption jobs may share an asset without a predecessor chain —
     GREED does not model asset exclusivity, so ``small --seed 42`` stays the
-    fail-closed ASSET_OVERLAP demo.
+    fail-closed ASSET_OVERLAP demo. Windows here are not frozen; ``window.frozen``
+    is a real independent-check lock (use FrozenAssignment / frozen-conflict).
     """
 
     outages: list[OutageWindow] = []
@@ -254,7 +255,7 @@ def _legacy_feeder(
                 asset_id=asset.id,
                 start=w_start,
                 end=w_start + timedelta(hours=10),
-                frozen=(i % 3 == 0),
+                frozen=False,
                 approved=True,
                 external_ref=f"OUT-{i + 1:03d}",
                 data_provenance="synthetic",

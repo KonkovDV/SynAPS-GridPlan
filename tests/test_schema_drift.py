@@ -53,6 +53,12 @@ def test_problem_schemas_forbid_unknown_top_level_keys() -> None:
         assert set(schema["properties"]) == props
 
 
+def test_committed_pydantic_schema_matches_live_model() -> None:
+    generated = json.dumps(GridPlanProblem.model_json_schema(), indent=2, sort_keys=True) + "\n"
+    committed = (SCHEMAS / "gridplan.pydantic.problem.json").read_text(encoding="utf-8")
+    assert committed == generated
+
+
 def test_result_schema_allows_embedded_problem_and_forbids_other_keys() -> None:
     schema = _schema("gridplan-result.schema.json")
     assert schema["additionalProperties"] is False

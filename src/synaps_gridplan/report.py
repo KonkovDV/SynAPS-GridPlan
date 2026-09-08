@@ -42,6 +42,7 @@ VIOLATION_KIND_RU: dict[str, str] = {
     "UNKNOWN_OPERATION": "назначение на неизвестную операцию",
     "UNKNOWN_WORK_CENTER": "назначение на неизвестный рабочий центр",
     "UNKNOWN_CREW": "назначение на неизвестную бригаду",
+    "INVALID_ASSIGNMENT_TIME": "назначение без часового пояса",
     "INVALID_ID_MAP": "карта идентификаторов неполна или неоднозначна",
     "INVALID_PROBLEM": "некорректная постановка задачи",
 }
@@ -191,6 +192,12 @@ def _as_csv(outcome: PlanOutcome) -> str:
     return buf.getvalue()
 
 
+def _md_inline(value: Any) -> str:
+    """Keep Markdown a single visual line; backticks cannot break out of inline code."""
+
+    return str(value).replace("\r", " ").replace("\n", " ").replace("`", "'")
+
+
 def _as_markdown(outcome: PlanOutcome) -> str:
     obj = outcome.schedule.objective
     meta = outcome.metadata or {}
@@ -198,20 +205,23 @@ def _as_markdown(outcome: PlanOutcome) -> str:
     lines = [
         "# SynAPS-GridPlan report",
         "",
-        f"- schema: `{outcome.schema_version}`",
-        f"- gridplan_version: `{meta.get('gridplan_version', GRIDPLAN_VERSION)}`",
-        f"- synaps_commit: `{meta.get('synaps_commit', SYNAPS_COMMIT)}`",
-        f"- solver: `{outcome.solver_config}`",
-        f"- status: **{outcome.status}**",
-        f"- claim_status: `{meta.get('claim_status', outcome.status)}`",
+        f"- schema: `{_md_inline(outcome.schema_version)}`",
+        f"- gridplan_version: `{_md_inline(meta.get('gridplan_version', GRIDPLAN_VERSION))}`",
+        f"- synaps_commit: `{_md_inline(meta.get('synaps_commit', SYNAPS_COMMIT))}`",
+        f"- solver: `{_md_inline(outcome.solver_config)}`",
+        f"- status: **{_md_inline(outcome.status)}**",
+        f"- claim_status: `{_md_inline(meta.get('claim_status', outcome.status))}`",
         f"- verified_feasible: **{outcome.verified_feasible}**",
-        f"- verification_origin: `{meta.get('verification_origin', 'in_memory_result')}`",
+        (
+            "- verification_origin: "
+            f"`{_md_inline(meta.get('verification_origin', 'in_memory_result'))}`"
+        ),
         f"- hard_violations: {outcome.hard_violation_count}",
-        f"- claim_level: `{meta.get('claim_level', 'experiment')}`",
+        f"- claim_level: `{_md_inline(meta.get('claim_level', 'experiment'))}`",
         f"- iso16290_trl: `{meta.get('iso16290_trl', ISO16290_TRL)}`",
-        f"- data_provenance: `{meta.get('data_provenance', 'experiment')}`",
-        f"- input_hash: `{meta.get('input_hash', '')}`",
-        f"- config_hash: `{meta.get('config_hash', '')}`",
+        f"- data_provenance: `{_md_inline(meta.get('data_provenance', 'experiment'))}`",
+        f"- input_hash: `{_md_inline(meta.get('input_hash', ''))}`",
+        f"- config_hash: `{_md_inline(meta.get('config_hash', ''))}`",
         f"- frozen_assignments: {sum(fr.immutable for fr in outcome.frozen_assignments)}",
         f"- assignments: {len(outcome.schedule.assignments)}",
         f"- unscheduled_operations: {obj.unscheduled_operations}",
@@ -235,7 +245,7 @@ def _as_markdown(outcome: PlanOutcome) -> str:
         f"- unserved_critical_jobs: "
         f"{risk.get('unserved_critical_jobs', risk.get('unserved_critical_assets'))}",
         f"- critical_jobs_late: {risk.get('critical_jobs_late')}",
-        f"- note: {risk.get('claim_note', 'proxy only')}",
+        f"- note: {_md_inline(risk.get('claim_note', 'proxy only'))}",
         "",
         "## Violations",
         "",
@@ -248,14 +258,14 @@ def _as_markdown(outcome: PlanOutcome) -> str:
     gp = meta.get("gridplan_violations") or []
     engine = meta.get("engine_violations") or []
     for v in gp[:20]:
-        lines.append(f"- `{v.get('kind')}`: {v.get('message')}")
+        lines.append(f"- `{_md_inline(v.get('kind'))}`: {_md_inline(v.get('message'))}")
     if not gp:
         lines.append("- none recorded at GridPlan layer")
     lines.append("")
     if engine:
         lines.append("Engine (SynAPS) hard violations:")
         for v in engine[:20]:
-            lines.append(f"- `{v.get('kind')}`: {v.get('message')}")
+            lines.append(f"- `{_md_inline(v.get('kind'))}`: {_md_inline(v.get('message'))}")
     else:
         lines.append("Engine (SynAPS) hard violations: none")
     practice = meta.get("practice") or {}
@@ -269,8 +279,8 @@ def _as_markdown(outcome: PlanOutcome) -> str:
             "",
             *limit_lines,
             "",
-            f"- practice layer: `{layer}`",
-            f"- electrical_security: `{security}` (see PRACTICE.md).",
+            f"- practice layer: `{_md_inline(layer)}`",
+            f"- electrical_security: `{_md_inline(security)}` (see PRACTICE.md).",
             "",
             "## Next step recommendation",
             "",
@@ -279,5 +289,5 @@ def _as_markdown(outcome: PlanOutcome) -> str:
         ]
     )
     if meta.get("optimality_note"):
-        lines.extend(["", f"Optimality note: {meta['optimality_note']}", ""])
+        lines.extend(["", f"Optimality note: {_md_inline(meta['optimality_note'])}", ""])
     return "\n".join(lines)

@@ -68,7 +68,6 @@ impl PlanResult {
 
 fn parse_dt(raw: &str) -> Result<DateTime<Utc>, String> {
     DateTime::parse_from_rfc3339(raw)
-        .or_else(|_| DateTime::parse_from_rfc3339(&format!("{raw}Z")))
         .map(|dt| dt.with_timezone(&Utc))
         .map_err(|e| format!("datetime {raw}: {e}"))
 }

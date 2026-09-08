@@ -10,6 +10,7 @@ permissions: {}
 jobs:
   python:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     strategy:
@@ -41,13 +42,17 @@ jobs:
         run: |
           python -m pip install pip-audit
           pip-audit
-      - name: SBOM lockfile inventory is current
+      - name: Pattern secret scan
+        run: python scripts/scan_secrets.py
+      - name: Schema and SBOM inventories are current
         run: |
+          python scripts/export_pydantic_schema.py
           python scripts/export_sbom.py
-          git diff --exit-code -- sbom/
+          git diff --exit-code -- schemas/gridplan.pydantic.problem.json sbom/
 
   lockfile:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -64,6 +69,7 @@ jobs:
 
   rust:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     defaults:

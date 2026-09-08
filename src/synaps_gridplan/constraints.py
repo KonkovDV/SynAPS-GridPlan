@@ -13,6 +13,7 @@ from uuid import UUID
 
 from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
+from synaps_gridplan.adapter import legacy_window_frozen_assignments
 from synaps_gridplan.model import FrozenAssignment, GridPlanProblem, MaintenanceJob, SparePart
 
 
@@ -101,6 +102,15 @@ def check_gridplan_constraints(
             )
             continue
         crew = crews_by_id[crew_id]
+        if not _is_aware_instant(asn.start_time) or not _is_aware_instant(asn.end_time):
+            violations.append(
+                ConstraintViolation(
+                    kind="INVALID_ASSIGNMENT_TIME",
+                    message=(f"job {job.external_ref} assignment instants must be timezone-aware"),
+                    job_id=job_id,
+                )
+            )
+            continue
         required = set(job.required_qualifications)
         if required and not required.issubset(set(crew.qualifications)):
             violations.append(
@@ -200,9 +210,15 @@ def check_gridplan_constraints(
     violations.extend(_simultaneous_outage_ban_violations(problem, result, op_to_job, jobs_by_id))
 
     # Caller-provided repair locks may add obligations, never remove declared ПЛ locks.
+    locked_jobs = {
+        fr.job_id for fr in [*problem.frozen_assignments, *(expected_frozen or [])] if fr.immutable
+    }
+    window_locks = [
+        fr for fr in legacy_window_frozen_assignments(problem) if fr.job_id not in locked_jobs
+    ]
     frozen_by_placement = {
         (fr.job_id, fr.crew_id, fr.start, fr.end, fr.immutable): fr
-        for fr in [*problem.frozen_assignments, *(expected_frozen or [])]
+        for fr in [*problem.frozen_assignments, *(expected_frozen or []), *window_locks]
     }
     violations.extend(
         _frozen_violations(
@@ -247,14 +263,23 @@ def _calendar_row_bounds(row: Any) -> tuple[Any, Any]:
     return getattr(row, "start", None), getattr(row, "end", None)
 
 
+def _is_aware_instant(value: Any) -> bool:
+    return (
+        isinstance(value, datetime)
+        and value.tzinfo is not None
+        and value.tzinfo.utcoffset(value) is not None
+    )
+
+
 def _parse_calendar_instant(value: Any) -> datetime | None:
     if isinstance(value, datetime):
-        return value
+        return value if _is_aware_instant(value) else None
     if isinstance(value, str) and value:
         try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
         except ValueError:
             return None
+        return parsed if _is_aware_instant(parsed) else None
     return None
 
 
