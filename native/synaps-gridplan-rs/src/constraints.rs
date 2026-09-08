@@ -209,7 +209,10 @@ fn crew_overlap_violations(
     for (crew_id, rows) in by_crew {
         // Sweep-line: a violation is concurrency above max_parallel, not any
         // pairwise overlap (crews may field several technicians at once).
-        let max_parallel = crews_by_id.get(&crew_id).map(|c| c.max_parallel).unwrap_or(1);
+        let max_parallel = crews_by_id
+            .get(&crew_id)
+            .map(|c| c.max_parallel)
+            .unwrap_or(1);
         let mut events: Vec<(DateTime<Utc>, i64, Uuid)> = Vec::new();
         for a in &rows {
             events.push((a.start, 1, a.job_id));
