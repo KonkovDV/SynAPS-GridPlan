@@ -21,3 +21,13 @@ pub use synthetic::synthesize_feeder;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const SCHEMA_VERSION: &str = "gridplan.v1";
 pub const CLAIM_LEVEL: &str = "experiment";
+
+/// Known engine-only inputs that the native contour must not silently certify.
+/// An empty travel matrix is the explicit zero-travel assumption; no jobs need no travel.
+pub fn unsupported_native_constraints(problem: &GridPlanProblem) -> Vec<&'static str> {
+    if !problem.jobs.is_empty() && !problem.travel_minutes.is_empty() {
+        vec!["travel_minutes"]
+    } else {
+        vec![]
+    }
+}
