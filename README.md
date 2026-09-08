@@ -3,8 +3,8 @@
 Планировщик **ТОиР**: бригады, окна отключения, ЗИП, заморозка согласованных
 заявок ПЛ и явные запреты «эти два аппарата не должны быть отключены сразу».
 Поиск слотов — [SynAPS](https://github.com/KonkovDV/SynAPS). Проверка правил —
-отдельный fail-closed чекер на Python; Rust повторяет доменный слой,
-**но не весь чекер движка SynAPS**.
+отдельный fail-closed чекер на Python; Rust реализует доменный контур
+с целевыми тестами паритета, **но не весь чекер движка SynAPS**.
 
 [![CI main](https://github.com/KonkovDV/SynAPS-GridPlan/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/KonkovDV/SynAPS-GridPlan/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -19,6 +19,7 @@
 | Академия инноваторов, 10-й поток | [Подготовка заявки и проверенные условия](ACADEMY_APPLICATION.md) |
 | Исторический пакет другой программы | [APPLICATION.md](APPLICATION.md): «Марафон инноваций. Энергия будущего». PDF ещё не актуализирован для Академии. |
 | Практика | [PRACTICE.md](PRACTICE.md) |
+| Аудит и риски | [AUDIT.md](AUDIT.md): воспроизведения, CI, границы модели и выпускной gate |
 
 [Аудит и исправления — PR #12](https://github.com/KonkovDV/SynAPS-GridPlan/pull/12).
 Badge выше относится к `main`; актуальность аудита проверяйте по Checks PR
@@ -96,7 +97,7 @@ python -m pip install -e ".[dev]" --force-reinstall --no-deps
 | Аварийные сутки: синтетическая постановка с отдельными проверками ограничений | `tests/test_emergency_day.py`, `benchmark/results/emergency_day_report.md` |
 | Фидер 200 / 600 работ: GREED проверен, FIFO ломает окна | `tests/test_scale_feeder.py`, `benchmark/results/scale_report.md` |
 | Чекер ловит overlap, ЗИП, квалификации, короткую длительность | `tests/test_adversarial_*.py` |
-| Аудит заморозки, мутаций модели, ID-map, импорта, CSV и UTC | `tests/test_audit_regressions.py`, `tests/test_import_export_audit.py`, `tests/test_time_contract.py` |
+| Аудит заморозки, мутаций модели, ID-map, импорта, CSV и UTC | `tests/test_audit_regressions.py`, `tests/test_import_export_audit.py`, `tests/test_time_contract.py`, `tests/test_final_audit_guards.py` |
 
 РЭС «Северный» копирует **типы** оборудования и открытые нормы. Это не
 именованный участок Россети и не промышленные данные. Сохранённые отчёты —
@@ -121,9 +122,10 @@ python -m pytest -q -m "not slow"
 
 ## Контракт входа после аудита
 
-- Даты доменной модели требуют `Z` или явного смещения, например
-  `2026-09-01T09:00:00+03:00`. Они нормализуются в UTC с сохранением момента.
-  Локальное время без зоны отвергается; это намеренное ужесточение импорта.
+- ISO-даты передавайте с `Z` или явным смещением, например
+  `2026-09-01T09:00:00+03:00`. Распознанные aware-моменты доменной модели
+  нормализуются в UTC. Naive datetime без зоны отвергаются.
+  Pydantic-коэрции остаются: это не строгий ISO-only JSON Schema-контракт.
 - ID внутри каталогов уникальны; ссылки должны существовать. Мутации
   `model_copy(update=...)` повторно проверяются на границе компилятора и чекера.
 - `immutable:false` не закрепляет слот. Неизменяемую ПЛ нельзя отменить пустым
@@ -132,6 +134,8 @@ python -m pytest -q -m "not slow"
   матрице реальный маршрут A→B не заменяется маршрутом «база→B». Начальные/
   конечные поездки и индивидуальные маршруты при `max_parallel>1` требуют
   отдельного согласования модели; полноценный VRP здесь не заявлен.
+- Плотная setup-матрица проверяется до построения по upstream-лимиту
+  2 000 000 элементов. Это не полный бюджет JSON, CPU и памяти всего процесса.
 - `approved=true`, происхождение данных и TRL — не подпись, не независимая
   проверка источника и не регуляторный допуск.
 
@@ -153,7 +157,8 @@ python -m synaps_gridplan report result.json --format markdown
 
 `report` **не перепроверяет** сохранённый план. Импорт помечается
 `imported_snapshot_not_rechecked`. CSV экранирует формулоподобный текст;
-в JSON сохраняются исходные машинные значения. Это не подпись файла.
+JSON не добавляет этих CSV-префиксов. Типизированный рендеринг не обещает
+побайтовый JSON round trip. Это не подпись файла.
 
 Fail-closed на том же контуре (`--seed 42` → exit **2**, `ASSET_OVERLAP`):
 
@@ -193,6 +198,10 @@ cargo test --locked
 ```
 
 Границы и отдельные коды native CLI — в [native README](native/synaps-gridplan-rs/README.md).
+Для непустой задачи любая непустая `travel_minutes` блокирует native-подтверждение,
+даже если матрица заполнена нулями. Доменный verdict выдаётся отдельно;
+`engine_checked=false`. Неподдерживаемое ограничение — не доказанное нарушение
+и не сертификат невыполнимости. Не удаляйте реальные переезды ради зелёного флага.
 Native `check` не заменяет проверку всех ограничений движка Python.
 
 ## Дерево
@@ -203,6 +212,7 @@ native/synaps-gridplan-rs/  Rust: FIFO и доменные проверки
 schemas/                    JSON Schema (не замена семантической валидации)
 benchmark/                  РЭС / jury / аварийные сутки / масштаб
 tests/
+AUDIT.md                    доказательства аудита, границы и выпускной gate
 ACADEMY_APPLICATION.md      подготовка к 10-му потоку Академии
 APPLICATION.md              исторический пакет энергетического марафона
 PRACTICE.md                 мировая практика и границы
