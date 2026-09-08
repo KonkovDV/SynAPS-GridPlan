@@ -156,29 +156,31 @@ fn serde_rejects_unknown_enums_malformed_times_and_numeric_overflow() {
 }
 
 #[test]
-fn naive_calendar_windows_are_rejected_at_validate() {
-    let mut p = problem();
-    p.crews[0].availability = vec![json!({
+fn naive_calendar_windows_are_rejected_at_parse() {
+    let mut raw = serde_json::to_value(problem()).unwrap();
+    raw["crews"][0]["availability"] = json!([{
         "start": "2026-09-01T06:00:00",
         "end": "2026-09-01T08:00:00"
-    })];
-    assert!(p.validate_refs().is_err());
-    p.crews[0].availability = vec![json!({
+    }]);
+    assert!(serde_json::from_value::<GridPlanProblem>(raw).is_err());
+    let mut ok = serde_json::to_value(problem()).unwrap();
+    ok["crews"][0]["availability"] = json!([{
         "start": "2026-09-01T06:00:00Z",
         "end": "2026-09-01T08:00:00Z"
-    })];
+    }]);
+    let p: GridPlanProblem = serde_json::from_value(ok).unwrap();
     p.validate_refs().unwrap();
 }
 
 #[test]
 fn extra_calendar_fields_are_rejected() {
-    let mut p = problem();
-    p.crews[0].availability = vec![json!({
+    let mut raw = serde_json::to_value(problem()).unwrap();
+    raw["crews"][0]["availability"] = json!([{
         "start": "2026-09-01T06:00:00Z",
         "end": "2026-09-01T08:00:00Z",
         "always": true
-    })];
-    assert!(p.validate_refs().unwrap_err().contains("unknown field"));
+    }]);
+    assert!(serde_json::from_value::<GridPlanProblem>(raw).is_err());
 }
 
 #[test]
@@ -186,4 +188,20 @@ fn unknown_top_level_fields_are_rejected() {
     let mut raw = serde_json::to_value(problem()).unwrap();
     raw["unexpected"] = json!(true);
     assert!(serde_json::from_value::<GridPlanProblem>(raw).is_err());
+}
+
+#[test]
+fn unknown_nested_catalog_fields_are_rejected() {
+    let raw = serde_json::to_value(problem()).unwrap();
+    for catalog in ["assets", "crews", "jobs", "spare_parts", "outage_windows"] {
+        let mut bad = raw.clone();
+        bad[catalog][0]["unexpected"] = json!(true);
+        assert!(
+            serde_json::from_value::<GridPlanProblem>(bad).is_err(),
+            "{catalog}"
+        );
+    }
+    let mut risk = raw.clone();
+    risk["assets"][0]["risk"]["unexpected"] = json!(true);
+    assert!(serde_json::from_value::<GridPlanProblem>(risk).is_err());
 }

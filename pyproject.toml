@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "synaps-gridplan"
-version = "0.1.6"
+version = "0.1.7"
 description = "Deterministic maintenance scheduling contour for power-grid assets on SynAPS (experimental)"
 readme = "README.md"
 license = "MIT"
@@ -44,6 +44,7 @@ dev = [
   "pytest-timeout>=2.4",
   "ruff>=0.8",
   "mypy>=1.13",
+  "jsonschema>=4.23",
 ]
 
 [project.scripts]
@@ -101,7 +102,7 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests"]
+src = ["src", "tests", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

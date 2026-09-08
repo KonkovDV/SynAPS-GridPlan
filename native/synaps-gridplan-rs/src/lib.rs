@@ -6,14 +6,17 @@ pub mod constraints;
 pub mod fifo;
 pub mod fingerprint;
 pub mod ids;
+pub mod io;
 pub mod model;
 pub mod report;
+pub mod sanitize;
 pub mod schedule;
 pub mod synthetic;
 
 pub use constraints::{check_plan, merge_expected_frozen, Violation};
 pub use fifo::plan_fifo;
 pub use fingerprint::{fingerprint_payload, stable_digest, stable_int};
+pub use io::read_text_limited;
 pub use model::GridPlanProblem;
 pub use model::MAX_JSON_BYTES;
 pub use schedule::{assignments_from_python_cli, looks_like_python_cli_result, PlanResult};

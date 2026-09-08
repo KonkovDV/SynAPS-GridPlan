@@ -5,7 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
-use crate::model::{Asset, Crew, FrozenAssignment, GridPlanProblem, MaintenanceJob};
+use crate::model::{
+    Asset, Crew, CrewCalendarWindow, FrozenAssignment, GridPlanProblem, MaintenanceJob,
+};
 use crate::schedule::Assignment;
 use serde_json::Value;
 
@@ -669,42 +671,18 @@ fn frozen_violations(
     out
 }
 
-fn parse_calendar_instant(value: Option<&Value>) -> Option<DateTime<Utc>> {
-    let raw = value?;
-    let text = raw.as_str()?;
-    DateTime::parse_from_rfc3339(text)
-        .ok()
-        .map(|parsed| parsed.with_timezone(&Utc))
-}
-
 fn calendar_verdict(
-    rows: &[Value],
+    rows: &[CrewCalendarWindow],
     start: DateTime<Utc>,
     end: DateTime<Utc>,
 ) -> Option<&'static str> {
     if rows.is_empty() {
         return None;
     }
-    let mut parsed = Vec::new();
-    for row in rows {
-        let Some(obj) = row.as_object() else {
-            return Some("MALFORMED");
-        };
-        let Some(window_start) = parse_calendar_instant(obj.get("start")) else {
-            return Some("MALFORMED");
-        };
-        let Some(window_end) = parse_calendar_instant(obj.get("end")) else {
-            return Some("MALFORMED");
-        };
-        if window_end <= window_start {
-            return Some("MALFORMED");
-        }
-        parsed.push((window_start, window_end));
+    if rows.iter().any(|row| row.end <= row.start) {
+        return Some("MALFORMED");
     }
-    if parsed
-        .iter()
-        .any(|(window_start, window_end)| start >= *window_start && end <= *window_end)
-    {
+    if rows.iter().any(|row| start >= row.start && end <= row.end) {
         return None;
     }
     Some("OUTSIDE")

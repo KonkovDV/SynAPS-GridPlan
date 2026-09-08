@@ -3,7 +3,7 @@
 Experimental Rust contour: deterministic FIFO, domain-layer checks with targeted
 Python parity, fingerprints and a synthetic feeder. Optional bridge to Python GREED.
 
-Package version **0.1.6**.
+Package version **0.1.7**.
 GREED and the SynAPS engine checker are not implemented in this crate.
 
 ## Scope
@@ -97,7 +97,8 @@ leading whitespace/BOM, and leading tab/CR/LF) with an apostrophe. The protectio
 also covers metadata/preamble cells. JSON does not add these CSV safety prefixes
 to exported strings; typed rendering is not a byte-for-byte JSON round trip.
 This is not a general Markdown/HTML sanitizer or a guarantee for every spreadsheet
-application's behavior.
+application's behavior. Interpolated Markdown fields are flattened (newlines,
+backticks, angle brackets) so they cannot break surrounding markup.
 
 ## Kind names and parity
 

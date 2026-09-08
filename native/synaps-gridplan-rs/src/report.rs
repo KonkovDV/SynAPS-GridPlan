@@ -1,59 +1,50 @@
 //! Human/machine report renderers. Rendering is not a fresh verification.
 
+use crate::sanitize::display_text;
 use crate::schedule::PlanResult;
 
-fn md_inline(value: &str) -> String {
-    value.replace(['\r', '\n'], " ").replace('`', "'")
+fn md_meta(meta: &serde_json::Value, key: &str, default: &str) -> String {
+    display_text(meta.get(key).and_then(|v| v.as_str()).unwrap_or(default))
 }
 
 pub fn render_markdown(plan: &PlanResult) -> String {
     let meta = &plan.metadata;
+    let unsupported = meta
+        .get("unsupported_constraints")
+        .unwrap_or(&serde_json::Value::Null)
+        .to_string();
     let mut lines = vec![
         "# SynAPS-GridPlan (Rust) report".into(),
         String::new(),
         "> Rendering only: this report does not recheck the plan.".into(),
         String::new(),
-        format!("- schema: `{}`", plan.schema_version),
+        format!("- schema: `{}`", display_text(&plan.schema_version)),
         format!(
             "- gridplan_rs_version: `{}`",
-            meta.get("gridplan_rs_version")
-                .and_then(|v| v.as_str())
-                .unwrap_or("?")
+            md_meta(meta, "gridplan_rs_version", "?")
         ),
-        format!("- solver: `{}`", md_inline(&plan.solver_config)),
-        format!("- status: **{}**", md_inline(&plan.status)),
-        format!("- claim_status: `{}`", md_inline(&plan.claim_status)),
+        format!("- solver: `{}`", display_text(&plan.solver_config)),
+        format!("- status: **{}**", display_text(&plan.status)),
+        format!("- claim_status: `{}`", display_text(&plan.claim_status)),
         format!("- verified_feasible: **{}**", plan.verified_feasible),
         format!("- hard_violations: {}", plan.hard_violation_count),
         format!(
             "- verification_scope: `{}`",
-            meta.get("verification_scope")
-                .and_then(|v| v.as_str())
-                .unwrap_or("unknown")
+            md_meta(meta, "verification_scope", "unknown")
         ),
         format!(
             "- verification_origin: `{}`",
-            meta.get("verification_origin")
-                .and_then(|v| v.as_str())
-                .unwrap_or("unspecified")
+            md_meta(meta, "verification_origin", "unspecified")
         ),
         format!(
             "- unsupported_constraints: `{}`",
-            meta.get("unsupported_constraints")
-                .unwrap_or(&serde_json::Value::Null)
+            display_text(&unsupported)
         ),
         format!(
             "- claim_level: `{}`",
-            meta.get("claim_level")
-                .and_then(|v| v.as_str())
-                .unwrap_or("experiment")
+            md_meta(meta, "claim_level", "experiment")
         ),
-        format!(
-            "- input_hash: `{}`",
-            meta.get("input_hash")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-        ),
+        format!("- input_hash: `{}`", md_meta(meta, "input_hash", "")),
         format!("- assignments: {}", plan.assignments.len()),
         String::new(),
         "## Objective".into(),
@@ -77,8 +68,8 @@ pub fn render_markdown(plan: &PlanResult) -> String {
         for v in plan.violations.iter().take(20) {
             lines.push(format!(
                 "- `{}`: {}",
-                md_inline(&v.kind),
-                md_inline(&v.message)
+                display_text(&v.kind),
+                display_text(&v.message)
             ));
         }
     }

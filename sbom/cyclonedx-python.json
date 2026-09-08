@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "synaps-gridplan",
-      "version": "0.1.6"
+      "version": "0.1.7"
     }
   },
   "components": [
