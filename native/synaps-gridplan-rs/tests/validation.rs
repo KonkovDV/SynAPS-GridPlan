@@ -18,7 +18,10 @@ fn supported_versions_and_empty_workload_remain_valid() {
     p.jobs.clear();
     p.validate_refs().unwrap();
     p.schema_version = "gridplan.future".into();
-    assert!(p.validate_refs().unwrap_err().contains("unsupported schema"));
+    assert!(p
+        .validate_refs()
+        .unwrap_err()
+        .contains("unsupported schema"));
 }
 
 #[test]

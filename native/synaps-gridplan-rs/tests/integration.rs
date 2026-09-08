@@ -321,7 +321,9 @@ fn plan_cannot_remove_or_redefine_problem_freeze() {
         assert_eq!(violations[0].kind, "FROZEN_ASSIGNMENT_CONFLICT");
     }
     let violations = check_plan(&p, &[], &[]);
-    assert!(violations.iter().any(|v| v.kind == "FROZEN_ASSIGNMENT_CONFLICT"));
+    assert!(violations
+        .iter()
+        .any(|v| v.kind == "FROZEN_ASSIGNMENT_CONFLICT"));
 }
 
 #[test]
@@ -363,5 +365,7 @@ fn direct_checker_rejects_negative_setup_and_invalid_extra_freeze() {
     fr.immutable = false;
     fr.crew_id = Uuid::nil();
     let violations = check_plan(&p, &[a], &[fr]);
-    assert!(violations.iter().any(|v| v.kind == "INVALID_FROZEN_ASSIGNMENT"));
+    assert!(violations
+        .iter()
+        .any(|v| v.kind == "INVALID_FROZEN_ASSIGNMENT"));
 }
