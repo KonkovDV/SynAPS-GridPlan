@@ -270,7 +270,10 @@ impl GridPlanProblem {
         let frozen_ids: HashSet<_> = self.frozen_assignments.iter().map(|f| f.job_id).collect();
         let mut issues = Vec::new();
         if !matches!(self.schema_version.as_str(), "gridplan.v1" | "gridplan.v2") {
-            issues.push(format!("unsupported schema_version {}", self.schema_version));
+            issues.push(format!(
+                "unsupported schema_version {}",
+                self.schema_version
+            ));
         }
         for (kind, total, unique) in [
             ("asset", self.assets.len(), asset_ids.len()),
@@ -278,8 +281,16 @@ impl GridPlanProblem {
             ("job", self.jobs.len(), job_ids.len()),
             ("spare", self.spare_parts.len(), spare_ids.len()),
             ("outage window", self.outage_windows.len(), window_ids.len()),
-            ("outage ban", self.simultaneous_outage_bans.len(), ban_ids.len()),
-            ("frozen job", self.frozen_assignments.len(), frozen_ids.len()),
+            (
+                "outage ban",
+                self.simultaneous_outage_bans.len(),
+                ban_ids.len(),
+            ),
+            (
+                "frozen job",
+                self.frozen_assignments.len(),
+                frozen_ids.len(),
+            ),
         ] {
             if total != unique {
                 issues.push(format!("duplicate {kind} id"));
@@ -344,7 +355,11 @@ impl GridPlanProblem {
             if window.end <= window.start {
                 issues.push("outage window invalid interval".into());
             }
-            for id in window.allowed_job_ids.iter().chain(&window.forbidden_job_ids) {
+            for id in window
+                .allowed_job_ids
+                .iter()
+                .chain(&window.forbidden_job_ids)
+            {
                 if !job_ids.contains(id) {
                     issues.push("outage window unknown job".into());
                 }
