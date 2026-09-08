@@ -65,8 +65,14 @@ fn csv_protects_preamble_and_assignment_cells() {
         p.verified_feasible = false;
         p.metadata = json!({"claim_level": raw, "input_hash": raw});
         let csv = render_csv(&p);
-        assert!(csv.contains(&format!("# claim_level,{encoded}\n")), "{csv:?}");
-        assert!(csv.contains(&format!("# input_hash,{encoded}\n")), "{csv:?}");
+        assert!(
+            csv.contains(&format!("# claim_level,{encoded}\n")),
+            "{csv:?}"
+        );
+        assert!(
+            csv.contains(&format!("# input_hash,{encoded}\n")),
+            "{csv:?}"
+        );
         assert!(csv.contains(&format!("# status,{encoded}\n")), "{csv:?}");
         assert!(csv.ends_with(&format!(",{encoded},{encoded}\n")), "{csv:?}");
     }

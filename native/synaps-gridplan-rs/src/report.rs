@@ -124,9 +124,7 @@ pub fn render_csv(plan: &PlanResult) -> String {
         "# unsupported_constraints,{}\n",
         csv_cell(&unsupported)
     ));
-    out.push_str(
-        "# verification_note,Rendering only: this report does not recheck the plan.\n",
-    );
+    out.push_str("# verification_note,Rendering only: this report does not recheck the plan.\n");
     out.push_str(&format!("# status,{}\n", csv_cell(&plan.status)));
     out.push_str(&format!("# verified_feasible,{}\n", plan.verified_feasible));
     out.push_str("job_id,crew_id,start,end,setup_minutes,status,source\n");
