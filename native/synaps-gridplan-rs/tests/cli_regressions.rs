@@ -132,7 +132,10 @@ fn check_preserves_mandatory_problem_freeze_against_plan_override() {
         let output = check(&p, &plan);
         assert_rejected(&output, 2);
         let payload: Value = serde_json::from_slice(&output.stdout).unwrap();
-        assert_eq!(payload["violations"][0]["kind"], "FROZEN_ASSIGNMENT_CONFLICT");
+        assert_eq!(
+            payload["violations"][0]["kind"],
+            "FROZEN_ASSIGNMENT_CONFLICT"
+        );
     }
 }
 

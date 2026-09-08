@@ -77,7 +77,10 @@ fn setup_requires_a_nonnegative_i32_instead_of_defaulting_or_wrapping() {
         assert!(assignments_from_python_cli(&p).is_err(), "{p}");
     }
     let mut p = payload();
-    assert_eq!(assignments_from_python_cli(&p).unwrap().0[0].setup_minutes, 0);
+    assert_eq!(
+        assignments_from_python_cli(&p).unwrap().0[0].setup_minutes,
+        0
+    );
     p["schedule"]["assignments"][0]["setup_minutes"] = json!(i32::MAX);
     assert_eq!(
         assignments_from_python_cli(&p).unwrap().0[0].setup_minutes,
