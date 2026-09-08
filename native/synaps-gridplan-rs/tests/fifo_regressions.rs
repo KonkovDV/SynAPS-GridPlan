@@ -93,5 +93,8 @@ fn chrono_upper_bound_cannot_panic_or_clip_duration() {
     assert!(!result.verified_feasible);
     assert!(result.assignments.is_empty());
     assert_eq!(result.objective.unscheduled_operations, 1);
-    assert!(result.violations.iter().any(|v| v.kind == "UNSCHEDULED_JOB"));
+    assert!(result
+        .violations
+        .iter()
+        .any(|v| v.kind == "UNSCHEDULED_JOB"));
 }

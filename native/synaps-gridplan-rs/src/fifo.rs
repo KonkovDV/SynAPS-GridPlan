@@ -115,7 +115,8 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
                 .unwrap_or(&problem.planning_horizon_start);
             let release = job.release_date.unwrap_or(problem.planning_horizon_start);
             let start = free_at.max(release).max(problem.planning_horizon_start);
-            let Some(end) = start.checked_add_signed(Duration::minutes(i64::from(job.duration_min)))
+            let Some(end) =
+                start.checked_add_signed(Duration::minutes(i64::from(job.duration_min)))
             else {
                 continue;
             };
@@ -137,7 +138,8 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
             }
         }
         if let Some((crew_id, start)) = best {
-            let Some(end) = start.checked_add_signed(Duration::minutes(i64::from(job.duration_min)))
+            let Some(end) =
+                start.checked_add_signed(Duration::minutes(i64::from(job.duration_min)))
             else {
                 continue;
             };
@@ -152,8 +154,8 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
         }
     }
 
-    let unscheduled = i32::try_from(problem.jobs.len().saturating_sub(assignments.len()))
-        .unwrap_or(i32::MAX);
+    let unscheduled =
+        i32::try_from(problem.jobs.len().saturating_sub(assignments.len())).unwrap_or(i32::MAX);
     let coverage = if problem.jobs.is_empty() {
         1.0
     } else {
