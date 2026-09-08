@@ -12,7 +12,7 @@ use crate::constraints::{check_plan, Violation};
 use crate::fingerprint::fingerprint_payload;
 use crate::model::GridPlanProblem;
 use crate::schedule::{Assignment, ObjectiveSnapshot, PlanResult};
-use crate::{CLAIM_LEVEL, SCHEMA_VERSION, VERSION};
+use crate::{unsupported_native_constraints, CLAIM_LEVEL, SCHEMA_VERSION, VERSION};
 
 pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
     if let Err(message) = problem.validate_refs() {
@@ -181,10 +181,12 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
     }
 
     let violations = check_plan(problem, &assignments, &problem.frozen_assignments);
+    let domain_verified_feasible = violations.is_empty();
+    let unsupported_constraints = unsupported_native_constraints(problem);
     // Empty instance (zero jobs) is vacuously feasible, not a solver failure.
     let status = if assignments.is_empty() && !problem.jobs.is_empty() {
         "infeasible"
-    } else if violations.is_empty() {
+    } else if domain_verified_feasible && unsupported_constraints.is_empty() {
         "feasible"
     } else {
         "error"
@@ -227,6 +229,10 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
                 .unwrap_or(json!("synthetic")),
             "gridplan_rs_version": VERSION,
             "baseline": "calendar_fifo_earliest_due",
+            "verification_scope": "gridplan_domain",
+            "engine_checked": false,
+            "domain_verified_feasible": domain_verified_feasible,
+            "unsupported_constraints": unsupported_constraints,
             "metric_tag": "synthetic_experiment",
             "input_hash": input_hash,
             "config_hash": config_hash,

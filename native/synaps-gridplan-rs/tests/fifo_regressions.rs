@@ -10,6 +10,8 @@ fn problem() -> GridPlanProblem {
     p.jobs[0].spare_part_ids.clear();
     p.jobs[0].required_qualifications.clear();
     p.jobs[0].release_date = None;
+    // Domain scheduling fixture; travel rejection is covered in travel_scope.rs.
+    p.travel_minutes.clear();
     p
 }
 
