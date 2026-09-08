@@ -8,6 +8,17 @@ use uuid::Uuid;
 
 use crate::SCHEMA_VERSION;
 
+pub const MAX_JSON_BYTES: u64 = 32 * 1024 * 1024;
+const MAX_ASSETS: usize = 20_000;
+const MAX_CREWS: usize = 5_000;
+const MAX_JOBS: usize = 20_000;
+const MAX_WINDOWS: usize = 50_000;
+const MAX_SPARES: usize = 20_000;
+const MAX_FROZEN: usize = 20_000;
+const MAX_BANS: usize = 50_000;
+const MAX_TRAVEL_ENTRIES: usize = 2_000_000;
+const MAX_CALENDAR_ROWS: usize = 10_000;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum Criticality {
@@ -311,6 +322,31 @@ impl GridPlanProblem {
             if crew.max_parallel < 1 {
                 issues.push(format!("crew {} invalid max_parallel", crew.code));
             }
+            validate_calendar_rows(
+                &crew.shift_calendar,
+                &crew.code,
+                "shift_calendar",
+                &mut issues,
+            );
+            validate_calendar_rows(&crew.availability, &crew.code, "availability", &mut issues);
+        }
+        for (kind, total, limit) in [
+            ("assets", self.assets.len(), MAX_ASSETS),
+            ("crews", self.crews.len(), MAX_CREWS),
+            ("jobs", self.jobs.len(), MAX_JOBS),
+            ("outage windows", self.outage_windows.len(), MAX_WINDOWS),
+            ("spares", self.spare_parts.len(), MAX_SPARES),
+            ("frozen jobs", self.frozen_assignments.len(), MAX_FROZEN),
+            ("outage bans", self.simultaneous_outage_bans.len(), MAX_BANS),
+            (
+                "travel entries",
+                self.travel_minutes.len(),
+                MAX_TRAVEL_ENTRIES,
+            ),
+        ] {
+            if total > limit {
+                issues.push(format!("{kind} count {total} exceeds lab limit {limit}"));
+            }
         }
         for spare in &self.spare_parts {
             let available = spare.available_quantity.unwrap_or(spare.stock_qty);
@@ -391,6 +427,35 @@ impl GridPlanProblem {
             Ok(())
         } else {
             Err(issues[..issues.len().min(20)].join("; "))
+        }
+    }
+}
+
+fn validate_calendar_rows(rows: &[Value], crew: &str, name: &str, issues: &mut Vec<String>) {
+    if rows.len() > MAX_CALENDAR_ROWS {
+        issues.push(format!(
+            "crew {crew} {name} exceeds {MAX_CALENDAR_ROWS} rows"
+        ));
+        return;
+    }
+    for (index, row) in rows.iter().enumerate() {
+        let Some(obj) = row.as_object() else {
+            issues.push(format!("crew {crew} {name}[{index}] must be an object"));
+            continue;
+        };
+        let start = obj
+            .get("start")
+            .and_then(Value::as_str)
+            .and_then(|text| DateTime::parse_from_rfc3339(text).ok());
+        let end = obj
+            .get("end")
+            .and_then(Value::as_str)
+            .and_then(|text| DateTime::parse_from_rfc3339(text).ok());
+        match (start, end) {
+            (Some(start), Some(end)) if end > start => {}
+            _ => issues.push(format!(
+                "crew {crew} {name}[{index}] needs RFC3339 start/end with offset"
+            )),
         }
     }
 }

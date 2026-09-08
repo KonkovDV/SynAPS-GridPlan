@@ -1,38 +1,45 @@
 # Changelog
 
-## Unreleased audit — 2026-09-07/08
+## 0.1.5 — 2026-09-08
 
-Reviewable changes in [PR #12](https://github.com/KonkovDV/SynAPS-GridPlan/pull/12),
-including the native audit from PR #13. No merge into `main`, version bump or new
-release tag was performed. Evidence and remaining release gates: [AUDIT.md](AUDIT.md).
+Fail-closed audit from [PR #12](https://github.com/KonkovDV/SynAPS-GridPlan/pull/12) /
+[PR #13](https://github.com/KonkovDV/SynAPS-GridPlan/pull/13), plus the remaining
+closable release gates. SynAPS pin remains
+[`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169).
+Self-assessed ISO 16290 TRL 4. Not a plant pilot.
 
-### Stricter contracts and fixes
+### Breaking input contracts (migration)
 
-- Validate catalog identity, references and version labels at use boundaries;
-  malformed/incomplete/non-injective ID maps must not erase work from checking.
-- Intersect clearance windows with release/latest bounds. Preserve all immutable
-  problem commitments through plan import, checking, disruption and diffing;
-  advisory freezes are not hard locks.
-- Recompile the current problem for repair, keep the base unmodified and disclose
-  the actual `INCREMENTAL_REPAIR` engine. Unsupported custom repair labels fail.
-- Reject naive domain datetimes and normalize aware instants to UTC. Pydantic
-  coercions still exist; this is not a complete strict JSON Schema contract.
-- Require actual site-to-site travel in nonempty matrices; reject oversized dense
-  setup matrices before constructing them using the pinned upstream limit.
-- Native FIFO/check now distinguish domain feasibility from verification scope.
-  Any nonempty travel matrix prevents native verification for a nonempty workload,
-  including all-zero matrices. Empty travel is an explicit zero-travel assumption.
-- Harden native ranges, temporal arithmetic, frozen/setup parsing and UUID maps.
-- Reject contradictory positive saved-result flags; label imported reports as
-  snapshots, not new checks. Quote CSV cells and mitigate formula-like prefixes,
-  including metadata/preamble fields. JSON does not add CSV safety prefixes.
-- Gate positive jury-demo claims on actual results; document limited compiled-model
-  optimality, synthetic data, self-assessed TRL and absent industrial validation.
+- Domain instants must be ISO-8601 **with offset** (`Z` or `+03:00`). Unix
+  timestamps, booleans and naive local datetimes are rejected, including crew
+  `shift_calendar` / `availability`.
+- Unknown JSON fields on GridPlan documents are rejected. Extensions belong in
+  `domain_attributes`.
+- A nonempty `travel_minutes` map must contain the actual site-to-site leg;
+  missing A→B is not replaced by home→B. Empty map remains explicit zero travel.
+- Native FIFO/`check` will not set overall `verified_feasible` when travel is
+  present on a nonempty workload, including an all-zero matrix.
+- `report` is rendering only. Re-verification is `python -m synaps_gridplan check PROBLEM RESULT`.
+- Lab size quotas apply to JSON files and catalog counts. They are not capacity SLAs.
 
-Historical entries below describe earlier release claims, not fresh evidence for
-an arbitrary revision. Current applicability corrections are in README/AUDIT;
-ISO 16290 TRL is self-assessed and the existing PDF was not reviewed or regenerated
-by this audit.
+### Verification and repair
+
+- Incomplete, non-injective or mutated ID maps cannot erase work from checking.
+- Immutable ПЛ rows survive import, check, disruption and diff; `immutable:false`
+  is not a hard lock. Repair recompiles the current problem and names
+  `INCREMENTAL_REPAIR`.
+- Clearance windows intersect release/latest. Setup matrices are sized against
+  the upstream 2 000 000-entry cap before allocation.
+- Solve payloads may embed `problem` so `check` can detect a swapped constraint set.
+- Jury, emergency-day and scale demos exit 2 unless their positive claims hold.
+
+### Supply chain and docs
+
+- CI runs mypy (package), pip-audit on the installed tree, cargo-audit, and a
+  lockfile CycloneDX inventory under `sbom/`. That is not a complete SSDF
+  attestation, secret scan or license legal opinion.
+- `AUDIT.md` and `ACADEMY_APPLICATION.md` record remaining gates: kernel review,
+  authenticated provenance, shadow-pilot, Academy IP/rubric, PDF regeneration.
 
 ## 0.1.4 — 2026-09-04
 
@@ -58,4 +65,3 @@ ISO 16290 TRL 4. Not a plant pilot.
 - Generic feeder ``medium``/``stress`` (200/600 jobs): GREED verifies; FIFO
   does not. 50k engine runs are a different domain.
 - Contest pitch: ``SynAPS-GridPlan.pdf``. Honest limits in ``APPLICATION.md``.
-

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import UUID, uuid5
 
 from synaps.model import (
@@ -19,7 +19,13 @@ from synaps.model import (
     WorkCenter,
 )
 
-from synaps_gridplan.model import Asset, FrozenAssignment, GridPlanProblem, MaintenanceJob
+from synaps_gridplan.model import (
+    Asset,
+    FrozenAssignment,
+    GridPlanProblem,
+    MaintenanceJob,
+    OutageWindow,
+)
 from synaps_gridplan.risk import job_priority
 
 _NS = UUID("0f1e2d3c-4b5a-6978-90ab-cdef01234567")
@@ -71,7 +77,9 @@ def _lookup_travel_minutes(
     raise ValueError(f"travel_minutes missing for {from_loc}|{to_loc} (crew home {home})")
 
 
-def _approved_outage_windows(job: MaintenanceJob, windows: list) -> list:
+def _approved_outage_windows(
+    job: MaintenanceJob, windows: list[OutageWindow]
+) -> list[OutageWindow]:
     return [
         window
         for window in windows
@@ -81,7 +89,9 @@ def _approved_outage_windows(job: MaintenanceJob, windows: list) -> list:
     ]
 
 
-def _job_clearance_bounds(job: MaintenanceJob, windows: list) -> tuple:
+def _job_clearance_bounds(
+    job: MaintenanceJob, windows: list[OutageWindow]
+) -> tuple[datetime | None, datetime | None]:
     """Intersect a clearance with the job's hard bounds; due date stays soft.
 
     Choose the earliest individually fitting approved window. This is a
@@ -325,7 +335,7 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
         skill_resources.append(aux)
         id_map[f"skill:{skill}"] = aux.id
 
-    windows_by_asset: dict[UUID, list] = defaultdict(list)
+    windows_by_asset: dict[UUID, list[OutageWindow]] = defaultdict(list)
     for window in problem.outage_windows:
         windows_by_asset[window.asset_id].append(window)
 
@@ -340,8 +350,8 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
 
         release = head.release_date
         due = head.due_date
-        union_starts: list = []
-        union_ends: list = []
+        union_starts: list[datetime] = []
+        union_ends: list[datetime] = []
         for job in chain:
             earliest, latest = _job_clearance_bounds(job, windows_by_asset.get(job.asset_id, []))
             if earliest is not None:

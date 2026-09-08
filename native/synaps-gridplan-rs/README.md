@@ -3,7 +3,7 @@
 Experimental Rust contour: deterministic FIFO, domain-layer checks with targeted
 Python parity, fingerprints and a synthetic feeder. Optional bridge to Python GREED.
 
-Package version **0.1.4**; audit-branch changes are unreleased.
+Package version **0.1.5**.
 GREED and the SynAPS engine checker are not implemented in this crate.
 
 ## Scope
@@ -21,7 +21,8 @@ GREED and the SynAPS engine checker are not implemented in this crate.
 
 ### Verification contract
 
-`check` reports `verification_scope="gridplan_domain"` and `engine_checked=false`.
+`check` reports `verification_scope="gridplan_domain"`,
+`verification_origin="independent_recheck"` and `engine_checked=false`.
 `domain_verified_feasible` describes the domain checker only. `verified_feasible`
 is additionally false when `unsupported_constraints` is nonempty.
 

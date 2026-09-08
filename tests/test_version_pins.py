@@ -101,6 +101,19 @@ def test_cli_version_prints_pin(capsys: pytest.CaptureFixture[str]) -> None:
     assert "source " in out
 
 
+def test_sbom_inventory_matches_declared_version() -> None:
+    python_bom = json.loads(
+        (REPO_ROOT / "sbom" / "cyclonedx-python.json").read_text(encoding="utf-8")
+    )
+    native_bom = json.loads(
+        (REPO_ROOT / "sbom" / "cyclonedx-native.json").read_text(encoding="utf-8")
+    )
+    assert python_bom["metadata"]["component"]["version"] == GRIDPLAN_VERSION
+    assert native_bom["metadata"]["component"]["version"] == GRIDPLAN_VERSION
+    synaps = next(c for c in python_bom["components"] if c["name"] == "synaps")
+    assert synaps["version"] == SYNAPS_COMMIT
+
+
 def test_installed_synaps_git_commit_matches_pin() -> None:
     raw = importlib.metadata.distribution("synaps").read_text("direct_url.json")
     if raw is None:

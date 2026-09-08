@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from synaps_gridplan.model import (
     Asset,
@@ -52,7 +53,7 @@ def _crew(seed: int, tag: str, code: str, quals: list[str], loc: str) -> Crew:
     )
 
 
-def _window(seed: int, tag: str, asset_id, day: int, hours: int = 14) -> OutageWindow:
+def _window(seed: int, tag: str, asset_id: UUID, day: int, hours: int = 14) -> OutageWindow:
     start = _T0 + timedelta(days=day, hours=1)
     return OutageWindow(
         id=_uid(seed, "hall-window", tag),

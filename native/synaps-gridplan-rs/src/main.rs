@@ -16,7 +16,7 @@ use synaps_gridplan_rs::schedule::{
     PlanResult,
 };
 use synaps_gridplan_rs::synthetic::synthesize_feeder;
-use synaps_gridplan_rs::{unsupported_native_constraints, VERSION};
+use synaps_gridplan_rs::{unsupported_native_constraints, MAX_JSON_BYTES, VERSION};
 
 #[derive(Parser, Debug)]
 #[command(name = "synaps-gridplan-rs", version = VERSION)]
@@ -79,6 +79,17 @@ fn main() -> ExitCode {
     }
 }
 
+fn read_json_text(path: &PathBuf) -> Result<String, String> {
+    let size = fs::metadata(path).map_err(|e| e.to_string())?.len();
+    if size > MAX_JSON_BYTES {
+        return Err(format!(
+            "{} is {size} bytes; limit is {MAX_JSON_BYTES}",
+            path.display()
+        ));
+    }
+    fs::read_to_string(path).map_err(|e| e.to_string())
+}
+
 fn run(cli: Cli) -> Result<ExitCode, String> {
     match cli.command {
         Commands::Synthesize { mode, seed, output } => {
@@ -94,7 +105,7 @@ fn run(cli: Cli) -> Result<ExitCode, String> {
             output,
         } => match engine {
             Engine::Fifo => {
-                let raw = fs::read_to_string(&input).map_err(|e| e.to_string())?;
+                let raw = read_json_text(&input)?;
                 let problem: GridPlanProblem =
                     serde_json::from_str(&raw).map_err(|e| e.to_string())?;
                 problem.validate_refs()?;
@@ -115,8 +126,7 @@ fn run(cli: Cli) -> Result<ExitCode, String> {
         },
         Commands::Check { problem, plan } => {
             let problem: GridPlanProblem =
-                serde_json::from_str(&fs::read_to_string(&problem).map_err(|e| e.to_string())?)
-                    .map_err(|e| e.to_string())?;
+                serde_json::from_str(&read_json_text(&problem)?).map_err(|e| e.to_string())?;
             problem.validate_refs()?;
             let (assignments, plan_frozen) = load_assignments_flexible(&plan)?;
             // The checker always includes mandatory problem commitments.
@@ -128,6 +138,7 @@ fn run(cli: Cli) -> Result<ExitCode, String> {
                 "verified_feasible": verified_feasible,
                 "domain_verified_feasible": domain_verified_feasible,
                 "verification_scope": "gridplan_domain",
+                "verification_origin": "independent_recheck",
                 "engine_checked": false,
                 "unsupported_constraints": unsupported_constraints,
                 "hard_violation_count": violations.len(),
@@ -144,8 +155,7 @@ fn run(cli: Cli) -> Result<ExitCode, String> {
         }
         Commands::Report { input, format } => {
             let mut plan: PlanResult =
-                serde_json::from_str(&fs::read_to_string(&input).map_err(|e| e.to_string())?)
-                    .map_err(|e| e.to_string())?;
+                serde_json::from_str(&read_json_text(&input)?).map_err(|e| e.to_string())?;
             if plan.verified_feasible && !plan.ok() {
                 return Err("saved plan has contradictory verification flags".into());
             }
@@ -175,7 +185,7 @@ fn run(cli: Cli) -> Result<ExitCode, String> {
 fn load_assignments_flexible(
     path: &PathBuf,
 ) -> Result<(Vec<Assignment>, Vec<FrozenAssignment>), String> {
-    let raw = fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let raw = read_json_text(path)?;
     let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
     if looks_like_python_cli_result(&v) {
         return assignments_from_python_cli(&v);

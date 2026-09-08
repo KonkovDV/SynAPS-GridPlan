@@ -154,3 +154,18 @@ fn serde_rejects_unknown_enums_malformed_times_and_numeric_overflow() {
         );
     }
 }
+
+#[test]
+fn naive_calendar_windows_are_rejected_at_validate() {
+    let mut p = problem();
+    p.crews[0].availability = vec![json!({
+        "start": "2026-09-01T06:00:00",
+        "end": "2026-09-01T08:00:00"
+    })];
+    assert!(p.validate_refs().is_err());
+    p.crews[0].availability = vec![json!({
+        "start": "2026-09-01T06:00:00Z",
+        "end": "2026-09-01T08:00:00Z"
+    })];
+    p.validate_refs().unwrap();
+}

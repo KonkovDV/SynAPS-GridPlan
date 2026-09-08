@@ -14,7 +14,7 @@ from synaps.solvers.router import SolveRegime
 from synaps_gridplan.adapter import compile_frozen_assignments, to_schedule_problem
 from synaps_gridplan.constraints import check_gridplan_constraints
 from synaps_gridplan.fingerprint import fingerprint_payload
-from synaps_gridplan.model import SCHEMA_VERSION, FrozenAssignment, GridPlanProblem
+from synaps_gridplan.model import FrozenAssignment, GridPlanProblem
 from synaps_gridplan.practice import practice_snapshot
 from synaps_gridplan.risk_metrics import compute_risk_metrics
 from synaps_gridplan.versions import GRIDPLAN_VERSION, ISO16290_TRL, SYNAPS_COMMIT
@@ -119,7 +119,7 @@ def replan_after_disruption(
     live_job_ids = {job.id for job in problem.jobs}
     if compiled_job_ids != live_job_ids:
         return PlanOutcome(
-            schema_version=SCHEMA_VERSION,
+            schema_version=problem.schema_version,
             solver_config=f"repair:{solver_config}",
             status=SolverStatus.ERROR.value,
             verified_feasible=False,
@@ -153,7 +153,7 @@ def replan_after_disruption(
     unknown_disrupted = set(disrupted_job_ids) - live_job_ids
     if not disrupted_op_ids or unknown_disrupted:
         return PlanOutcome(
-            schema_version=SCHEMA_VERSION,
+            schema_version=problem.schema_version,
             solver_config=f"repair:{solver_config}",
             status=SolverStatus.ERROR.value,
             verified_feasible=False,
@@ -228,7 +228,7 @@ def replan_after_disruption(
         )
     except PortfolioValidationError as exc:
         return PlanOutcome(
-            schema_version=SCHEMA_VERSION,
+            schema_version=problem.schema_version,
             solver_config=f"repair:{solver_config}",
             status=SolverStatus.ERROR.value,
             verified_feasible=False,
@@ -258,6 +258,67 @@ def replan_after_disruption(
             "radius": radius,
             "disrupted_job_ids": [str(x) for x in disrupted_job_ids],
         },
+    )
+
+
+def recheck_plan(
+    problem: GridPlanProblem,
+    schedule: ScheduleResult,
+    *,
+    id_map: dict[str, UUID] | None = None,
+    frozen_assignments: list[FrozenAssignment] | None = None,
+    solver_config: str = "recheck",
+) -> PlanOutcome:
+    """Independently re-check a candidate against the current problem.
+
+    Saved ``verified_feasible`` flags are ignored. The compiled model is rebuilt
+    from ``problem``; a stale or weakened ``schedule_problem`` is not trusted.
+    """
+
+    schedule_problem, live_map = to_schedule_problem(problem)
+    if id_map is not None and id_map != live_map:
+        return PlanOutcome(
+            schema_version=problem.schema_version,
+            solver_config=solver_config,
+            status=SolverStatus.ERROR.value,
+            verified_feasible=False,
+            schedule=schedule,
+            schedule_problem=schedule_problem,
+            id_map=live_map,
+            hard_violation_count=0,
+            metadata={
+                "error": "id_map_diverged_from_recompiled_problem",
+                "verification_origin": "independent_recheck",
+            },
+            frozen_assignments=tuple(
+                frozen_assignments if frozen_assignments is not None else problem.frozen_assignments
+            ),
+        )
+    expected_frozen = list(
+        frozen_assignments if frozen_assignments is not None else problem.frozen_assignments
+    )
+    outcome = _wrap(
+        schedule,
+        live_map,
+        solver_config,
+        schedule_problem,
+        problem,
+        expected_frozen=expected_frozen,
+        kwargs_for_hash={"verification_origin": "independent_recheck"},
+    )
+    meta = dict(outcome.metadata)
+    meta["verification_origin"] = "independent_recheck"
+    return PlanOutcome(
+        schema_version=outcome.schema_version,
+        solver_config=outcome.solver_config,
+        status=outcome.status,
+        verified_feasible=outcome.verified_feasible,
+        schedule=outcome.schedule,
+        schedule_problem=outcome.schedule_problem,
+        id_map=outcome.id_map,
+        hard_violation_count=outcome.hard_violation_count,
+        metadata=meta,
+        frozen_assignments=outcome.frozen_assignments,
     )
 
 
@@ -319,7 +380,7 @@ def _wrap(
     meta = dict(result.metadata or {})
     meta.update(
         {
-            "gridplan_schema_version": SCHEMA_VERSION,
+            "gridplan_schema_version": problem.schema_version,
             "gridplan_version": GRIDPLAN_VERSION,
             "synaps_commit": SYNAPS_COMMIT,
             "input_hash": input_hash,
@@ -350,7 +411,7 @@ def _wrap(
     )
 
     return PlanOutcome(
-        schema_version=SCHEMA_VERSION,
+        schema_version=problem.schema_version,
         solver_config=solver_config,
         status=status,
         verified_feasible=verified,

@@ -13,7 +13,7 @@ from uuid import UUID
 
 from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
-from synaps_gridplan.model import FrozenAssignment, GridPlanProblem, MaintenanceJob
+from synaps_gridplan.model import FrozenAssignment, GridPlanProblem, MaintenanceJob, SparePart
 
 
 @dataclass(frozen=True)
@@ -225,8 +225,8 @@ def check_gridplan_constraints(
             )
         seen_ops.add(op_id)
     for job in problem.jobs:
-        op_id = id_map.get(f"job:{job.id}")
-        if op_id is not None and op_id not in seen_ops:
+        mapped_op = id_map.get(f"job:{job.id}")
+        if mapped_op is not None and mapped_op not in seen_ops:
             violations.append(
                 ConstraintViolation(
                     kind="UNSCHEDULED_JOB",
@@ -241,6 +241,12 @@ def check_gridplan_constraints(
     return violations
 
 
+def _calendar_row_bounds(row: Any) -> tuple[Any, Any]:
+    if isinstance(row, dict):
+        return row.get("start"), row.get("end")
+    return getattr(row, "start", None), getattr(row, "end", None)
+
+
 def _parse_calendar_instant(value: Any) -> datetime | None:
     if isinstance(value, datetime):
         return value
@@ -252,15 +258,15 @@ def _parse_calendar_instant(value: Any) -> datetime | None:
     return None
 
 
-def _calendar_covers(rows: list[dict[str, Any]], start: datetime, end: datetime) -> str | None:
+def _calendar_covers(rows: list[Any], start: datetime, end: datetime) -> str | None:
     """None = covered or unconstrained. Kind suffix when violated/malformed."""
     if not rows:
         return None
     parsed: list[tuple[datetime, datetime]] = []
     try:
         for row in rows:
-            window_start = _parse_calendar_instant(row.get("start"))
-            window_end = _parse_calendar_instant(row.get("end"))
+            window_start = _parse_calendar_instant(_calendar_row_bounds(row)[0])
+            window_end = _parse_calendar_instant(_calendar_row_bounds(row)[1])
             if window_start is None or window_end is None or window_end <= window_start:
                 return "MALFORMED"
             parsed.append((window_start, window_end))
@@ -605,13 +611,14 @@ def _precedence_violations(
         if job.id not in start_by_job:
             continue
         for pred in job.predecessor_job_ids:
+            pred_job = jobs_by_id.get(pred)
             if pred not in end_by_job:
                 out.append(
                     ConstraintViolation(
                         kind="PRECEDENCE_VIOLATION",
                         message=(
                             f"job {job.external_ref} starts without scheduled predecessor "
-                            f"{jobs_by_id.get(pred).external_ref if pred in jobs_by_id else pred}"
+                            f"{pred_job.external_ref if pred_job is not None else pred}"
                         ),
                         job_id=job.id,
                     )
@@ -633,7 +640,7 @@ def _spare_violations(
     result: ScheduleResult,
     id_map: dict[str, UUID],
     op_to_job: dict[UUID, UUID],
-    spares_by_id: dict,
+    spares_by_id: dict[UUID, SparePart],
 ) -> list[ConstraintViolation]:
     """Consumable stock post-check (SynAPS aux = concurrent pool only)."""
 
@@ -703,10 +710,10 @@ def _frozen_violations(
     for fr in frozen:
         if not fr.immutable:
             continue
-        asn = by_job.get(fr.job_id)
+        matched = by_job.get(fr.job_id)
         job = jobs_by_id.get(fr.job_id)
         label = job.external_ref if job else str(fr.job_id)
-        if asn is None:
+        if matched is None:
             out.append(
                 ConstraintViolation(
                     kind="FROZEN_ASSIGNMENT_CONFLICT",
@@ -715,8 +722,8 @@ def _frozen_violations(
                 )
             )
             continue
-        crew_id = crew_of_wc.get(asn.work_center_id)
-        if crew_id != fr.crew_id or asn.start_time != fr.start or asn.end_time != fr.end:
+        crew_id = crew_of_wc.get(matched.work_center_id)
+        if crew_id != fr.crew_id or matched.start_time != fr.start or matched.end_time != fr.end:
             out.append(
                 ConstraintViolation(
                     kind="FROZEN_ASSIGNMENT_CONFLICT",
@@ -724,7 +731,7 @@ def _frozen_violations(
                         f"frozen job {label} changed: expected crew={fr.crew_id} "
                         f"[{fr.start.isoformat()}..{fr.end.isoformat()}], "
                         f"got crew={crew_id} "
-                        f"[{asn.start_time.isoformat()}..{asn.end_time.isoformat()}]"
+                        f"[{matched.start_time.isoformat()}..{matched.end_time.isoformat()}]"
                     ),
                     job_id=fr.job_id,
                     details={

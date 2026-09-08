@@ -7,14 +7,16 @@ import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from synaps.model import ScheduleProblem, ScheduleResult, SolverStatus
 
 from synaps_gridplan.baselines import plan_with_config
 from synaps_gridplan.diff import diff_plans
+from synaps_gridplan.io import read_text_limited
 from synaps_gridplan.model import FrozenAssignment, GridPlanProblem
-from synaps_gridplan.planner import PlanOutcome, replan_after_disruption
+from synaps_gridplan.planner import PlanOutcome, recheck_plan, replan_after_disruption
 from synaps_gridplan.report import render_report
 from synaps_gridplan.synthetic import synthesize_feeder
 from synaps_gridplan.synthetic_gres import synthesize_gres_block
@@ -119,6 +121,14 @@ def _run(argv: list[str] | None = None) -> int:
     p_rep.add_argument("input", type=Path)
     p_rep.add_argument("--format", choices=["json", "csv", "markdown"], default="markdown")
 
+    p_check = sub.add_parser(
+        "check",
+        help="Re-run independent checkers against the current problem (ignores saved flags)",
+    )
+    p_check.add_argument("problem", type=Path)
+    p_check.add_argument("result", type=Path)
+    p_check.add_argument("-o", "--output", type=Path)
+
     p_dis = sub.add_parser("disrupt", help="Replan after disrupting job UUIDs")
     p_dis.add_argument("problem", type=Path)
     p_dis.add_argument("base_result", type=Path)
@@ -143,18 +153,23 @@ def _run(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "solve":
-        problem = GridPlanProblem.model_validate_json(args.input.read_text(encoding="utf-8"))
+        problem = GridPlanProblem.model_validate_json(read_text_limited(args.input))
         outcome = plan_with_config(problem, solver_config=args.solver)
-        args.output.write_text(json.dumps(_payload(outcome), indent=2), encoding="utf-8")
+        args.output.write_text(
+            json.dumps(_payload(outcome, problem=problem), indent=2), encoding="utf-8"
+        )
         return 0 if outcome.ok else 2
 
     if args.command == "report":
-        raw = json.loads(args.input.read_text(encoding="utf-8"))
+        raw = json.loads(read_text_limited(args.input))
         outcome = _outcome_from_payload(raw)
         sys.stdout.write(render_report(outcome, fmt=args.format))
         if args.format != "json":
             sys.stdout.write("\n")
         return 0
+
+    if args.command == "check":
+        return _run_check(args)
 
     if args.command == "version":
         from synaps_gridplan.versions import GRIDPLAN_VERSION, ISO16290_TRL, SYNAPS_COMMIT
@@ -177,8 +192,8 @@ def _run(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "disrupt":
-        problem = GridPlanProblem.model_validate_json(args.problem.read_text(encoding="utf-8"))
-        raw = json.loads(args.base_result.read_text(encoding="utf-8"))
+        problem = GridPlanProblem.model_validate_json(read_text_limited(args.problem))
+        raw = json.loads(read_text_limited(args.base_result))
         base = _outcome_from_payload(raw)
         job_ids = [UUID(x) for x in args.job_id]
         outcome = replan_after_disruption(
@@ -186,7 +201,7 @@ def _run(argv: list[str] | None = None) -> int:
             base_outcome=base,
             disrupted_job_ids=job_ids,
         )
-        payload = _payload(outcome)
+        payload = _payload(outcome, problem=problem)
         payload["diff"] = diff_plans(
             base=base.schedule,
             repaired=outcome.schedule,
@@ -201,8 +216,56 @@ def _run(argv: list[str] | None = None) -> int:
     return 1
 
 
-def _payload(outcome: PlanOutcome) -> dict:
-    return {
+def _run_check(args: argparse.Namespace) -> int:
+    problem = GridPlanProblem.model_validate_json(read_text_limited(args.problem))
+    raw = json.loads(read_text_limited(args.result))
+    if not isinstance(raw, dict) or "schedule" not in raw:
+        raise ValueError("result JSON must contain a schedule object")
+    embedded = raw.get("problem")
+    if embedded is not None:
+        from synaps_gridplan.fingerprint import fingerprint_payload
+
+        saved_problem = GridPlanProblem.model_validate(embedded)
+        if fingerprint_payload(saved_problem.model_dump(mode="json")) != fingerprint_payload(
+            problem.model_dump(mode="json")
+        ):
+            raise ValueError("result.problem does not match the check problem")
+    schedule = ScheduleResult.model_validate(raw["schedule"])
+    oc = raw.get("outcome", {})
+    if oc and not isinstance(oc, dict):
+        raise ValueError("outcome must be a JSON object")
+    id_raw = oc.get("id_map") if isinstance(oc, dict) else None
+    id_map = {k: UUID(v) for k, v in id_raw.items()} if isinstance(id_raw, dict) else None
+    frozen_raw = oc.get("frozen_assignments") if isinstance(oc, dict) else None
+    frozen = (
+        [FrozenAssignment.model_validate(item) for item in frozen_raw]
+        if isinstance(frozen_raw, list)
+        else None
+    )
+    solver_config = (
+        oc.get("solver_config", schedule.solver_name)
+        if isinstance(oc, dict)
+        else (schedule.solver_name)
+    )
+    outcome = recheck_plan(
+        problem,
+        schedule,
+        id_map=id_map,
+        frozen_assignments=frozen,
+        solver_config=str(solver_config),
+    )
+    payload = _payload(outcome, problem=problem)
+    text = json.dumps(payload, indent=2)
+    if args.output is not None:
+        args.output.write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text)
+        sys.stdout.write("\n")
+    return 0 if outcome.ok else 2
+
+
+def _payload(outcome: PlanOutcome, *, problem: GridPlanProblem | None = None) -> dict[str, Any]:
+    payload = {
         "outcome": {
             "schema_version": outcome.schema_version,
             "solver_config": outcome.solver_config,
@@ -217,9 +280,12 @@ def _payload(outcome: PlanOutcome) -> dict:
         "schedule_problem": json.loads(outcome.schedule_problem.model_dump_json()),
         "report": json.loads(render_report(outcome, fmt="json")),
     }
+    if problem is not None:
+        payload["problem"] = json.loads(problem.model_dump_json())
+    return payload
 
 
-def _outcome_from_payload(raw: dict) -> PlanOutcome:
+def _outcome_from_payload(raw: dict[str, Any]) -> PlanOutcome:
     if not isinstance(raw, dict) or not isinstance(raw.get("outcome", raw), dict):
         raise ValueError("result and outcome must be JSON objects")
     schedule = ScheduleResult.model_validate(raw.get("schedule", raw))

@@ -43,3 +43,17 @@ def test_synthesize_small_satisfies_v1_required_keys() -> None:
     )
     for key in _schema("gridplan.v2.problem.schema.json")["required"]:
         assert key in dumped_v2
+
+
+def test_problem_schemas_forbid_unknown_top_level_keys() -> None:
+    props = set(GridPlanProblem.model_json_schema()["properties"])
+    for name in ("gridplan-problem.schema.json", "gridplan.v2.problem.schema.json"):
+        schema = _schema(name)
+        assert schema["additionalProperties"] is False
+        assert set(schema["properties"]) == props
+
+
+def test_result_schema_allows_embedded_problem_and_forbids_other_keys() -> None:
+    schema = _schema("gridplan-result.schema.json")
+    assert schema["additionalProperties"] is False
+    assert "problem" in schema["properties"]

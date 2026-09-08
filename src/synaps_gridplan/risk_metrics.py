@@ -65,8 +65,8 @@ def compute_risk_metrics(
         asset = assets[job.asset_id]
         risk = effective_risk(job, asset)
         before += risk_exposure_for_job(job, asset)
-        asn = assigned.get(job.id)
-        if asn is None:
+        placed = assigned.get(job.id)
+        if placed is None:
             after += risk_exposure_for_job(job, asset)
             if risk.criticality in {Criticality.HIGH, Criticality.CRITICAL}:
                 unserved_critical += 1
@@ -76,7 +76,7 @@ def compute_risk_metrics(
         # Served: residual exposure uses zero remaining duration for proxy "after".
         # Late jobs keep their exposure in `overdue_risk_exposure` instead.
         after += 0.0
-        if job.due_date is not None and asn.end_time > job.due_date:
+        if job.due_date is not None and placed.end_time > job.due_date:
             overdue_risk += risk_exposure_for_job(job, asset)
             if risk.criticality in {Criticality.HIGH, Criticality.CRITICAL}:
                 critical_late += 1

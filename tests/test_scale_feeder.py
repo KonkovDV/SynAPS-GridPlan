@@ -10,6 +10,7 @@ from pathlib import Path
 
 from synaps_gridplan.baselines import plan_with_config
 from synaps_gridplan.synthetic import synthesize_feeder
+from synaps_gridplan.versions import GRIDPLAN_VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
 SCALE_REPORT = ROOT / "benchmark" / "results" / "scale_report.md"
@@ -59,3 +60,4 @@ def test_committed_scale_report_shows_verified_campaign() -> None:
     assert "GREED" in text
     assert "50k" in text
     assert "seed 42" in text
+    assert GRIDPLAN_VERSION in text

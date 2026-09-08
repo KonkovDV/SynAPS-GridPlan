@@ -192,12 +192,11 @@ def test_empty_expected_freeze_cannot_override_declared_lock() -> None:
     assert any(v.kind == "FROZEN_ASSIGNMENT_CONFLICT" for v in violations)
 
 
-def test_mixed_calendar_timezone_is_a_violation_not_a_crash() -> None:
+def test_mixed_naive_calendar_is_rejected_at_ingest() -> None:
     problem = problem_fixture()
-    crew = problem.crews[0].model_copy(
-        update={"availability": [{"start": "2026-09-01T06:00:00", "end": "2026-09-02T06:00:00"}]}
-    )
-    problem = problem.model_copy(update={"crews": [crew]})
-    outcome = plan_fifo(problem)
-    assert not outcome.verified_feasible
-    assert "AVAILABILITY_MALFORMED" in outcome.metadata["gridplan_violation_kinds"]
+    payload = problem.model_dump(mode="json")
+    payload["crews"][0]["availability"] = [
+        {"start": "2026-09-01T06:00:00", "end": "2026-09-02T06:00:00"}
+    ]
+    with pytest.raises(ValueError, match="timezone"):
+        GridPlanProblem.model_validate(payload)

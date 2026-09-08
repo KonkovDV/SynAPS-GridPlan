@@ -35,7 +35,16 @@ def _snap(out: PlanOutcome, wall: float) -> dict[str, Any]:
 
 
 def _ok(snap: dict[str, Any]) -> bool:
-    return bool(snap["verified_feasible"]) and int(snap["hard_violation_count"]) == 0
+    return (
+        snap.get("verified_feasible") is True
+        and type(snap.get("hard_violation_count")) is int
+        and snap["hard_violation_count"] == 0
+        and snap.get("status") in {"feasible", "optimal"}
+    )
+
+
+def claims_pass(rows: list[dict[str, Any]]) -> bool:
+    return all(_ok(row["greed"]) for row in rows)
 
 
 def _run_mode(mode: str, seed: int) -> dict[str, Any]:
@@ -112,6 +121,7 @@ def main() -> None:
             f"wall={g['wall_time_s']}"
         )
     print(f"[scale] report -> {RESULTS / 'scale_report.md'}")
+    raise SystemExit(0 if claims_pass(rows) else 2)
 
 
 if __name__ == "__main__":

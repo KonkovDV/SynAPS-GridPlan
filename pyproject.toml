@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "synaps-gridplan"
-version = "0.1.4"
+version = "0.1.5"
 description = "Deterministic maintenance scheduling contour for power-grid assets on SynAPS (experimental)"
 readme = "README.md"
 license = "MIT"
@@ -77,6 +77,10 @@ include = [
   "/SynAPS-GridPlan.pdf",
   "/SECURITY.md",
   "/AGENTS.md",
+  "/AUDIT.md",
+  "/ACADEMY_APPLICATION.md",
+  "/sbom",
+  "/scripts",
   "/pyproject.toml",
   "/requirements-lock.txt",
 ]
@@ -109,3 +113,7 @@ python_version = "3.12"
 strict = true
 packages = ["synaps_gridplan"]
 mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["synaps", "synaps.*"]
+ignore_missing_imports = true

@@ -87,3 +87,31 @@ def test_even_advisory_freeze_requires_a_valid_interval() -> None:
         FrozenAssignment(
             job_id=UUID(int=1), crew_id=UUID(int=2), start=start, end=start, immutable=False
         )
+
+
+@pytest.mark.parametrize("value", [0, 0.0, "0", True, False])
+def test_unix_and_boolean_are_not_accepted_as_instants(value) -> None:
+    with pytest.raises(ValueError, match="ISO-8601|boolean is not an instant"):
+        GridPlanProblem.model_validate(
+            {
+                "assets": [],
+                "crews": [],
+                "jobs": [],
+                "planning_horizon_start": value,
+                "planning_horizon_end": "2026-09-01T07:00:00Z",
+            }
+        )
+
+
+def test_unknown_top_level_field_is_rejected() -> None:
+    with pytest.raises(ValueError, match="extra"):
+        GridPlanProblem.model_validate(
+            {
+                "assets": [],
+                "crews": [],
+                "jobs": [],
+                "planning_horizon_start": "2026-09-01T06:00:00Z",
+                "planning_horizon_end": "2026-09-01T07:00:00Z",
+                "unexpected": True,
+            }
+        )

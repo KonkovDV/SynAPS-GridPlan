@@ -109,10 +109,14 @@ def plan_fifo(
         makespan = (t1 - t0).total_seconds() / 60.0
 
     tardiness = 0.0
-    for a in assignments:
-        job = job_of_op.get(a.operation_id)
-        if job is not None and job.due_date is not None and a.end_time > job.due_date:
-            tardiness += (a.end_time - job.due_date).total_seconds() / 60.0
+    for assignment in assignments:
+        due_job = job_of_op.get(assignment.operation_id)
+        if (
+            due_job is not None
+            and due_job.due_date is not None
+            and assignment.end_time > due_job.due_date
+        ):
+            tardiness += (assignment.end_time - due_job.due_date).total_seconds() / 60.0
 
     # Empty instance (zero jobs) is vacuously feasible, not a solver failure.
     status = (

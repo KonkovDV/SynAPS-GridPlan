@@ -12,18 +12,18 @@
 
 | | |
 | --- | --- |
-| Базовая версия | **0.1.4**; нерелизные исправления аудита — в PR ниже |
+| Базовая версия | **0.1.5** |
 | Базовая ветка | `main` |
 | Пин SynAPS | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
 | Зрелость | **Самооценка** ISO 16290 TRL 4, синтетические фикстуры. Не сертификат и **не пилот на объекте**. |
 | Академия инноваторов, 10-й поток | [Подготовка заявки и проверенные условия](ACADEMY_APPLICATION.md) |
-| Исторический пакет другой программы | [APPLICATION.md](APPLICATION.md): «Марафон инноваций. Энергия будущего». PDF ещё не актуализирован для Академии. |
+| Исторический пакет другой программы | [APPLICATION.md](APPLICATION.md): «Марафон инноваций. Энергия будущего». `SynAPS-GridPlan.pdf` — прежний питч марафона, не пакет Академии. |
 | Практика | [PRACTICE.md](PRACTICE.md) |
-| Аудит и риски | [AUDIT.md](AUDIT.md): воспроизведения, CI, границы модели и выпускной gate |
+| Аудит и риски | [AUDIT.md](AUDIT.md): воспроизведения, CI, границы модели и оставшиеся gate |
 
-[Аудит и исправления — PR #12](https://github.com/KonkovDV/SynAPS-GridPlan/pull/12).
-Badge выше относится к `main`; актуальность аудита проверяйте по Checks PR
-и точному commit, а не по номеру версии или старой картинке отчёта.
+[Аудит fail-closed вошёл в 0.1.5](https://github.com/KonkovDV/SynAPS-GridPlan/pull/12).
+Badge относится к `main`. Доказательства аудита привязаны к commit в `AUDIT.md`,
+а не к номеру версии или старой картинке отчёта.
 
 English: crew- and window-constrained maintenance scheduling on SynAPS, with an
 independent domain checker. Lab fixtures only. Not N-1, not SAIDI, not a plant pilot.
@@ -78,7 +78,7 @@ python benchmark/jury_benchmark.py
 перепланировании, сохранении заморозки или детерминизме не подтверждены.
 Успешное создание Markdown не считается успешным экспериментом.
 
-`version` должен напечатать `0.1.4` и пин `6178c93…`. Если `source` указывает
+`version` должен напечатать `0.1.5` и пин `6178c93…`. Если `source` указывает
 в `site-packages`, а не в `<репо>/src/synaps_gridplan`:
 
 ```bash
@@ -120,12 +120,14 @@ python -m synaps_gridplan practice
 python -m pytest -q -m "not slow"
 ```
 
-## Контракт входа после аудита
+## Контракт входа (0.1.5)
 
 - ISO-даты передавайте с `Z` или явным смещением, например
-  `2026-09-01T09:00:00+03:00`. Распознанные aware-моменты доменной модели
-  нормализуются в UTC. Naive datetime без зоны отвергаются.
-  Pydantic-коэрции остаются: это не строгий ISO-only JSON Schema-контракт.
+  `2026-09-01T09:00:00+03:00`. Unix-время, boolean и naive datetime без зоны
+  отвергаются, в том числе в календарях бригад. Aware-моменты нормализуются в UTC.
+- Неизвестные поля верхнего и вложенного GridPlan-документа отвергаются.
+  Расширения — только в `domain_attributes`. JSON Schema в `schemas/` — конверт
+  верхнего уровня, не полная вложенная спецификация каждого каталога.
 - ID внутри каталогов уникальны; ссылки должны существовать. Мутации
   `model_copy(update=...)` повторно проверяются на границе компилятора и чекера.
 - `immutable:false` не закрепляет слот. Неизменяемую ПЛ нельзя отменить пустым
@@ -135,7 +137,8 @@ python -m pytest -q -m "not slow"
   конечные поездки и индивидуальные маршруты при `max_parallel>1` требуют
   отдельного согласования модели; полноценный VRP здесь не заявлен.
 - Плотная setup-матрица проверяется до построения по upstream-лимиту
-  2 000 000 элементов. Это не полный бюджет JSON, CPU и памяти всего процесса.
+  2 000 000 элементов. Дополнительно действуют лабораторные квоты JSON и
+  каталогов (`synaps_gridplan.limits`). Это не SLA CPU/памяти процесса.
 - `approved=true`, происхождение данных и TRL — не подпись, не независимая
   проверка источника и не регуляторный допуск.
 
@@ -152,13 +155,16 @@ python benchmark/jury_benchmark.py
 ```bash
 python -m synaps_gridplan synthesize --mode small --seed 12 -o feeder.json
 python -m synaps_gridplan solve feeder.json --solver GREED -o result.json
+python -m synaps_gridplan check feeder.json result.json
 python -m synaps_gridplan report result.json --format markdown
 ```
 
 `report` **не перепроверяет** сохранённый план. Импорт помечается
-`imported_snapshot_not_rechecked`. CSV экранирует формулоподобный текст;
-JSON не добавляет этих CSV-префиксов. Типизированный рендеринг не обещает
-побайтовый JSON round trip. Это не подпись файла.
+`imported_snapshot_not_rechecked`. Повторная проверка — `check PROBLEM RESULT`
+(`verification_origin=independent_recheck`); сохранённый `verified_feasible`
+игнорируется. CSV экранирует формулоподобный текст; JSON не добавляет этих
+CSV-префиксов. Типизированный рендеринг не обещает побайтовый JSON round trip.
+Это не подпись файла.
 
 Fail-closed на том же контуре (`--seed 42` → exit **2**, `ASSET_OVERLAP`):
 
@@ -174,7 +180,7 @@ seed тоже выходит **2**.
 
 | Код | Смысл |
 | --- | --- |
-| **0** | Команда выполнена. Только для `solve`/`disrupt` это также означает подтверждённый план. |
+| **0** | Команда выполнена. Для `solve`/`disrupt`/`check` это также означает подтверждённый план. |
 | **2** | План не прошёл проверку либо обработана ошибка аргументов/ввода/вывода. При ошибке входа файл плана может не появиться. |
 | **1** | Неперехваченная ошибка или проблема окружения. |
 
@@ -212,11 +218,12 @@ native/synaps-gridplan-rs/  Rust: FIFO и доменные проверки
 schemas/                    JSON Schema (не замена семантической валидации)
 benchmark/                  РЭС / jury / аварийные сутки / масштаб
 tests/
-AUDIT.md                    доказательства аудита, границы и выпускной gate
+AUDIT.md                    доказательства аудита, границы и оставшиеся gate
 ACADEMY_APPLICATION.md      подготовка к 10-му потоку Академии
 APPLICATION.md              исторический пакет энергетического марафона
 PRACTICE.md                 мировая практика и границы
-SynAPS-GridPlan.pdf         прежняя презентация; не обновлена этим аудитом
+sbom/                       CycloneDX-инвентарь lockfile, не сканер уязвимостей
+SynAPS-GridPlan.pdf         прежний питч марафона; не обновлён под Академию
 requirements-lock.txt       Linux-пин Python + SHA SynAPS
 ```
 

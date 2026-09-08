@@ -5,15 +5,16 @@ type: software
 authors:
   - family-names: Konkov
     given-names: D.V.
-version: "0.1.4"
-date-released: "2026-09-04"
+version: "0.1.5"
+date-released: "2026-09-08"
 url: "https://github.com/KonkovDV/SynAPS-GridPlan"
 repository-code: "https://github.com/KonkovDV/SynAPS-GridPlan"
 license: MIT
 abstract: >-
   Crew- and window-constrained maintenance scheduling (ТОиР) on the
   SynAPS engine, with an independent fail-closed checker in Python and
-  Rust. Synthetic fixtures. ISO 16290 TRL 4. Not a plant pilot.
+  Rust. Synthetic fixtures. Self-assessed ISO 16290 TRL 4. Not a plant
+  pilot.
 keywords:
   - power-grid
   - maintenance

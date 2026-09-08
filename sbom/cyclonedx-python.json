@@ -1,0 +1,105 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "synaps-gridplan",
+      "version": "0.1.5"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "absl-py",
+      "version": "2.5.0",
+      "purl": "pkg:pypi/absl-py@2.5.0"
+    },
+    {
+      "type": "library",
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "purl": "pkg:pypi/annotated-types@0.8.0"
+    },
+    {
+      "type": "library",
+      "name": "highspy",
+      "version": "1.14.0",
+      "purl": "pkg:pypi/highspy@1.14.0"
+    },
+    {
+      "type": "library",
+      "name": "immutabledict",
+      "version": "4.3.1",
+      "purl": "pkg:pypi/immutabledict@4.3.1"
+    },
+    {
+      "type": "library",
+      "name": "numpy",
+      "version": "2.5.2",
+      "purl": "pkg:pypi/numpy@2.5.2"
+    },
+    {
+      "type": "library",
+      "name": "ortools",
+      "version": "9.15.6755",
+      "purl": "pkg:pypi/ortools@9.15.6755"
+    },
+    {
+      "type": "library",
+      "name": "pandas",
+      "version": "3.0.5",
+      "purl": "pkg:pypi/pandas@3.0.5"
+    },
+    {
+      "type": "library",
+      "name": "protobuf",
+      "version": "6.33.6",
+      "purl": "pkg:pypi/protobuf@6.33.6"
+    },
+    {
+      "type": "library",
+      "name": "pydantic",
+      "version": "2.13.4",
+      "purl": "pkg:pypi/pydantic@2.13.4"
+    },
+    {
+      "type": "library",
+      "name": "pydantic-core",
+      "version": "2.46.4",
+      "purl": "pkg:pypi/pydantic-core@2.46.4"
+    },
+    {
+      "type": "library",
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "purl": "pkg:pypi/python-dateutil@2.9.0.post0"
+    },
+    {
+      "type": "library",
+      "name": "six",
+      "version": "1.17.0",
+      "purl": "pkg:pypi/six@1.17.0"
+    },
+    {
+      "type": "library",
+      "name": "synaps",
+      "version": "6178c93b705ff58be21fa74a98651883a2da1169",
+      "purl": "pkg:generic/synaps@6178c93b705ff58be21fa74a98651883a2da1169",
+      "description": "git+https://github.com/KonkovDV/SynAPS.git@6178c93b705ff58be21fa74a98651883a2da1169"
+    },
+    {
+      "type": "library",
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "purl": "pkg:pypi/typing-extensions@4.16.0"
+    },
+    {
+      "type": "library",
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "purl": "pkg:pypi/typing-inspection@0.4.4"
+    }
+  ]
+}
