@@ -16,7 +16,7 @@ use synaps_gridplan_rs::schedule::{
     PlanResult,
 };
 use synaps_gridplan_rs::synthetic::synthesize_feeder;
-use synaps_gridplan_rs::VERSION;
+use synaps_gridplan_rs::{unsupported_native_constraints, VERSION};
 
 #[derive(Parser, Debug)]
 #[command(name = "synaps-gridplan-rs", version = VERSION)]
@@ -45,9 +45,9 @@ enum Commands {
         #[arg(short, long)]
         output: PathBuf,
     },
-    /// Re-check assignments JSON against a problem (fail-closed)
+    /// Re-check domain rules; unsupported engine constraints prevent verification
     Check { problem: PathBuf, plan: PathBuf },
-    /// Render a native PlanResult JSON
+    /// Render a saved native PlanResult without rechecking the original problem
     Report {
         input: PathBuf,
         #[arg(long, value_enum, default_value_t = ReportFmt::Markdown)]
@@ -121,24 +121,42 @@ fn run(cli: Cli) -> Result<ExitCode, String> {
             let (assignments, plan_frozen) = load_assignments_flexible(&plan)?;
             // The checker always includes mandatory problem commitments.
             let violations = check_plan(&problem, &assignments, &plan_frozen);
+            let domain_verified_feasible = violations.is_empty();
+            let unsupported_constraints = unsupported_native_constraints(&problem);
+            let verified_feasible = domain_verified_feasible && unsupported_constraints.is_empty();
             let payload = serde_json::json!({
-                "verified_feasible": violations.is_empty(),
+                "verified_feasible": verified_feasible,
+                "domain_verified_feasible": domain_verified_feasible,
+                "verification_scope": "gridplan_domain",
+                "engine_checked": false,
+                "unsupported_constraints": unsupported_constraints,
                 "hard_violation_count": violations.len(),
                 "violations": violations,
                 "claim_level": "experiment",
                 "engine": "synaps_gridplan_rs"
             });
             println!("{}", serde_json::to_string_pretty(&payload).unwrap());
-            Ok(if violations.is_empty() {
+            Ok(if verified_feasible {
                 ExitCode::SUCCESS
             } else {
                 ExitCode::from(2)
             })
         }
         Commands::Report { input, format } => {
-            let plan: PlanResult =
+            let mut plan: PlanResult =
                 serde_json::from_str(&fs::read_to_string(&input).map_err(|e| e.to_string())?)
                     .map_err(|e| e.to_string())?;
+            if plan.verified_feasible && !plan.ok() {
+                return Err("saved plan has contradictory verification flags".into());
+            }
+            let metadata = plan
+                .metadata
+                .as_object_mut()
+                .ok_or_else(|| "saved plan metadata must be an object".to_string())?;
+            metadata.insert(
+                "verification_origin".into(),
+                "imported_snapshot_not_rechecked".into(),
+            );
             match format {
                 ReportFmt::Json => {
                     println!(
