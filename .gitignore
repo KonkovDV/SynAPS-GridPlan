@@ -32,6 +32,12 @@ APS.code-workspace
 /docs/_pdf_pages/
 /docs/_pdf_p1.png
 
+# Node (pitch rebuild)
+node_modules/
+
+# Do not treat the retracted v7 deck as a tracked submission artefact
+/SynAPS_v7_Dark.pptx
+
 # Generated benchmark I/O (markdown reports stay tracked)
 benchmark/results/*.json
 benchmark/results/*.log

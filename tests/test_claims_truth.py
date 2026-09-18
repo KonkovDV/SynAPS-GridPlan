@@ -26,6 +26,8 @@ def test_application_is_marked_historical_and_not_a_rosseti_partnership() -> Non
     assert "0.1.8" in text
     assert "187-ФЗ" in text
     assert "APPLICATION_TOIR_SCENARIO.md" in text
+    assert "ETECHHUB_APPLICATION.md" in text
+    assert "SynAPS_v8_Evidence.pptx" in text
 
 
 def test_academy_does_not_point_at_open_draft_prs() -> None:
@@ -43,6 +45,8 @@ def test_readme_points_at_claims_registry() -> None:
     assert "scripts/evidence_bundle.py" in text
     assert "ГОСТ Р 58048" in text
     assert "docs/ETECHHUB_APPLICATION.md" in text
+    assert "SynAPS_v8_Evidence.pptx" in text
+    assert "scripts/build_pitch_v8.js" in text
 
 
 def test_no_duplicate_root_claims_register() -> None:
@@ -73,3 +77,15 @@ def test_v7_pitch_factcheck_exists() -> None:
     assert "0.1.8" in text
     assert "Андрей" in text
     assert "Роман" in text  # named as the wrong name to reject
+    assert "SynAPS_v8_Evidence.pptx" in text
+
+
+def test_v8_pitch_builder_and_deck_exist() -> None:
+    builder = (ROOT / "scripts" / "build_pitch_v8.js").read_text(encoding="utf-8")
+    assert "CPSAT-30" in builder
+    assert "heuristic_feasible" in builder
+    assert "0.1.8" in builder
+    assert "www.etechhubspb.ru/accelerator" in builder
+    assert "планировщик смен" in builder  # denied, not sold
+    assert (ROOT / "SynAPS_v8_Evidence.pptx").is_file()
+    assert not (ROOT / "CLAIMS_REGISTER.md").exists()

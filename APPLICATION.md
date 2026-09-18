@@ -6,6 +6,9 @@
 > Реестр утверждений: [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md).
 > Актуальная формулировка (один сценарий ТОиР):
 > [`docs/APPLICATION_TOIR_SCENARIO.md`](docs/APPLICATION_TOIR_SCENARIO.md).
+> Текущая целевая программа (приём до **25.09.2026**):
+> [`docs/ETECHHUB_APPLICATION.md`](docs/ETECHHUB_APPLICATION.md);
+> дек подачи — `SynAPS_v8_Evidence.pptx`, не v7 и не этот PDF марафона.
 >
 > ПАО «Россети» в анонсе 30.07.2026 — соорганизатор **программы**, не партнёр
 > и не заказчик продукта. Подписанного пилота нет. Рыночные суммы ниже —
