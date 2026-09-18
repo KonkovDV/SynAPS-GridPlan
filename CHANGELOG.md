@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **docs**: CI-gated claims table in `docs/CLAIMS_REGISTRY.md` (`claim_id`,
+  artifact, reproduce command, status). `tests/test_claims_registry.py`
+  fails when a tagged lab number in README/deck builder lacks its id.
+
 - **docs**: executable banned-claim list (`docs/BANNED_CLAIMS.txt`,
   `python scripts/lint_claims.py`). Live pack uses the `versions.py` TRL
   sentence. Pytest count is `docs/TEST_COUNT.txt` from

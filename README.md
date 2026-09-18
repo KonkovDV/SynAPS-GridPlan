@@ -15,16 +15,16 @@
 
 | | |
 | --- | --- |
-| Базовая версия | **0.1.8** |
+| Базовая версия | **0.1.8** [V1] |
 | Базовая ветка | `main` |
-| Пин SynAPS | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
-| Зрелость | **TRL 4 по ISO 16290: лабораторные фикстуры, не пилот на предприятии** (`versions.py`). Не сертификат, **не ГОСТ Р 58048 УГТ4/5**. |
-| Счёт pytest | [`docs/TEST_COUNT.txt`](docs/TEST_COUNT.txt) (`python -m pytest --collect-only -q`) |
+| Пин SynAPS | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) [V2] |
+| Зрелость | **TRL 4 по ISO 16290: лабораторные фикстуры, не пилот на предприятии** (`versions.py`) [V3]. Не сертификат, **не ГОСТ Р 58048 УГТ4/5**. |
+| Счёт pytest | [`docs/TEST_COUNT.txt`](docs/TEST_COUNT.txt) (`python -m pytest --collect-only -q`) [T1] |
 | Границы | [docs/LIMITS.md](docs/LIMITS.md) |
 | Реестр утверждений | [docs/CLAIMS_REGISTRY.md](docs/CLAIMS_REGISTRY.md) — verified / assumption / target / withdrawn |
 | Запрещённые формулировки | [`docs/BANNED_CLAIMS.txt`](docs/BANNED_CLAIMS.txt), CI: `python scripts/lint_claims.py` |
 | Текущая заявка (один сценарий ТОиР) | [docs/APPLICATION_TOIR_SCENARIO.md](docs/APPLICATION_TOIR_SCENARIO.md) |
-| Энерготехнохаб (приём до 25.09) | [docs/ETECHHUB_APPLICATION.md](docs/ETECHHUB_APPLICATION.md) |
+| Энерготехнохаб (приём до 25.09) [P6] | [docs/ETECHHUB_APPLICATION.md](docs/ETECHHUB_APPLICATION.md) |
 | Дек v7 (не отправлять) | [docs/PITCH_V7_FACTCHECK.md](docs/PITCH_V7_FACTCHECK.md) |
 | Дек для подачи | `SynAPS_v8_Evidence.pptx` (пересборка: `node scripts/build_pitch_v8.js`) |
 | Академия инноваторов, 10-й поток | [Подготовка заявки и проверенные условия](ACADEMY_APPLICATION.md) |
@@ -113,13 +113,13 @@ python -m pip install -e ".[dev]" --force-reinstall --no-deps
 
 | Результат | Где |
 | --- | --- |
-| РЭС «Северный» (55 работ): GREED проверен, FIFO нет | `tests/test_res_severny.py`, `benchmark/results/jury_report.md` |
-| CP-SAT доказывает оптимум makespan скомпилированной постановки | `test_res_cpsat_proves_optimal_makespan` (маркер `slow`) |
+| [B1] [B2] РЭС «Северный» (55 работ): FIFO **107** жёстких нарушений, GREED **0** | `tests/test_res_severny.py`, `benchmark/results/jury_report.md` |
+| [B3] CP-SAT (`CPSAT-30`) доказывает оптимум makespan скомпилированной постановки | `test_res_cpsat_proves_optimal_makespan` (маркер `slow`) |
 | Перепланирование не двигает замороженные строки ПЛ | Scenario B, те же тесты |
 | Блок ГРЭС (синтетика, не станция): GREED чист, FIFO нет | `tests/test_gres_block.py` |
 | Два ввода в зал (не М9): GREED чист; оба ввода сразу — `SIMULTANEOUS_OUTAGE_BAN` | `tests/test_dual_feed_hall.py` |
-| Аварийные сутки: синтетическая постановка с отдельными проверками ограничений | `tests/test_emergency_day.py`, `benchmark/results/emergency_day_report.md` |
-| Фидер 200 / 600 работ: GREED проверен, FIFO ломает окна | `tests/test_scale_feeder.py`, `benchmark/results/scale_report.md` |
+| [B4] Аварийные сутки (23 работы): FIFO 27 / GREED 0 | `tests/test_emergency_day.py`, `benchmark/results/emergency_day_report.md` |
+| [B5] Фидер 200 / 600 работ: GREED проверен, FIFO ломает окна | `tests/test_scale_feeder.py`, `benchmark/results/scale_report.md` |
 | Чекер ловит overlap, ЗИП, квалификации, короткую длительность | `tests/test_adversarial_*.py` |
 | Аудит заморозки, мутаций модели, ID-map, импорта, CSV и UTC | `tests/test_audit_regressions.py`, `tests/test_import_export_audit.py`, `tests/test_time_contract.py`, `tests/test_final_audit_guards.py` |
 
