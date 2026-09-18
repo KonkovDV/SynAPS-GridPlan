@@ -5,10 +5,9 @@ Three adversarial scenarios not covered by the 0.1.7 test suite.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
-
-import pytest
 
 from synaps_gridplan.adapter import _job_chains
 from synaps_gridplan.baselines import plan_fifo
@@ -20,7 +19,6 @@ from synaps_gridplan.model import (
     OutageWindow,
 )
 from synaps_gridplan.report import render_report
-
 
 # ---------------------------------------------------------------------------
 # 1. _job_chains: linear chain of 500 jobs stays one chain after deque refactor
@@ -89,8 +87,6 @@ def test_markdown_report_shows_truncation_note_beyond_20() -> None:
     Silently cutting at 20 with no note would mislead a reviewer who
     reads only the markdown (e.g. in a CI PR comment).
     """
-    from dataclasses import replace
-
     problem = _make_tiny_problem()
     outcome = plan_fifo(problem)
     # Inject 25 synthetic violations into metadata.
@@ -111,14 +107,10 @@ def test_markdown_report_shows_truncation_note_beyond_20() -> None:
 
 def test_markdown_report_no_truncation_note_when_under_limit() -> None:
     """When violations ≤ 20 no overflow note should appear."""
-    from dataclasses import replace
-
     problem = _make_tiny_problem()
     outcome = plan_fifo(problem)
     meta = dict(outcome.metadata)
-    meta["gridplan_violations"] = [
-        {"kind": "SYNTHETIC", "message": f"probe-{i}"} for i in range(5)
-    ]
+    meta["gridplan_violations"] = [{"kind": "SYNTHETIC", "message": f"probe-{i}"} for i in range(5)]
     patched = replace(outcome, metadata=meta)
     text = render_report(patched, fmt="markdown")
     # No truncation indicator for a short list.
