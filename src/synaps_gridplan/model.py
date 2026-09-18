@@ -41,6 +41,10 @@ DataProvenance = Literal[
 ]
 ClaimLevel = Literal["experiment", "benchmark", "pilot_candidate", "production_verified"]
 
+# Maximum number of cross-reference errors reported in one ValidationError message.
+# Errors beyond this limit are counted but not listed; a suffix names the overflow.
+_CROSS_REFS_LIMIT = 20
+
 
 def _as_utc(value: datetime) -> datetime:
     return value.astimezone(UTC)
@@ -428,5 +432,9 @@ class GridPlanProblem(GridPlanModel):
         if self.planning_horizon_end <= self.planning_horizon_start:
             issues.append("planning horizon end must be after start")
         if issues:
-            raise ValueError("; ".join(issues[:20]))
+            msg = "; ".join(issues[:_CROSS_REFS_LIMIT])
+            if len(issues) > _CROSS_REFS_LIMIT:
+                overflow = len(issues) - _CROSS_REFS_LIMIT
+                msg += f"; … and {overflow} more validation error(s) (see full list in JSON)"
+            raise ValueError(msg)
         return self
