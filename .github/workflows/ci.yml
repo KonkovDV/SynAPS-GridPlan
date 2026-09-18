@@ -21,6 +21,8 @@ jobs:
         python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -55,6 +57,15 @@ jobs:
         run: |
           python scripts/export_test_count.py
           git diff --exit-code -- docs/TEST_COUNT.txt
+      - uses: actions/setup-node@49933ea5288ca35ae9d3a5242e3306d2d91e11d7 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Rebuild pitch from jury_report and compare extracted text
+        run: |
+          npm ci
+          python scripts/build_deck.py
+          python scripts/extract_deck_text.py --check
       - name: Schema and SBOM inventories are current
         run: |
           python scripts/export_pydantic_schema.py

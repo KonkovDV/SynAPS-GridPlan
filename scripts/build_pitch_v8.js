@@ -1,11 +1,13 @@
 /**
- * Honest Energotechhub pitch. Numbers only from docs/CLAIMS_REGISTRY.md.
- * Run: node scripts/build_pitch_v8.js
+ * Honest Energotechhub pitch. Numbers from benchmark/results/deck_facts.json.
+ * Public entry: python scripts/build_deck.py
  */
 const pptxgen = require("pptxgenjs");
+const fs = require("fs");
 const path = require("path");
 
 // CI-gated claim_ids from docs/CLAIMS_REGISTRY.md: V1 V2 V3 B1 B2 B3 B4 B5 B7 P6 P8 M6
+// Package version 0.1.8 is injected from versions.py via deck_facts.json; footer uses git describe.
 
 const BG = "0B1117";
 const CARD = "151D26";
@@ -16,8 +18,19 @@ const OK = "3D9B7A";
 const STOP = "C45C4A";
 const LINE = "2A3542";
 
+let FACTS;
+
+function loadFacts() {
+  const factsPath = path.join(__dirname, "..", "benchmark", "results", "deck_facts.json");
+  if (!fs.existsSync(factsPath)) {
+    process.stderr.write("missing deck_facts.json; run python scripts/deck_facts.py\n");
+    process.exit(1);
+  }
+  return JSON.parse(fs.readFileSync(factsPath, "utf8"));
+}
+
 function footer(slide, n, total) {
-  slide.addText("SynAPS-GridPlan 0.1.8  ·  лабораторный прототип  ·  не пилот", {
+  slide.addText(`SynAPS-GridPlan ${FACTS.git_describe}  ·  лабораторный прототип  ·  не пилот`, {
     x: 0.5,
     y: 7.12,
     w: 10.5,
@@ -56,11 +69,15 @@ function kicker(slide, text) {
 }
 
 async function main() {
+  FACTS = loadFacts();
+  const jury = FACTS.jury;
+  const budgetParts = String(FACTS.budget).split(" = ")[0].split("/");
   const pres = new pptxgen();
   pres.defineLayout({ name: "WIDE", width: 13.3, height: 7.5 });
   pres.layout = "WIDE";
-  pres.title = "SynAPS-GridPlan 0.1.8 — evidence pitch";
-  pres.author = "Konkov D.V.";
+  pres.title = `SynAPS-GridPlan ${FACTS.gridplan_version} — evidence pitch`;
+  pres.author = FACTS.author;
+  pres.company = FACTS.company;
   pres.subject = "Энерготехнохаб Петербург, направление 02";
 
   const total = 12;
@@ -111,8 +128,8 @@ async function main() {
       }
     );
     const chips = [
-      ["версия", "0.1.8 V1"],
-      ["зрелость", "самооценка ISO 16290 TRL 4  V3"],
+      ["версия", `${FACTS.gridplan_version} V1`],
+      ["зрелость", FACTS.trl_sentence + "  V3"],
       ["данные", "synthetic only"],
       ["лицензия", "MIT, закрытого ядра нет"],
     ];
@@ -212,7 +229,9 @@ async function main() {
     const cols = [
       [
         "Есть в git",
-        "JSON-постановка → GREED/FIFO/CP-SAT → независимый checker. Fail-closed. Синтетический макет 55 работ.",
+        "JSON-постановка → GREED/FIFO/CP-SAT → независимый checker. Fail-closed. Синтетический макет " +
+          jury.jobs +
+          " работ.",
       ],
       [
         "Нужна валидация",
@@ -339,7 +358,7 @@ async function main() {
     const s = pres.addSlide();
     s.background = { color: BG };
     kicker(s, "ЛАБОРАТОРИЯ  ·  ОДИН ИНСТАНС  ·  B1 B2 B3 B4 B5 B7");
-    s.addText("Синтетический макет 55 работ — не выгрузка Россети", {
+    s.addText("Синтетический макет " + jury.jobs + " работ — не выгрузка Россети", {
       x: 0.5,
       y: 0.58,
       w: 12.3,
@@ -358,9 +377,9 @@ async function main() {
           { text: "Checker", options: { fill: { color: LINE }, color: INK, bold: true } },
           { text: "Статус", options: { fill: { color: LINE }, color: INK, bold: true } },
         ],
-        ["FIFO (календарный)", "107", "нет", "недопустим"],
-        ["GREED", "0", "да", "heuristic_feasible"],
-        ["CPSAT-30, тот же JSON", "0", "да", "optimal makespan"],
+        ["FIFO (календарный)", String(jury.fifo_hard), jury.fifo_checker, "недопустим"],
+        ["GREED", String(jury.greed_hard), jury.greed_checker, "heuristic_feasible"],
+        ["CPSAT-30, тот же JSON", String(jury.cpsat_hard), jury.cpsat_verified, jury.cpsat_status + " makespan"],
       ],
       {
         x: 0.5,
@@ -686,12 +705,12 @@ async function main() {
           { text: "Статья", options: { fill: { color: LINE }, color: INK, bold: true } },
           { text: "тыс. ₽", options: { fill: { color: LINE }, color: INK, bold: true } },
         ],
-        ["Доменная формализация и данные", "300"],
-        ["Solver / checker / тесты", "350"],
-        ["Интеграция и on-prem упаковка", "300"],
-        ["ИБ, журнал, документация", "200"],
-        ["Проведение тени и оценка", "200"],
-        ["IP / юрработы / резерв", "150"],
+        ["Доменная формализация и данные", budgetParts[0]],
+        ["Solver / checker / тесты", budgetParts[1]],
+        ["Интеграция и on-prem упаковка", budgetParts[2]],
+        ["ИБ, журнал, документация", budgetParts[3]],
+        ["Проведение тени и оценка", budgetParts[4]],
+        ["IP / юрработы / резерв", budgetParts[5]],
       ],
       {
         x: 0.5,
@@ -827,7 +846,7 @@ async function main() {
       ["Сейчас", "Отбор в программу. Работа с техноброкером и заказчиком ТЭК."],
       ["После отбора", "Владелец процесса, обезличенный срез, критерии GO/NO-GO."],
       ["Демо-день (14–20.12, СПб)", "Показать протокол тени или честный NO-GO. Не живой контур."],
-      ["Не просим", "Называть хаб или Россети партнёрами. Принять лабораторные 107 как эффект сети."],
+      ["Не просим", "Называть хаб или Россети партнёрами. Принять лабораторные " + jury.fifo_hard + " как эффект сети."],
     ];
     asks.forEach((a, i) => {
       const col = i % 2;
@@ -903,7 +922,11 @@ async function main() {
       }
     );
     s.addText(
-      "Должно напечатать 0.1.8 и пин SynAPS 6178c93… [V1] [V2]. Jury + CP-SAT на том же res_severny. Реестр: docs/CLAIMS_REGISTRY.md. Почему не v7: docs/PITCH_V7_FACTCHECK.md. Программа: https://www.etechhubspb.ru/accelerator",
+      "Должно напечатать " +
+        FACTS.gridplan_version +
+        " и пин SynAPS " +
+        FACTS.synaps_commit12 +
+        "… [V1] [V2]. Jury + CP-SAT на том же res_severny. Реестр: docs/CLAIMS_REGISTRY.md. Почему не v7: docs/PITCH_V7_FACTCHECK.md. Программа: https://www.etechhubspb.ru/accelerator",
       {
         x: 0.5,
         y: 3.75,

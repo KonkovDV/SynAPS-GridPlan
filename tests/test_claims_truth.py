@@ -46,7 +46,7 @@ def test_readme_points_at_claims_registry() -> None:
     assert "ГОСТ Р 58048" in text
     assert "docs/ETECHHUB_APPLICATION.md" in text
     assert "SynAPS_v8_Evidence.pptx" in text
-    assert "scripts/build_pitch_v8.js" in text
+    assert "scripts/build_deck.py" in text
 
 
 def test_no_duplicate_root_claims_register() -> None:
