@@ -20,6 +20,8 @@
 | Исторический пакет другой программы | [APPLICATION.md](APPLICATION.md): «Марафон инноваций. Энергия будущего». `SynAPS-GridPlan.pdf` — прежний питч марафона, не пакет Академии. |
 | Практика | [PRACTICE.md](PRACTICE.md) |
 | Аудит и риски | [AUDIT.md](AUDIT.md): воспроизведения, CI, границы модели и оставшиеся gate |
+| Архив заявки и red-team | [docs/00_README.md](docs/00_README.md), [_SUBMIT_MIK_2026_08_18](_SUBMIT_MIK_2026_08_18/README.md) |
+| Синтетические фикстуры | [benchmark/instances](benchmark/instances/README.md) |
 
 [Аудит fail-closed вошёл в 0.1.5](https://github.com/KonkovDV/SynAPS-GridPlan/pull/14).
 0.1.8 закрывает Red Team 0.1.8–0.1.9: `deque` в `_job_chains`, FIFO
