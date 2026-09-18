@@ -2,7 +2,7 @@
 
 ## 0.1.8 — 2026-09-18
 
-Red Team 0.1.8 fixes and tests. SynAPS pin unchanged
+Red Team 0.1.8–0.1.9 closures. SynAPS pin unchanged
 [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169).
 Self-assessed ISO 16290 TRL 4. Not a plant pilot.
 
@@ -15,9 +15,16 @@ Self-assessed ISO 16290 TRL 4. Not a plant pilot.
   `gridplan_violations` or `engine_violations` exceed 20 entries —
   silent truncation would mislead a reviewer reading only the markdown
   output (PR #18). Constant extracted as `_TRUNCATION_LIMIT = 20`.
+- **fix**: `GridPlanProblem._cross_refs` appends an overflow count when
+  more than 20 validation errors are raised (PR #23).
 - **test**: Red Team 0.1.8 suite — 500-job chain correctness, markdown
   truncation note, FIFO `latest_finish` boundary, outage-window boundary
   smoke (PR #19).
+- **test**: Red Team 0.1.9 suite — diamond topology, `_cross_refs`
+  overflow, sparse precedence (PR #24).
+- **docs**: Barral CPAIOR 2024 stable Springer DOI and September 2026
+  SOTA notes in ``PRACTICE.md`` (PR #22).
+- **deps**: native ``uuid`` 1.24.1 → 1.26.1 (PR #17).
 
 ## 0.1.7 — 2026-09-08
 

@@ -3,7 +3,7 @@
 Experimental Rust contour: deterministic FIFO, domain-layer checks with targeted
 Python parity, fingerprints and a synthetic feeder. Optional bridge to Python GREED.
 
-Package version **0.1.7**.
+Package version **0.1.8**.
 GREED and the SynAPS engine checker are not implemented in this crate.
 
 ## Scope
