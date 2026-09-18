@@ -1,0 +1,36 @@
+{
+  "event_type": "job_disruption",
+  "disrupted_job_ids": [
+    "cca42297-5835-5a03-8558-e93a2c2aca38"
+  ],
+  "base_status": "feasible",
+  "repaired_status": "error",
+  "diff": {
+    "schema_version": "gridplan.diff.v1",
+    "added_assignments": [],
+    "removed_assignments": [],
+    "moved_assignments": [],
+    "unchanged_frozen_assignments": [],
+    "frozen_job_count": 0,
+    "newly_late_jobs": [],
+    "newly_unassigned_jobs": [],
+    "changed_metrics": {
+      "base_assignments": 30,
+      "repaired_assignments": 30,
+      "base_coverage": 1.0,
+      "repaired_coverage": 1.0,
+      "base_tardiness_min": 0.0,
+      "repaired_tardiness_min": 0.0,
+      "base_makespan_min": 3120.0,
+      "repaired_makespan_min": 3120.0
+    },
+    "violations": [],
+    "churn": {
+      "added": 0,
+      "removed": 0,
+      "moved": 0,
+      "unchanged_frozen": 0
+    }
+  },
+  "metric_tag": "synthetic_experiment"
+}

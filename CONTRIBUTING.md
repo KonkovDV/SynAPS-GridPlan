@@ -30,3 +30,7 @@ cargo clippy --locked -- -D warnings
 
 Do not float the SynAPS pin on a branch tip. Do not mark GREED/FIFO as
 `optimal`. Do not add live grid dumps.
+
+`docs/` and `_SUBMIT_MIK_2026_08_18/` are a **historical** application/red-team
+archive (August 2026). Current claims live in `README.md`, `AUDIT.md`,
+`CHANGELOG.md` and `src/synaps_gridplan/versions.py`.

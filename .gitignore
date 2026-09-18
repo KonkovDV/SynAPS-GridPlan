@@ -23,20 +23,18 @@ build/
 .env.*
 !.env.example
 
-# Working notes — not part of the published tree
-/docs/
-/_SUBMIT_MIK_2026_08_18/
-
 # Local IDE isolation
 APS.code-workspace
 .cursorignore
 .cursorindexingignore
 
-# Generated benchmark I/O
+# Raster dumps of the already-tracked pitch PDF
+/docs/_pdf_pages/
+/docs/_pdf_p1.png
+
+# Generated benchmark I/O (markdown reports stay tracked)
 benchmark/results/*.json
 benchmark/results/*.log
-benchmark/instances/*.json
-benchmark/scenarios/*.json
 
 # Rust build
 native/synaps-gridplan-rs/target/
