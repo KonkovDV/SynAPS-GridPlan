@@ -16,6 +16,32 @@
 Нельзя складывать результаты разных датасетов в одну шкалу. Нельзя называть
 организацию партнёром или заказчиком продукта без документа в этом реестре.
 
+## CI-gated (дек и README)
+
+Эта таблица — исполняемый контракт. Парсер: `tests/test_claims_registry.py`.
+Каждая цифра в деке и README, которая совпадает с «текст» строки со статусом
+`verified` / `assumption`, должна нести тот же `claim_id`.
+
+| claim_id | текст | артефакт-источник | команда воспроизведения | статус |
+| --- | --- | --- | --- | --- |
+| V1 | Версия пакета 0.1.8 | `src/synaps_gridplan/versions.py` | `python -m synaps_gridplan version` | verified |
+| V2 | Пин SynAPS `6178c93b705ff58be21fa74a98651883a2da1169` | `src/synaps_gridplan/versions.py` | `python -m synaps_gridplan version` | verified |
+| V3 | TRL 4 по ISO 16290: лабораторные фикстуры, не пилот на предприятии | `src/synaps_gridplan/versions.py` | `python -c "from synaps_gridplan.versions import ISO16290_TRL; print(ISO16290_TRL)"` | verified |
+| B1 | Синтетический РЭС «Северный»: 55 работ, 7 бригад, 39 активов | `tests/test_res_severny.py` | `python -m pytest tests/test_res_severny.py::test_res_instance_shape` | verified |
+| B2 | На том же инстансе FIFO: 107 жёстких нарушений; GREED: 0 | `benchmark/results/jury_report.md` | `python benchmark/jury_benchmark.py` | verified |
+| B3 | CPSAT-30 на том же JSON: optimal, 0 жёстких, dual bound = makespan | `benchmark/results/jury_report.md` | `python benchmark/jury_benchmark.py --cpsat` | verified |
+| B4 | Аварийные сутки: 23 работы; FIFO 27 / GREED 0 | `benchmark/results/emergency_day_report.md` | `python benchmark/emergency_day_benchmark.py` | verified |
+| B5 | medium seed=12: 200 работ; stress seed=12: 600 работ | `benchmark/results/scale_report.md` | `python benchmark/scale_benchmark.py` | verified |
+| B7 | Wall-clock в отчётах — машина прогона, не SLA | `benchmark/results/jury_report.md` | `python benchmark/jury_benchmark.py` | assumption |
+| P6 | Акселератор Энерготехнохаб: приём 7–25 сентября 2026 | `docs/ETECHHUB_APPLICATION.md` | страница https://www.etechhubspb.ru/accelerator | verified |
+| P8 | Приз 1 500 000 ₽ — потолок eligibility, не выплата GridPlan | `docs/ETECHHUB_APPLICATION.md` | страница https://research.spbstu.ru/events/energotehnohaba_peterburg/ | verified |
+| M6 | Смета пилота 300/350/300/200/200/150 = 1500 тыс. ₽ | `docs/PILOT_ONEPAGER.md` | чтение one-pager | assumption |
+| T1 | Счёт pytest --collect-only | `docs/TEST_COUNT.txt` | `python scripts/export_test_count.py` | verified |
+
+Подробные обоснования, withdrawn-строки и нормативные названия — в таблицах ниже.
+Их колонки шире; CI читает только таблицу выше.
+
+
 ## Нормы и законы (названия)
 
 | id | claim | source | дата доступа | методика | commit/dataset | статус |

@@ -5,6 +5,8 @@
 const pptxgen = require("pptxgenjs");
 const path = require("path");
 
+// CI-gated claim_ids from docs/CLAIMS_REGISTRY.md: V1 V2 V3 B1 B2 B3 B4 B5 B7 P6 P8 M6
+
 const BG = "0B1117";
 const CARD = "151D26";
 const INK = "E8EEF4";
@@ -74,7 +76,7 @@ async function main() {
       h: 7.5,
       fill: { color: AMBER },
     });
-    s.addText("ЭНЕРГОТЕХНОХАБ ПЕТЕРБУРГ  ·  НАПРАВЛЕНИЕ 02  ·  ПРИЁМ ДО 25.09.2026", {
+    s.addText("ЭНЕРГОТЕХНОХАБ ПЕТЕРБУРГ  ·  НАПРАВЛЕНИЕ 02  ·  ПРИЁМ ДО 25.09.2026  ·  P6", {
       x: 0.55,
       y: 0.45,
       w: 12.2,
@@ -109,8 +111,8 @@ async function main() {
       }
     );
     const chips = [
-      ["версия", "0.1.8"],
-      ["зрелость", "самооценка ISO 16290 TRL 4"],
+      ["версия", "0.1.8 V1"],
+      ["зрелость", "самооценка ISO 16290 TRL 4  V3"],
       ["данные", "synthetic only"],
       ["лицензия", "MIT, закрытого ядра нет"],
     ];
@@ -336,7 +338,7 @@ async function main() {
   {
     const s = pres.addSlide();
     s.background = { color: BG };
-    kicker(s, "ЛАБОРАТОРИЯ  ·  ОДИН ИНСТАНС");
+    kicker(s, "ЛАБОРАТОРИЯ  ·  ОДИН ИНСТАНС  ·  B1 B2 B3 B4 B5 B7");
     s.addText("Синтетический макет 55 работ — не выгрузка Россети", {
       x: 0.5,
       y: 0.58,
@@ -666,7 +668,7 @@ async function main() {
   {
     const s = pres.addSlide();
     s.background = { color: BG };
-    kicker(s, "ПРИЗ ПРОГРАММЫ  ·  ПРЕДМЕТ СОГЛАСОВАНИЯ");
+    kicker(s, "ПРИЗ ПРОГРАММЫ  ·  ПРЕДМЕТ СОГЛАСОВАНИЯ  ·  P8 M6");
     s.addText("1,5 млн ₽ — если присудят, не «два инженера по 750»", {
       x: 0.5,
       y: 0.58,
@@ -901,7 +903,7 @@ async function main() {
       }
     );
     s.addText(
-      "Должно напечатать 0.1.8 и пин SynAPS 6178c93…  Jury + CP-SAT на том же res_severny. Реестр: docs/CLAIMS_REGISTRY.md. Почему не v7: docs/PITCH_V7_FACTCHECK.md. Программа: https://www.etechhubspb.ru/accelerator",
+      "Должно напечатать 0.1.8 и пин SynAPS 6178c93… [V1] [V2]. Jury + CP-SAT на том же res_severny. Реестр: docs/CLAIMS_REGISTRY.md. Почему не v7: docs/PITCH_V7_FACTCHECK.md. Программа: https://www.etechhubspb.ru/accelerator",
       {
         x: 0.5,
         y: 3.75,
