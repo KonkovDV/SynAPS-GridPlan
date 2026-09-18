@@ -5,7 +5,9 @@
 - **docs**: Energotechhub working note (`docs/ETECHHUB_APPLICATION.md`):
   live URL `/accelerator` (not `/accelerator2026`), official broker names,
   v7 pitch retracts, no second claims file at repo root. 25 Sep is this
-  accelerator, not Academy «10th stream».
+  accelerator, not Academy «10th stream». Honest 12-slide deck
+  ``SynAPS_v8_Evidence.pptx`` (``scripts/build_pitch_v8.js``). Retracted
+  unverifiable Sep 2026 «Zhao / Gupta TPWRS» rows from ``PRACTICE.md``.
 
 - **docs**: truth pass 2026-09-18 — claims registry, GOST R 58048 vs ISO 16290,
   187-FZ not claimed as attestation, no GridPlan–Россети partnership, market

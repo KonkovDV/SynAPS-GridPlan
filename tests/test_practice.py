@@ -101,6 +101,17 @@ def test_mapping_does_not_overclaim_capabilities() -> None:
         assert "pilot" not in low
 
 
+def test_practice_md_rejects_placeholder_sota() -> None:
+    """Unstable 'Sep 2026 SOTA' rows without identifiers must not return."""
+    text = PRACTICE_MD.read_text(encoding="utf-8")
+    assert "10.1109/TPWRS>" not in text
+    assert "DOI to be confirmed" not in text
+    assert "September 2026 submission" not in text
+    assert "Zhao et al., arXiv (Sep 2026)" not in text
+    assert "| Gupta" not in text
+    assert "arxiv.org/abs/2508.08147" in text
+
+
 def test_practice_md_names_forbidden_topics_as_limits() -> None:
     text = PRACTICE_MD.read_text(encoding="utf-8")
     assert "N-1" in text

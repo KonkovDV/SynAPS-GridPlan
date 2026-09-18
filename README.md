@@ -20,6 +20,7 @@
 | Текущая заявка (один сценарий ТОиР) | [docs/APPLICATION_TOIR_SCENARIO.md](docs/APPLICATION_TOIR_SCENARIO.md) |
 | Энерготехнохаб (приём до 25.09) | [docs/ETECHHUB_APPLICATION.md](docs/ETECHHUB_APPLICATION.md) |
 | Дек v7 (не отправлять) | [docs/PITCH_V7_FACTCHECK.md](docs/PITCH_V7_FACTCHECK.md) |
+| Дек для подачи | `SynAPS_v8_Evidence.pptx` (пересборка: `node scripts/build_pitch_v8.js`) |
 | Академия инноваторов, 10-й поток | [Подготовка заявки и проверенные условия](ACADEMY_APPLICATION.md) |
 | Исторический пакет другой программы | [APPLICATION.md](APPLICATION.md): «Марафон инноваций. Энергия будущего». `SynAPS-GridPlan.pdf` — прежний питч марафона, не пакет Академии. |
 | Практика | [PRACTICE.md](PRACTICE.md) |
