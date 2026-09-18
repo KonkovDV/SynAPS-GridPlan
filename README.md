@@ -15,8 +15,10 @@
 | Базовая версия | **0.1.8** |
 | Базовая ветка | `main` |
 | Пин SynAPS | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
-| Зрелость | **Самооценка** ISO 16290 TRL 4, синтетические фикстуры. Не сертификат, **не ГОСТ Р 58048 УГТ4/5**, **не пилот на объекте**. |
+| Зрелость | **TRL 4 по ISO 16290: лабораторные фикстуры, не пилот на предприятии** (`versions.py`). Не сертификат, **не ГОСТ Р 58048 УГТ4/5**. |
+| Счёт pytest | [`docs/TEST_COUNT.txt`](docs/TEST_COUNT.txt) (`python -m pytest --collect-only -q`) |
 | Реестр утверждений | [docs/CLAIMS_REGISTRY.md](docs/CLAIMS_REGISTRY.md) — verified / assumption / target / withdrawn |
+| Запрещённые формулировки | [`docs/BANNED_CLAIMS.txt`](docs/BANNED_CLAIMS.txt), CI: `python scripts/lint_claims.py` |
 | Текущая заявка (один сценарий ТОиР) | [docs/APPLICATION_TOIR_SCENARIO.md](docs/APPLICATION_TOIR_SCENARIO.md) |
 | Энерготехнохаб (приём до 25.09) | [docs/ETECHHUB_APPLICATION.md](docs/ETECHHUB_APPLICATION.md) |
 | Дек v7 (не отправлять) | [docs/PITCH_V7_FACTCHECK.md](docs/PITCH_V7_FACTCHECK.md) |
@@ -37,7 +39,7 @@ Badge относится к `main`. Доказательства аудита п
 
 English: crew- and window-constrained maintenance scheduling on SynAPS, with an
 independent domain checker. Lab fixtures only. Not N-1, not SAIDI, not a plant
-pilot. ISO 16290 TRL 4 is a space-systems self-assessment, not GOST R 58048
+pilot. TRL 4 per ISO 16290: lab fixtures, not a plant pilot. Not GOST R 58048
 certification. 187-FZ (KII) compliance is not claimed. ПАО «Россети» is not a
 documented GridPlan customer.
 
