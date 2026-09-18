@@ -18,6 +18,8 @@
 | Зрелость | **Самооценка** ISO 16290 TRL 4, синтетические фикстуры. Не сертификат, **не ГОСТ Р 58048 УГТ4/5**, **не пилот на объекте**. |
 | Реестр утверждений | [docs/CLAIMS_REGISTRY.md](docs/CLAIMS_REGISTRY.md) — verified / assumption / target / withdrawn |
 | Текущая заявка (один сценарий ТОиР) | [docs/APPLICATION_TOIR_SCENARIO.md](docs/APPLICATION_TOIR_SCENARIO.md) |
+| Энерготехнохаб (приём до 25.09) | [docs/ETECHHUB_APPLICATION.md](docs/ETECHHUB_APPLICATION.md) |
+| Дек v7 (не отправлять) | [docs/PITCH_V7_FACTCHECK.md](docs/PITCH_V7_FACTCHECK.md) |
 | Академия инноваторов, 10-й поток | [Подготовка заявки и проверенные условия](ACADEMY_APPLICATION.md) |
 | Исторический пакет другой программы | [APPLICATION.md](APPLICATION.md): «Марафон инноваций. Энергия будущего». `SynAPS-GridPlan.pdf` — прежний питч марафона, не пакет Академии. |
 | Практика | [PRACTICE.md](PRACTICE.md) |
