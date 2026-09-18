@@ -1,0 +1,17 @@
+# Promotional phrases that must not appear as product claims.
+# Enforced by scripts/lint_claims.py in CI.
+# Quote these only in retract notes, LIMITS, or this file.
+
+до 40% планов
+подтверждённая технология
+подтвержденная технология
+TRL 4 — подтверждённая технология
+TRL 4 - подтверждённая технология
+первые в нише
+первые в мире
+в реальном времени
+с первого раза
+3/3 автотестов
+нормы непрерывного отдыха
+Минтруд
+СНиП

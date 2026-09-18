@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **docs**: executable banned-claim list (`docs/BANNED_CLAIMS.txt`,
+  `python scripts/lint_claims.py`). Live pack uses the `versions.py` TRL
+  sentence. Pytest count is `docs/TEST_COUNT.txt` from
+  `python scripts/export_test_count.py`, not a hardcoded 3/3 or 183.
+
 - **test**: native `check` on synthetic `res_severny` GREED/FIFO — domain kind
   multiset matches Python; nonempty `travel_minutes` keeps
   `verified_feasible` false (`tests/test_native_parity.py`). Jury-facing
