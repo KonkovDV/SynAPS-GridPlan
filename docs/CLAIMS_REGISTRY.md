@@ -106,7 +106,7 @@
 | Независимый Python-чекер жёстких нарушений | live | `tests/`, CLI `check` |
 | GREED / FIFO (эвристика `heuristic_feasible`) | prototype | jury / baselines |
 | CP-SAT makespan на скомпилированной постановке | prototype | `slow` test B3 |
-| Native Rust FIFO + доменный контур | prototype | `cargo test`; не весь чекер SynAPS |
+| Native Rust FIFO + доменный контур | prototype | `tests/test_native_parity.py` (small + домен `res_severny`); `travel_minutes` unsupported; не чекер движка SynAPS |
 | Синтетические фикстуры РЭС / авария / фидер | mock | `data_provenance=synthetic` |
 | Импорт живой выгрузки ДЗО | planned | живых дампов нет |
 | UI / кабинет планировщика | planned | в репо нет приложения |

@@ -7,6 +7,11 @@
   sentence. Pytest count is `docs/TEST_COUNT.txt` from
   `python scripts/export_test_count.py`, not a hardcoded 3/3 or 183.
 
+- **test**: native `check` on synthetic `res_severny` GREED/FIFO — domain kind
+  multiset matches Python; nonempty `travel_minutes` keeps
+  `verified_feasible` false (`tests/test_native_parity.py`). Jury-facing
+  limits: `docs/LIMITS.md`.
+
 - **bench**: committed ``jury_report.md`` now includes scenario D from a live
   ``CPSAT-30`` run on the same synthetic ``res_severny`` instance (status
   ``optimal``, 0 hard violations, dual bound = makespan, plan SHA-256).
