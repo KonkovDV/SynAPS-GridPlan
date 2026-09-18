@@ -48,6 +48,8 @@ VIOLATION_KIND_RU: dict[str, str] = {
     "INVALID_PROBLEM": "некорректная постановка задачи",
 }
 
+_TRUNCATION_LIMIT = 20
+
 
 def ru_violation_counts(outcome: PlanOutcome) -> dict[str, int]:
     """Counts from both check layers. Sum equals ``hard_violation_count``."""
@@ -252,15 +254,25 @@ def _as_markdown(outcome: PlanOutcome) -> str:
         ]
     gp = meta.get("gridplan_violations") or []
     engine = meta.get("engine_violations") or []
-    for v in gp[:20]:
+    for v in gp[:_TRUNCATION_LIMIT]:
         lines.append(f"- `{display_text(v.get('kind'))}`: {display_text(v.get('message'))}")
+    if len(gp) > _TRUNCATION_LIMIT:
+        overflow = len(gp) - _TRUNCATION_LIMIT
+        lines.append(
+            f"- _… ещё {overflow} нарушений GridPlan-слоя (полный список в JSON-отчёте)_"
+        )
     if not gp:
         lines.append("- none recorded at GridPlan layer")
     lines.append("")
     if engine:
         lines.append("Engine (SynAPS) hard violations:")
-        for v in engine[:20]:
+        for v in engine[:_TRUNCATION_LIMIT]:
             lines.append(f"- `{display_text(v.get('kind'))}`: {display_text(v.get('message'))}")
+        if len(engine) > _TRUNCATION_LIMIT:
+            overflow = len(engine) - _TRUNCATION_LIMIT
+            lines.append(
+                f"- _… ещё {overflow} нарушений движка (полный список в JSON-отчёте)_"
+            )
     else:
         lines.append("Engine (SynAPS) hard violations: none")
     practice = meta.get("practice") or {}
