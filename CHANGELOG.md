@@ -7,6 +7,12 @@
   `verified_feasible` false (`tests/test_native_parity.py`). Jury-facing
   limits: `docs/LIMITS.md`.
 
+- **bench**: committed ``jury_report.md`` now includes scenario D from a live
+  ``CPSAT-30`` run on the same synthetic ``res_severny`` instance (status
+  ``optimal``, 0 hard violations, dual bound = makespan, plan SHA-256).
+  ``python benchmark/jury_benchmark.py --cpsat`` is the regeneration command;
+  CI claim fixtures use it. Snapshot pin in ``test_committed_jury_report_matches_pin``.
+
 - **docs**: Energotechhub working note (`docs/ETECHHUB_APPLICATION.md`):
   live URL `/accelerator` (not `/accelerator2026`), official broker names,
   v7 pitch retracts, no second claims file at repo root. 25 Sep is this

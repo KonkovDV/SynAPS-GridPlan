@@ -104,11 +104,13 @@ def test_render_cpsat_section_stays_on_the_same_instance() -> None:
         "makespan_minutes": 120,
         "best_objective_bound": 120,
         "objective_bound_units": "makespan_minutes",
+        "plan_fingerprint": "ab" * 32,
     }
     text = render_md(payload)
     assert "## D. CP-SAT на том же инстансе" in text
     assert "scale-фидером" in text
     assert "Оптимальность GREED из scenario A не следует" in text
+    assert "abababababababab…" in text
 
 
 def test_demo_gate_checks_status_freeze_and_determinism() -> None:
@@ -122,6 +124,13 @@ def test_demo_gate_checks_status_freeze_and_determinism() -> None:
     assert not claims_pass(payload)
     payload["scenario_c"]["two_runs_identical"] = True
     payload["scenario_a"]["greed"]["status"] = "error"
+    assert not claims_pass(payload)
+    payload["scenario_a"]["greed"]["status"] = "feasible"
+    payload["scenario_d"] = {
+        "status": "feasible",
+        "verified_feasible": True,
+        "hard_violation_count": 0,
+    }
     assert not claims_pass(payload)
 
 
@@ -159,6 +168,22 @@ def test_committed_jury_report_matches_pin() -> None:
     greed_sec = text.split("GREED, расшифровка:")[1].split("\n## ")[0]
     assert _section_count_sum(fifo_sec) == fifo_n
     assert _section_count_sum(greed_sec) == greed_n
+    assert "## D. CP-SAT на том же инстансе" in text
+    d_sec = text.split("## D. CP-SAT на том же инстансе")[1].split("## ")[0]
+    assert "`CPSAT-30`" in d_sec
+    assert "| status | optimal |" in d_sec
+    assert "| verified_feasible | да |" in d_sec
+    hard = re.search(r"\| Жёстких нарушений \| (\d+) \|", d_sec)
+    assert hard is not None and int(hard.group(1)) == 0
+    span = re.search(r"\| makespan, мин \| ([0-9.]+) \|", d_sec)
+    bound = re.search(r"\| dual bound \| ([0-9.]+) \(makespan_minutes\) \|", d_sec)
+    assert span is not None and bound is not None
+    assert float(span.group(1)) == float(bound.group(1))
+    fp = re.search(r"\| Отпечаток \(SHA-256\) \| `([0-9a-f]{16})…` \|", d_sec)
+    assert fp is not None
+    wall = re.search(r"\| Время, с \| ([0-9.]+) \|", d_sec)
+    assert wall is not None
+    assert "не другой датасет" in text
 
 
 def test_fifo_serialized_layers_match_hard_count() -> None:

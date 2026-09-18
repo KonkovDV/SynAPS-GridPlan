@@ -66,14 +66,20 @@ def test_res_windowed_job_repair_feasible(res_problem) -> None:
 
 @pytest.mark.slow
 def test_res_cpsat_proves_optimal_makespan(res_problem) -> None:
-    """CP-SAT must prove OPTIMAL and its dual bound must equal achieved makespan."""
+    """End-to-end CPSAT-30 on the same res_severny instance as FIFO/GREED.
+
+    This is not a renderer test. The solver must return OPTIMAL, the
+    independent checker must accept the plan, and the dual bound must
+    equal achieved makespan.
+    """
     outcome = plan_with_config(res_problem, solver_config="CPSAT-30", apply_frozen=False)
     assert outcome.status == "optimal"
     assert outcome.verified_feasible
+    assert outcome.hard_violation_count == 0
+    assert len(outcome.schedule.assignments) == len(res_problem.jobs)
     bound = outcome.metadata.get("best_objective_bound")
     assert outcome.metadata.get("objective_bound_units") == "makespan_minutes"
     assert bound is not None
     assert outcome.schedule.objective.makespan_minutes == pytest.approx(bound, abs=1.0)
-    # Heuristic must match the proven optimum on the primary criterion.
     greed = plan_with_config(res_problem, solver_config="GREED", apply_frozen=False)
     assert greed.schedule.objective.makespan_minutes == pytest.approx(bound, abs=1.0)
