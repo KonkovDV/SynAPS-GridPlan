@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **test**: native `check` on synthetic `res_severny` GREED/FIFO — domain kind
+  multiset matches Python; nonempty `travel_minutes` keeps
+  `verified_feasible` false (`tests/test_native_parity.py`). Jury-facing
+  limits: `docs/LIMITS.md`.
+
 - **docs**: Energotechhub working note (`docs/ETECHHUB_APPLICATION.md`):
   live URL `/accelerator` (not `/accelerator2026`), official broker names,
   v7 pitch retracts, no second claims file at repo root. 25 Sep is this

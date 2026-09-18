@@ -10,12 +10,16 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB.svg)](https://www.python.org/)
 
+Границы продукта (синтетика, лабораторный TRL 4, Rust только доменный слой,
+нет трудового права): [docs/LIMITS.md](docs/LIMITS.md).
+
 | | |
 | --- | --- |
 | Базовая версия | **0.1.8** |
 | Базовая ветка | `main` |
 | Пин SynAPS | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
 | Зрелость | **Самооценка** ISO 16290 TRL 4, синтетические фикстуры. Не сертификат, **не ГОСТ Р 58048 УГТ4/5**, **не пилот на объекте**. |
+| Границы | [docs/LIMITS.md](docs/LIMITS.md) |
 | Реестр утверждений | [docs/CLAIMS_REGISTRY.md](docs/CLAIMS_REGISTRY.md) — verified / assumption / target / withdrawn |
 | Текущая заявка (один сценарий ТОиР) | [docs/APPLICATION_TOIR_SCENARIO.md](docs/APPLICATION_TOIR_SCENARIO.md) |
 | Энерготехнохаб (приём до 25.09) | [docs/ETECHHUB_APPLICATION.md](docs/ETECHHUB_APPLICATION.md) |
