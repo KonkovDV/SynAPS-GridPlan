@@ -113,6 +113,8 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "tests/test_res_severny.py" = ["E402"]
 "tests/test_emergency_day.py" = ["E402"]
 "tests/test_evidence_bundle.py" = ["E402"]
+"scripts/deck_facts.py" = ["E402"]
+"scripts/build_deck.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.12"

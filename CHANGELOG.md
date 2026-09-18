@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **docs**: pitch rebuild `python scripts/build_deck.py` reads
+  `jury_report.md` + `versions.py` + `git describe`; footer is not a
+  hardcoded 0.1.8. Extracted text: `docs/DECK_TEXT.txt`.
+
 - **docs**: CI-gated claims table in `docs/CLAIMS_REGISTRY.md` (`claim_id`,
   artifact, reproduce command, status). `tests/test_claims_registry.py`
   fails when a tagged lab number in README/deck builder lacks its id.

@@ -5,7 +5,7 @@
 Единственный реестр цифр: [`CLAIMS_REGISTRY.md`](CLAIMS_REGISTRY.md).
 Сценарий заявки: [`APPLICATION_TOIR_SCENARIO.md`](APPLICATION_TOIR_SCENARIO.md).
 Fact-check дека v7: [`PITCH_V7_FACTCHECK.md`](PITCH_V7_FACTCHECK.md).
-Дек подачи: `SynAPS_v8_Evidence.pptx` (`../scripts/build_pitch_v8.js`).
+Дек подачи: `SynAPS_v8_Evidence.pptx` (`python scripts/build_deck.py`).
 
 Приём: **7–25 сентября 2026**. Живая страница:
 [https://www.etechhubspb.ru/accelerator](https://www.etechhubspb.ru/accelerator).
