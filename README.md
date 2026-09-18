@@ -10,6 +10,9 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB.svg)](https://www.python.org/)
 
+Границы продукта (синтетика, лабораторный TRL 4, Rust только доменный слой,
+нет трудового права): [docs/LIMITS.md](docs/LIMITS.md).
+
 | | |
 | --- | --- |
 | Базовая версия | **0.1.8** [V1] |
@@ -17,6 +20,7 @@
 | Пин SynAPS | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) [V2] |
 | Зрелость | **TRL 4 по ISO 16290: лабораторные фикстуры, не пилот на предприятии** (`versions.py`) [V3]. Не сертификат, **не ГОСТ Р 58048 УГТ4/5**. |
 | Счёт pytest | [`docs/TEST_COUNT.txt`](docs/TEST_COUNT.txt) (`python -m pytest --collect-only -q`) [T1] |
+| Границы | [docs/LIMITS.md](docs/LIMITS.md) |
 | Реестр утверждений | [docs/CLAIMS_REGISTRY.md](docs/CLAIMS_REGISTRY.md) — verified / assumption / target / withdrawn |
 | Запрещённые формулировки | [`docs/BANNED_CLAIMS.txt`](docs/BANNED_CLAIMS.txt), CI: `python scripts/lint_claims.py` |
 | Текущая заявка (один сценарий ТОиР) | [docs/APPLICATION_TOIR_SCENARIO.md](docs/APPLICATION_TOIR_SCENARIO.md) |
