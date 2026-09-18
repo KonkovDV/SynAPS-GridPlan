@@ -58,25 +58,25 @@ def test_goel_doi_is_the_verified_ejor_article() -> None:
 
 
 def test_barral_doi_is_stable_springer_lncs() -> None:
-    """barral_cpaior_2024 must point to the permanent Springer LNCS 14742 DOI.
+    """barral_cpaior_2024 must point to the chapter DOI, not a volume or slides.
 
-    The EasyChair slide link (easychair.org/smart-slide/…) is a transient
-    artefact of the conference submission system and may disappear.  The
-    stable identifier is the Springer LNCS 14742 volume DOI.  PRACTICE.md
-    already uses this DOI; practice.py must stay in sync.
+    EasyChair smart-slide links are transient. CPAIOR 2024 is two LNCS volumes:
+    Part I = LNCS 14742 (10.1007/978-3-031-60597-0), Part II = LNCS 14743
+    (10.1007/978-3-031-60599-4). Barral et al. is LNCS 14742 pp. 34–50,
+    chapter DOI 10.1007/978-3-031-60597-0_3 (PolyPublie / Springer).
     """
+    chapter = "https://doi.org/10.1007/978-3-031-60597-0_3"
     barral = next(r for r in REFS if r.key == "barral_cpaior_2024")
-    assert barral.url == "https://doi.org/10.1007/978-3-031-60599-4", (
-        f"barral_cpaior_2024 URL must be the stable Springer LNCS DOI, got: {barral.url}"
+    assert barral.url == chapter, (
+        f"barral_cpaior_2024 URL must be the Springer chapter DOI, got: {barral.url}"
     )
-    assert "easychair" not in barral.url.lower(), (
-        "EasyChair link is transient; use the Springer LNCS DOI instead."
+    assert "easychair" not in barral.url.lower()
+    assert "60599-4" not in barral.url, (
+        "10.1007/978-3-031-60599-4 is CPAIOR 2024 Part II (LNCS 14743), not this paper."
     )
-    # PRACTICE.md must also reference the same DOI.
     text = PRACTICE_MD.read_text(encoding="utf-8")
-    assert "10.1007/978-3-031-60599-4" in text, (
-        "PRACTICE.md must contain the Springer LNCS 14742 DOI for Barral et al."
-    )
+    assert "10.1007/978-3-031-60597-0_3" in text
+    assert "10.1007/978-3-031-60599-4" not in text
 
 
 def test_energies_2025_and_hydro_quebec_are_cited() -> None:

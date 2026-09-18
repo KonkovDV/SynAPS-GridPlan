@@ -62,9 +62,9 @@ REFS: tuple[PracticeRef, ...] = (
         citation=(
             "Barral, Gaha, Dems, Côté, Nguewouo, Cappart. Acquiring Constraints "
             "for a Non-Linear Transmission Maintenance Scheduling Problem. "
-            "CPAIOR 2024, Springer LNCS 14742."
+            "CPAIOR 2024, Springer LNCS 14742, pp. 34–50."
         ),
-        url="https://doi.org/10.1007/978-3-031-60599-4",
+        url="https://doi.org/10.1007/978-3-031-60597-0_3",
         kind="paper",
     ),
     PracticeRef(
