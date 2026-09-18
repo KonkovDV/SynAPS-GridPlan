@@ -60,12 +60,16 @@ def _ok(snap: dict) -> bool:
 def claims_pass(results: dict) -> bool:
     """Gate the positive demo claims, not just successful script execution."""
     b = results["scenario_b"]
-    return (
+    ok = (
         _ok(results["scenario_a"]["greed"])
         and _ok(b["repaired"])
         and b["frozen_windows_moved"] == 0
         and results["scenario_c"]["two_runs_identical"] is True
     )
+    d = results.get("scenario_d")
+    if d is not None:
+        ok = ok and _ok(d) and d.get("status") == "optimal"
+    return ok
 
 
 def _mark(ok: bool) -> str:
@@ -174,6 +178,9 @@ def run(*, with_cpsat: bool = False) -> dict:
             "best_objective_bound": cpsat.metadata.get("best_objective_bound"),
             "objective_bound_units": cpsat.metadata.get("objective_bound_units"),
             "determinism": cpsat.metadata.get("determinism"),
+            "plan_fingerprint": fingerprint_payload(
+                [a.model_dump(mode="json") for a in cpsat.schedule.assignments]
+            ),
         }
     (RESULTS / "jury_results.json").write_text(
         json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8"
@@ -226,6 +233,7 @@ def render_md(r: dict) -> str:
 | Жёстких нарушений | {d.get("hard_violation_count")} |
 | makespan, мин | {d.get("makespan_minutes")} |
 | dual bound | {d.get("best_objective_bound")} ({d.get("objective_bound_units")}) |
+| Отпечаток (SHA-256) | `{str(d.get("plan_fingerprint") or "")[:16]}…` |
 | Время, с | {d.get("wall_time_s")} |
 
 Оптимум — только скомпилированная постановка и критерий makespan. Не смешивать

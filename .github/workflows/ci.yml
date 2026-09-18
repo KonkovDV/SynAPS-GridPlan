@@ -38,7 +38,7 @@ jobs:
         run: python -m pytest -q
       - name: Claim fixtures still run
         run: |
-          python benchmark/jury_benchmark.py
+          python benchmark/jury_benchmark.py --cpsat
           python benchmark/emergency_day_benchmark.py
           python benchmark/scale_benchmark.py
       - name: Evidence bundle (same res_severny instance, including CP-SAT)
