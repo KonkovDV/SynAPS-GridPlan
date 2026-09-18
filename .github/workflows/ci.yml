@@ -41,6 +41,8 @@ jobs:
           python benchmark/jury_benchmark.py
           python benchmark/emergency_day_benchmark.py
           python benchmark/scale_benchmark.py
+      - name: Evidence bundle (same res_severny instance, including CP-SAT)
+        run: python scripts/evidence_bundle.py --skip-pytest
       - name: pip-audit installed tree
         run: |
           python -m pip install pip-audit

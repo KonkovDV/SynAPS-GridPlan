@@ -72,7 +72,7 @@ def _mark(ok: bool) -> str:
     return "да" if ok else "нет"
 
 
-def run() -> dict:
+def run(*, with_cpsat: bool = False) -> dict:
     RESULTS.mkdir(parents=True, exist_ok=True)
     problem = build_res_problem()
 
@@ -160,6 +160,21 @@ def run() -> dict:
             ),
         },
     }
+    if with_cpsat:
+        cpsat, t_cpsat = _timed(
+            lambda: plan_with_config(problem, solver_config="CPSAT-30", apply_frozen=False)
+        )
+        results["scenario_d"] = {
+            "dataset": "res_severny_synthetic",
+            "same_instance_as": "scenario_a",
+            "solver_config": "CPSAT-30",
+            "do_not_merge_with": ["emergency_day", "scale_feeder", "synaps_50k"],
+            **_snapshot(cpsat, t_cpsat),
+            "makespan_minutes": cpsat.schedule.objective.makespan_minutes,
+            "best_objective_bound": cpsat.metadata.get("best_objective_bound"),
+            "objective_bound_units": cpsat.metadata.get("objective_bound_units"),
+            "determinism": cpsat.metadata.get("determinism"),
+        }
     (RESULTS / "jury_results.json").write_text(
         json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8"
     )
@@ -196,6 +211,27 @@ def render_md(r: dict) -> str:
             "Этот прогон нельзя показывать как допустимый план. "
             "Улучшение относительно FIFO без сравнения результатов не утверждается."
         )
+    d = r.get("scenario_d")
+    d_section = ""
+    if d:
+        d_ok = _ok(d)
+        d_section = f"""
+## D. CP-SAT на том же инстансе (не другой датасет)
+
+| Показатель | Значение |
+| --- | --- |
+| solver | `{d.get("solver_config", "CPSAT-30")}` |
+| status | {d.get("status")} |
+| verified_feasible | {_mark(d_ok)} |
+| Жёстких нарушений | {d.get("hard_violation_count")} |
+| makespan, мин | {d.get("makespan_minutes")} |
+| dual bound | {d.get("best_objective_bound")} ({d.get("objective_bound_units")}) |
+| Время, с | {d.get("wall_time_s")} |
+
+Оптимум — только скомпилированная постановка и критерий makespan. Не смешивать
+с аварийными сутками и scale-фидером. Оптимальность GREED из scenario A не следует.
+"""
+
     if repair_ok:
         b_verdict = (
             f"Замороженные заявки ПЛ не сдвинуты ({b['frozen_windows_moved']} конфликтов). "
@@ -267,26 +303,36 @@ GREED, расшифровка:
 ## Границы
 
 Синтетика. Нет расчёта N-1 и SAIDI, нет живых данных ДЗО. Показатель риска в продукте — справочный.
-Проверка оптимума makespan скомпилированной постановки (CP-SAT, dual bound = факт) — `benchmark/res_severny_benchmark.py`, маркер pytest `slow`.
+Проверка оптимума makespan скомпилированной постановки (CP-SAT, dual bound = факт) —
+`benchmark/res_severny_benchmark.py`, маркер pytest `slow`, либо
+`python benchmark/jury_benchmark.py --cpsat` (тот же инстанс, scenario D).
 
 Контур — слой формализуемых ограничений (бригады, окна, явные запреты пар, заморозка ПЛ),
 как слой 1 TMS Hydro-Québec (CP 2022). Потокораспределение вне продукта. Таблица: `PRACTICE.md`.
+{d_section}
 """
 
 
 if __name__ == "__main__":
-    out = run()
-    a = out["scenario_a"]
-    print(
-        json.dumps(
-            {
-                "greed_ok": _ok(a["greed"]),
-                "fifo_ok": _ok(a["fifo"]),
-                "repair_ok": _ok(out["scenario_b"]["repaired"]),
-                "deterministic": out["scenario_c"]["two_runs_identical"],
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--cpsat",
+        action="store_true",
+        help="Also solve the same res_severny instance with CPSAT-30 (scenario D).",
     )
+    args = parser.parse_args()
+    out = run(with_cpsat=args.cpsat)
+    a = out["scenario_a"]
+    payload = {
+        "greed_ok": _ok(a["greed"]),
+        "fifo_ok": _ok(a["fifo"]),
+        "repair_ok": _ok(out["scenario_b"]["repaired"]),
+        "deterministic": out["scenario_c"]["two_runs_identical"],
+    }
+    if "scenario_d" in out:
+        payload["cpsat_status"] = out["scenario_d"].get("status")
+        payload["cpsat_ok"] = _ok(out["scenario_d"])
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
     raise SystemExit(0 if claims_pass(out) else 2)

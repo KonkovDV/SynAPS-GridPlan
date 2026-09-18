@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **docs**: truth pass 2026-09-18 — claims registry, GOST R 58048 vs ISO 16290,
+  187-FZ not claimed as attestation, no GridPlan–Россети partnership, market
+  figures marked assumption/target, one ТОиР scenario, UGT/IP/pilot notes,
+  red-team brief. Evidence command: `python scripts/evidence_bundle.py`
+  (CP-SAT on the same `res_severny` instance as FIFO/GREED).
+
 ## 0.1.8 — 2026-09-18
 
 Red Team 0.1.8–0.1.9 closures. SynAPS pin unchanged

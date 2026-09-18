@@ -35,6 +35,7 @@ APS.code-workspace
 # Generated benchmark I/O (markdown reports stay tracked)
 benchmark/results/*.json
 benchmark/results/*.log
+benchmark/results/evidence_bundle.md
 
 # Rust build
 native/synaps-gridplan-rs/target/
