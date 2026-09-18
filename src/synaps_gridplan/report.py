@@ -258,9 +258,7 @@ def _as_markdown(outcome: PlanOutcome) -> str:
         lines.append(f"- `{display_text(v.get('kind'))}`: {display_text(v.get('message'))}")
     if len(gp) > _TRUNCATION_LIMIT:
         overflow = len(gp) - _TRUNCATION_LIMIT
-        lines.append(
-            f"- _… ещё {overflow} нарушений GridPlan-слоя (полный список в JSON-отчёте)_"
-        )
+        lines.append(f"- _… ещё {overflow} нарушений GridPlan-слоя (полный список в JSON-отчёте)_")
     if not gp:
         lines.append("- none recorded at GridPlan layer")
     lines.append("")
@@ -270,9 +268,7 @@ def _as_markdown(outcome: PlanOutcome) -> str:
             lines.append(f"- `{display_text(v.get('kind'))}`: {display_text(v.get('message'))}")
         if len(engine) > _TRUNCATION_LIMIT:
             overflow = len(engine) - _TRUNCATION_LIMIT
-            lines.append(
-                f"- _… ещё {overflow} нарушений движка (полный список в JSON-отчёте)_"
-            )
+            lines.append(f"- _… ещё {overflow} нарушений движка (полный список в JSON-отчёте)_")
     else:
         lines.append("Engine (SynAPS) hard violations: none")
     practice = meta.get("practice") or {}
