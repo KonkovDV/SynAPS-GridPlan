@@ -25,7 +25,13 @@ def plan_fifo(
     *,
     apply_frozen: bool = False,
 ) -> PlanOutcome:
-    """Earliest-due-date first; assign first eligible free crew (deterministic)."""
+    """Earliest-due-date first; assign first eligible free crew (deterministic).
+
+    A (crew, start) pair is skipped when the resulting end time would exceed
+    either ``planning_horizon_end`` or the job's own ``latest_finish``.  The
+    post-checker remains the authoritative constraint layer; this guard makes
+    the baseline honest about which slots it can fill.
+    """
 
     schedule_problem, id_map = to_schedule_problem(problem)
     ops = {op.id: op for op in schedule_problem.operations}
@@ -74,6 +80,9 @@ def plan_fifo(
             start = max(free_at, release, problem.planning_horizon_start)
             end = start + timedelta(minutes=op.base_duration_min)
             if end > problem.planning_horizon_end:
+                continue
+            # Respect the job's own hard deadline: do not schedule past latest_finish.
+            if job.latest_finish is not None and end > job.latest_finish:
                 continue
             code = crew_code.get(wc_id, "")
             best_code = crew_code.get(best_wc, "") if best_wc is not None else ""

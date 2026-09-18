@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import datetime, timedelta
 from uuid import UUID, uuid5
 
@@ -517,7 +517,11 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
 
 
 def _job_chains(jobs: list[MaintenanceJob]) -> list[list[MaintenanceJob]]:
-    """Partition jobs into predecessor chains (linear components only)."""
+    """Partition jobs into predecessor chains (linear components only).
+
+    Uses a deque for O(1) popleft instead of list.pop(0) which is O(n),
+    keeping the overall algorithm O(n) for MAX_JOBS=20 000 inputs.
+    """
 
     by_id = {job.id: job for job in jobs}
     successors: dict[UUID, list[UUID]] = defaultdict(list)
@@ -528,13 +532,13 @@ def _job_chains(jobs: list[MaintenanceJob]) -> list[list[MaintenanceJob]]:
                 successors[pred].append(job.id)
                 has_pred.add(job.id)
 
-    queue = [job.id for job in jobs if job.id not in has_pred]
+    queue: deque[UUID] = deque(job.id for job in jobs if job.id not in has_pred)
     seen: set[UUID] = set()
     chains: list[list[MaintenanceJob]] = []
     deferred: list[UUID] = []
 
     while queue:
-        job_id = queue.pop(0)
+        job_id = queue.popleft()
         if job_id in seen:
             continue
         chain: list[MaintenanceJob] = []
@@ -554,7 +558,7 @@ def _job_chains(jobs: list[MaintenanceJob]) -> list[list[MaintenanceJob]]:
 
     queue.extend(deferred)
     while queue:
-        job_id = queue.pop(0)
+        job_id = queue.popleft()
         if job_id in seen:
             continue
         chains.append([by_id[job_id]])
