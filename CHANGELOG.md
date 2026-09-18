@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **docs**: Energotechhub working note (`docs/ETECHHUB_APPLICATION.md`):
+  live URL `/accelerator` (not `/accelerator2026`), official broker names,
+  v7 pitch retracts, no second claims file at repo root. 25 Sep is this
+  accelerator, not Academy «10th stream».
+
 - **docs**: truth pass 2026-09-18 — claims registry, GOST R 58048 vs ISO 16290,
   187-FZ not claimed as attestation, no GridPlan–Россети partnership, market
   figures marked assumption/target, one ТОиР scenario, UGT/IP/pilot notes,
