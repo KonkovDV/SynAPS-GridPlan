@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "synaps-gridplan-rs",
-      "version": "0.1.7"
+      "version": "0.1.8"
     }
   },
   "components": [
@@ -793,8 +793,8 @@
     {
       "type": "library",
       "name": "synaps_gridplan_rs",
-      "version": "0.1.7",
-      "purl": "pkg:cargo/synaps_gridplan_rs@0.1.7"
+      "version": "0.1.8",
+      "purl": "pkg:cargo/synaps_gridplan_rs@0.1.8"
     },
     {
       "type": "library",
@@ -877,12 +877,12 @@
     {
       "type": "library",
       "name": "uuid",
-      "version": "1.24.1",
-      "purl": "pkg:cargo/uuid@1.24.1",
+      "version": "1.26.1",
+      "purl": "pkg:cargo/uuid@1.26.1",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "2cefc03fd367c0c6d4305de1b312cf00248c4114f4a0418ce6a6af769e3b0bd9"
+          "content": "2ef6dac1e96601b4fb3acccccff2139741fcb757cb9a36089bf5be91cfb285ce"
         }
       ],
       "description": "registry+https://github.com/rust-lang/crates.io-index"

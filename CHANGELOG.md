@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.8 — 2026-09-18
+
+Red Team 0.1.8–0.1.9 closures. SynAPS pin unchanged
+[`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169).
+Self-assessed ISO 16290 TRL 4. Not a plant pilot.
+
+- **perf**: `_job_chains` uses `deque.popleft()` instead of `list.pop(0)` —
+  O(n²) → O(n) for MAX_JOBS = 20 000 inputs (PR #20).
+- **fix**: `plan_fifo` now skips a (crew, slot) pair when
+  `start + duration_min > job.latest_finish`. The post-checker remains
+  authoritative; this makes the baseline honest (PR #21).
+- **fix**: `_as_markdown` adds an italicised continuation line when
+  `gridplan_violations` or `engine_violations` exceed 20 entries —
+  silent truncation would mislead a reviewer reading only the markdown
+  output (PR #18). Constant extracted as `_TRUNCATION_LIMIT = 20`.
+- **fix**: `GridPlanProblem._cross_refs` appends an overflow count when
+  more than 20 validation errors are raised (PR #23).
+- **test**: Red Team 0.1.8 suite — 500-job chain correctness, markdown
+  truncation note, FIFO `latest_finish` boundary, outage-window boundary
+  smoke (PR #19).
+- **test**: Red Team 0.1.9 suite — diamond topology, `_cross_refs`
+  overflow, sparse precedence (PR #24).
+- **docs**: Barral CPAIOR 2024 stable Springer DOI and September 2026
+  SOTA notes in ``PRACTICE.md`` (PR #22).
+- **deps**: native ``uuid`` 1.24.1 → 1.26.1 (PR #17).
+
 ## 0.1.7 — 2026-09-08
 
 Completes the laboratory closures named in 0.1.6. SynAPS pin remains

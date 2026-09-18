@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-GRIDPLAN_VERSION = "0.1.7"
+GRIDPLAN_VERSION = "0.1.8"
 
 # ISO 16290 TRL 4: lab fixtures and automated checks. Not a plant pilot.
 ISO16290_TRL = 4
