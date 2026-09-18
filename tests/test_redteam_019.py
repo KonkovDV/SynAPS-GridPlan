@@ -5,9 +5,10 @@ Three adversarial scenarios not covered by the 0.1.8 test suite.
 
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
+
+import pytest
 
 from synaps_gridplan.adapter import _job_chains
 from synaps_gridplan.model import (
@@ -16,7 +17,6 @@ from synaps_gridplan.model import (
     GridPlanProblem,
     MaintenanceJob,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -82,9 +82,7 @@ def test_diamond_topology_partitions_to_singletons() -> None:
 
     all_ids = {job.id for chain in chains for job in chain}
     assert all_ids == {a.id, b.id, c.id, d.id}, "no job must be dropped"
-    assert len(chains) == 4, (
-        f"diamond topology must produce 4 singleton chains, got {len(chains)}"
-    )
+    assert len(chains) == 4, f"diamond topology must produce 4 singleton chains, got {len(chains)}"
     assert all(len(chain) == 1 for chain in chains), (
         "each chain must be a singleton for non-linear topology"
     )
@@ -164,9 +162,7 @@ def test_cross_refs_overflow_note_when_more_than_20_errors() -> None:
         f"got: {msg[:200]}"
     )
     # Exactly _CROSS_REFS_LIMIT=20 errors are listed; 5 are in the overflow.
-    assert "5 more" in msg or "and 5" in msg, (
-        f"overflow count must be 5, got message: {msg[:200]}"
-    )
+    assert "5 more" in msg or "and 5" in msg, f"overflow count must be 5, got message: {msg[:200]}"
 
 
 def test_cross_refs_no_overflow_note_at_exactly_limit() -> None:
