@@ -6,3 +6,5 @@ Pin: `pyproject.toml` / `src/synaps_gridplan/versions.py`.
 Not N-1, not SAIDI, not 1С:ТОИР, not live DZO dumps.
 `FEASIBLE` ⇒ `proven_hard_violations = ∅`.
 ISO 16290 TRL 4 is a **self-assessment** on synthetic fixtures. Not a plant pilot.
+Not GOST R 58048 certification. Not 187-FZ / KII attestation.
+Claims: `docs/CLAIMS_REGISTRY.md`. Do not add numbers or partners without a row.

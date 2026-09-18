@@ -93,6 +93,24 @@ def test_renderer_does_not_invent_fifo_failure_or_greed_improvement() -> None:
     assert "сократил" not in render_md(worse)
 
 
+def test_render_cpsat_section_stays_on_the_same_instance() -> None:
+    payload = _payload(greed_verified=True, greed_viol=0, repair_verified=True)
+    payload["scenario_d"] = {
+        "status": "optimal",
+        "verified_feasible": True,
+        "hard_violation_count": 0,
+        "wall_time_s": 8.1,
+        "solver_config": "CPSAT-30",
+        "makespan_minutes": 120,
+        "best_objective_bound": 120,
+        "objective_bound_units": "makespan_minutes",
+    }
+    text = render_md(payload)
+    assert "## D. CP-SAT на том же инстансе" in text
+    assert "scale-фидером" in text
+    assert "Оптимальность GREED из scenario A не следует" in text
+
+
 def test_demo_gate_checks_status_freeze_and_determinism() -> None:
     payload = _payload(greed_verified=True, greed_viol=0, repair_verified=True)
     assert claims_pass(payload)

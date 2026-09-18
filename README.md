@@ -15,11 +15,14 @@
 | Базовая версия | **0.1.8** |
 | Базовая ветка | `main` |
 | Пин SynAPS | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
-| Зрелость | **Самооценка** ISO 16290 TRL 4, синтетические фикстуры. Не сертификат и **не пилот на объекте**. |
+| Зрелость | **Самооценка** ISO 16290 TRL 4, синтетические фикстуры. Не сертификат, **не ГОСТ Р 58048 УГТ4/5**, **не пилот на объекте**. |
+| Реестр утверждений | [docs/CLAIMS_REGISTRY.md](docs/CLAIMS_REGISTRY.md) — verified / assumption / target / withdrawn |
+| Текущая заявка (один сценарий ТОиР) | [docs/APPLICATION_TOIR_SCENARIO.md](docs/APPLICATION_TOIR_SCENARIO.md) |
 | Академия инноваторов, 10-й поток | [Подготовка заявки и проверенные условия](ACADEMY_APPLICATION.md) |
 | Исторический пакет другой программы | [APPLICATION.md](APPLICATION.md): «Марафон инноваций. Энергия будущего». `SynAPS-GridPlan.pdf` — прежний питч марафона, не пакет Академии. |
 | Практика | [PRACTICE.md](PRACTICE.md) |
 | Аудит и риски | [AUDIT.md](AUDIT.md): воспроизведения, CI, границы модели и оставшиеся gate |
+| УГТ / IP / пилот | [ГОСТ Р 58048](docs/UGT_GOST_R_58048.md), [IP и open-core](docs/IP_AND_OPEN_CORE.md), [one-pager пилота](docs/PILOT_ONEPAGER.md) |
 | Архив заявки и red-team | [docs/00_README.md](docs/00_README.md), [_SUBMIT_MIK_2026_08_18](_SUBMIT_MIK_2026_08_18/README.md) |
 | Синтетические фикстуры | [benchmark/instances](benchmark/instances/README.md) |
 
@@ -30,7 +33,10 @@ Badge относится к `main`. Доказательства аудита п
 а не к номеру версии или старой картинке отчёта.
 
 English: crew- and window-constrained maintenance scheduling on SynAPS, with an
-independent domain checker. Lab fixtures only. Not N-1, not SAIDI, not a plant pilot.
+independent domain checker. Lab fixtures only. Not N-1, not SAIDI, not a plant
+pilot. ISO 16290 TRL 4 is a space-systems self-assessment, not GOST R 58048
+certification. 187-FZ (KII) compliance is not claimed. ПАО «Россети» is not a
+documented GridPlan customer.
 
 ## Что делает и чего не делает
 
@@ -69,7 +75,12 @@ power-flow): [PRACTICE.md](PRACTICE.md). Явный запрет двух отк
 python -m pip install -e ".[dev]" --force-reinstall
 python -m synaps_gridplan version
 python benchmark/jury_benchmark.py
+python scripts/evidence_bundle.py --skip-pytest
 ```
+
+`evidence_bundle.py` без `--skip-pytest` прогоняет pytest, jury и CP-SAT на
+**том же** синтетическом РЭС «Северный». JSON пишется в `benchmark/results/`
+(gitignore). Не складывать этот прогон с аварийными сутками или scale-фидером.
 
 | Что увидеть | Команда / файл |
 | --- | --- |
@@ -124,7 +135,7 @@ python -m synaps_gridplan practice
 python -m pytest -q -m "not slow"
 ```
 
-## Контракт входа (0.1.7)
+## Контракт входа (0.1.8)
 
 - ISO-даты передавайте с `Z` или явным смещением, например
   `2026-09-01T09:00:00+03:00`. Unix-время, boolean и naive datetime без зоны
