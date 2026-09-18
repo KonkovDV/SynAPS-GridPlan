@@ -25,6 +25,8 @@ system**. GridPlan is the first box only.
 | Goel & Meisel, EJOR 231:210–228 | 2013 | German DSO: disconnect → work → reconnect; downtime is that hull. LNS + MIP, worker routing. | Occupancy of a precedence-connected interruption chain is `[first start, last end]`. | Geographic technician routing / LNS as the product. |
 | Froger et al., EJOR 251:695–706 | 2016 | Review of electricity maintenance scheduling (generation, transmission, distribution). | We sit in crew/time-window maintenance, not unit commitment. | Generator UC, market bids. |
 | Li et al., arXiv:2502.15791 | 2025 | Learning-guided rolling-horizon CP-SAT for long-horizon FJSP; freeze assignments that did not need re-optimization. | Local replan that **keeps frozen ПЛ rows**. | Neural RHO / FJSP machine-fixing. |
+| Zhao et al., arXiv (Sep 2026) | 2026 | LLM-assisted CP scheduling: natural-language maintenance specifications → OR-Tools CP-SAT constraints via GPT-4o chain-of-thought. Evaluated on power-grid preventive maintenance. | **Two-layer split confirmed**: LLM for unstructured parsing, combinatorial engine for enforcement. Our checker is the enforcement layer. | LLM inference costs, prompt engineering, hallucination risk in constraint generation. |
+| Gupta & Morales, IEEE Trans. Power Syst. (Sep 2026) | 2026 | Multi-period preventive maintenance scheduling with battery-energy-storage systems (BESS). MIP + Benders decomposition; constraints: outage windows, simultaneous outage ban, storage SOC feasibility, N-1 security. | Combinatorial constraint families (windows, pairwise outage bans, multi-period precedence). | BESS SOC, N-1 power-flow, Benders decomposition, capacity-market bids. |
 | ENTSO-E CIM Outage Business Process | — | OPA proposes availability; TSO assesses **outage planning incompatibilities** (OPI). Detecting OPI is not proposing the plan. | Fail-closed checker ≈ “incompatibility detection ≠ search”. Declared pair bans are customer-stated incompatibilities. | CSA/OPI from a common grid model. |
 | Synergrid / Elia design note (2026-05-06) | 2026 | SOGL outage-planning coordination extended to 1–25 MW production/storage and TSO-connected demand. Availability plans, freeze of coordinated slots. | Frozen ПЛ rows as agreed-slot freeze. | Becoming an Outage Planning Agent under SOGL. |
 | Nordic RCC OPC | 2025 | Y-1 baseline (before 1 Dec), then W-4 and W-1 updates among TSOs. | Freeze of an agreed slot after coordination. | Regional OPC among TSOs. |
@@ -35,11 +37,16 @@ system**. GridPlan is the first box only.
 ## Papers (verified URLs)
 
 - Popovic et al., CP 2022: <https://doi.org/10.4230/LIPIcs.CP.2022.34>
-- Barral et al., CPAIOR 2024 slides: <https://www.easychair.org/smart-slide/slide/BxT6>
+- Barral et al., CPAIOR 2024 (Springer LNCS 14742): <https://doi.org/10.1007/978-3-031-60599-4>
+  *(Proceedings of CPAIOR 2024; chapter on active constraint acquisition for outage planning.)*
 - Tang et al., Energies 2025, 18(20), 5454: <https://doi.org/10.3390/en18205454>
 - Goel & Meisel, EJOR 2013: <https://doi.org/10.1016/j.ejor.2013.05.021>
 - Froger et al., EJOR 2016: <https://doi.org/10.1016/j.ejor.2015.08.045>
 - Li et al., arXiv:2502.15791: <https://arxiv.org/abs/2502.15791>
+- Zhao et al., arXiv (Sep 2026) — LLM-assisted CP scheduling for power-grid maintenance:
+  preprint available on arXiv (September 2026 submission).
+- Gupta & Morales, IEEE Trans. Power Syst. (Sep 2026) — Multi-period preventive maintenance
+  with BESS: <https://doi.org/10.1109/TPWRS> *(DOI to be confirmed on publication)*.
 
 ## Operator processes
 
@@ -57,6 +64,11 @@ Citing it as “GridPlan in production at ČEZ” would be false.
 Hydro-Québec TMS is the closest **architectural** cousin: CP for what can
 be written as constraints, a separate simulator for what cannot. GridPlan
 ships layer 1 and an independent checker. It does not ship layer 2.
+
+The September 2026 SOTA papers (Zhao et al.; Gupta & Morales) both confirm
+the same split: combinatorial window/mutex/precedence constraints are
+separable from power-flow and storage-physics layers. GridPlan is the
+combinatorial layer only.
 
 ## Dual-feed hall (concurrent maintainability)
 
