@@ -115,8 +115,10 @@ Shared domain kinds include `ASSET_OVERLAP`, `CREW_OVERLAP`, `OUTAGE_WINDOW_*` a
 identical across languages. Engine-only kinds (`MACHINE_OVERLAP`,
 `DURATION_BELOW_GRAIN`, etc.) stay in Python.
 
-Parity guard: `tests/test_native_parity.py` (needs `cargo` on PATH). It retains the
-kind comparison and separately tests the stricter verification/coverage flags.
+Parity guard: `tests/test_native_parity.py` (needs `cargo` on PATH). Kind
+comparison plus coverage flags on `--mode small` (seeds 26/42/12) and on
+GREED/FIFO plans of synthetic `res_severny`. Domain layer only; travel remains
+unsupported.
 
 ## License
 
