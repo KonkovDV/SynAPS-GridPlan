@@ -37,8 +37,9 @@ system**. GridPlan is the first box only.
 ## Papers (verified URLs)
 
 - Popovic et al., CP 2022: <https://doi.org/10.4230/LIPIcs.CP.2022.34>
-- Barral et al., CPAIOR 2024 (Springer LNCS 14742): <https://doi.org/10.1007/978-3-031-60599-4>
-  *(Proceedings of CPAIOR 2024; chapter on active constraint acquisition for outage planning.)*
+- Barral et al., CPAIOR 2024 (Springer LNCS 14742, pp. 34–50):
+  <https://doi.org/10.1007/978-3-031-60597-0_3>
+  *(Active constraint acquisition for Hydro-Québec transmission outage planning.)*
 - Tang et al., Energies 2025, 18(20), 5454: <https://doi.org/10.3390/en18205454>
 - Goel & Meisel, EJOR 2013: <https://doi.org/10.1016/j.ejor.2013.05.021>
 - Froger et al., EJOR 2016: <https://doi.org/10.1016/j.ejor.2015.08.045>

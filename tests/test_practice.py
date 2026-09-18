@@ -57,14 +57,36 @@ def test_goel_doi_is_the_verified_ejor_article() -> None:
     assert "10.1016/j.ejor.2013.05.021" in model
 
 
+def test_barral_doi_is_stable_springer_lncs() -> None:
+    """barral_cpaior_2024 must point to the chapter DOI, not a volume or slides.
+
+    EasyChair smart-slide links are transient. CPAIOR 2024 is two LNCS volumes:
+    Part I = LNCS 14742 (10.1007/978-3-031-60597-0), Part II = LNCS 14743
+    (10.1007/978-3-031-60599-4). Barral et al. is LNCS 14742 pp. 34–50,
+    chapter DOI 10.1007/978-3-031-60597-0_3 (PolyPublie / Springer).
+    """
+    chapter = "https://doi.org/10.1007/978-3-031-60597-0_3"
+    barral = next(r for r in REFS if r.key == "barral_cpaior_2024")
+    assert barral.url == chapter, (
+        f"barral_cpaior_2024 URL must be the Springer chapter DOI, got: {barral.url}"
+    )
+    assert "easychair" not in barral.url.lower()
+    assert "60599-4" not in barral.url, (
+        "10.1007/978-3-031-60599-4 is CPAIOR 2024 Part II (LNCS 14743), not this paper."
+    )
+    text = PRACTICE_MD.read_text(encoding="utf-8")
+    assert "10.1007/978-3-031-60597-0_3" in text
+    assert "10.1007/978-3-031-60599-4" not in text
+
+
 def test_energies_2025_and_hydro_quebec_are_cited() -> None:
     urls = {r.url for r in REFS}
     assert "https://doi.org/10.3390/en18205454" in urls
     assert "https://doi.org/10.4230/LIPIcs.CP.2022.34" in urls
     text = PRACTICE_MD.read_text(encoding="utf-8")
     assert "10.3390/en18205454" in text
-    assert "Hydro-Québec" in text
-    assert "ČEZ" in text
+    assert "Hydro-Qu\u00e9bec" in text
+    assert "\u010cEZ" in text
     assert "out of scope" in text.lower()
 
 
@@ -119,6 +141,6 @@ def test_dual_feed_and_m9_are_cited_as_limits() -> None:
     assert "Concurrently Maintainable" in text or "concurrent maintainability" in text.lower()
     assert "MMTS-9" in text
     assert "not a reconstruction" in text.lower() or "not a reconstruction of M9" in text.lower()
-    assert "Кириенко" not in text
-    assert "Савиновский" not in text
+    assert "\u041a\u0438\u0440\u0438\u0435\u043d\u043a\u043e" not in text
+    assert "\u0421\u0430\u0432\u0438\u043d\u043e\u0432\u0441\u043a\u0438\u0439" not in text
     assert "dual-feed-hall" in text
