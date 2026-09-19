@@ -49,9 +49,7 @@ def test_linter_skips_historical_catalog_and_pdf() -> None:
     lint = _load("gridplan_lint_claims", "scripts/lint_claims.py")
     assert lint.skip_path(ROOT / "docs" / "00_README.md")
     assert lint.skip_path(ROOT / "_SUBMIT_MIK_2026_08_18" / "README.md")
-    assert lint.skip_path(
-        ROOT / "_SUBMIT_MIK_2026_08_18" / "SynAPS-GridPlan-marathon-0.1.4.pdf"
-    )
+    assert lint.skip_path(ROOT / "_SUBMIT_MIK_2026_08_18" / "SynAPS-GridPlan-marathon-0.1.4.pdf")
     assert not lint.skip_path(ROOT / "README.md")
 
 
