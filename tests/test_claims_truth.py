@@ -89,3 +89,12 @@ def test_v8_pitch_builder_and_deck_exist() -> None:
     assert "планировщик смен" in builder  # denied, not sold
     assert (ROOT / "SynAPS_v8_Evidence.pptx").is_file()
     assert not (ROOT / "CLAIMS_REGISTER.md").exists()
+
+
+def test_stale_marathon_pdf_is_archived_not_in_root_or_sdist() -> None:
+    assert not (ROOT / "SynAPS-GridPlan.pdf").exists()
+    archived = ROOT / "_SUBMIT_MIK_2026_08_18" / "SynAPS-GridPlan-marathon-0.1.4.pdf"
+    assert archived.is_file()
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert "/SynAPS-GridPlan.pdf" not in pyproject
+    assert "SynAPS-GridPlan-marathon-0.1.4.pdf" not in pyproject

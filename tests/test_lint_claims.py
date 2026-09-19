@@ -45,6 +45,14 @@ def test_linter_flags_unnegated_phrase() -> None:
     assert not any(phrase == "до 40% планов" for _, phrase in clean)
 
 
+def test_linter_skips_historical_catalog_and_pdf() -> None:
+    lint = _load("gridplan_lint_claims", "scripts/lint_claims.py")
+    assert lint.skip_path(ROOT / "docs" / "00_README.md")
+    assert lint.skip_path(ROOT / "_SUBMIT_MIK_2026_08_18" / "README.md")
+    assert lint.skip_path(ROOT / "_SUBMIT_MIK_2026_08_18" / "SynAPS-GridPlan-marathon-0.1.4.pdf")
+    assert not lint.skip_path(ROOT / "README.md")
+
+
 def test_test_count_snapshot_matches_collect_only() -> None:
     export = _load("gridplan_export_test_count", "scripts/export_test_count.py")
     expected = export.render(export.collected_count())

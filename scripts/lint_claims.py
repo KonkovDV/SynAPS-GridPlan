@@ -2,6 +2,10 @@
 
 Retract notes, LIMITS, and this scanner are skipped. A hit on a line that
 already negates the phrase (нет / не / withdrawn / …) is not a failure.
+
+Historical catalog is skipped on purpose (CLAIMS_REGISTRY.md): numbered
+``docs/0…29_*``, ``_SUBMIT_MIK_2026_08_18/``, ``docs/rfc/``. Binary
+suffixes including ``.pdf`` are skipped — this scanner is text/OOXML.
 """
 
 from __future__ import annotations
