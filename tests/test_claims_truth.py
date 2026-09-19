@@ -88,6 +88,7 @@ def test_v8_pitch_builder_and_deck_exist() -> None:
     assert "www.etechhubspb.ru/accelerator" in builder
     assert "планировщик смен" in builder  # denied, not sold
     assert (ROOT / "SynAPS_v8_Evidence.pptx").is_file()
+    assert (ROOT / "SynAPS_GridPlan.pptx").is_file()
     assert not (ROOT / "CLAIMS_REGISTER.md").exists()
 
 

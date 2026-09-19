@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **docs**: 14-slide submission pack `SynAPS_GridPlan.pptx` is in the
+  repo root. The CI-rebuilt 12-slide evidence deck remains
+  `SynAPS_v8_Evidence.pptx`.
+
 - **docs**: marathon pitch PDF left the repo root (sliced at 0.1.4 /
   `94b5048`). Path: `_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`.
   Dropped from the sdist include list. Not an Energotechhub packet.

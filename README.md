@@ -26,7 +26,8 @@
 | Текущая заявка (один сценарий ТОиР) | [docs/APPLICATION_TOIR_SCENARIO.md](docs/APPLICATION_TOIR_SCENARIO.md) |
 | Энерготехнохаб (приём до 25.09) [P6] | [docs/ETECHHUB_APPLICATION.md](docs/ETECHHUB_APPLICATION.md) |
 | Дек v7 (не отправлять) | [docs/PITCH_V7_FACTCHECK.md](docs/PITCH_V7_FACTCHECK.md) |
-| Дек для подачи | `SynAPS_v8_Evidence.pptx` (пересборка: `python scripts/build_deck.py`) |
+| Дек для подачи | `SynAPS_GridPlan.pptx` (14 слайдов) |
+| Evidence-дек из git | `SynAPS_v8_Evidence.pptx` (12 слайдов, `python scripts/build_deck.py`) |
 | Академия инноваторов, 10-й поток | [Подготовка заявки и проверенные условия](ACADEMY_APPLICATION.md) |
 | Исторический пакет другой программы | [APPLICATION.md](APPLICATION.md): «Марафон инноваций. Энергия будущего». Архивный PDF: [`_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`](_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf) — не пакет подачи. |
 | Практика | [PRACTICE.md](PRACTICE.md) |
@@ -249,6 +250,8 @@ tests/
 AUDIT.md                    доказательства аудита, границы и оставшиеся gate
 ACADEMY_APPLICATION.md      подготовка к 10-му потоку Академии
 APPLICATION.md              исторический пакет энергетического марафона
+SynAPS_GridPlan.pptx        14-слайдовый пакет подачи
+SynAPS_v8_Evidence.pptx     12-слайдовый evidence-дек из `build_deck.py`
 _SUBMIT_MIK_2026_08_18/     архив подачи 18.08.2026; PDF 0.1.4 — не пакет Энерготехнохаба
 PRACTICE.md                 мировая практика и границы
 sbom/                       CycloneDX-инвентарь lockfile, не сканер уязвимостей
