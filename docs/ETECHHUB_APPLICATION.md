@@ -5,9 +5,7 @@
 Единственный реестр цифр: [`CLAIMS_REGISTRY.md`](CLAIMS_REGISTRY.md).
 Сценарий заявки: [`APPLICATION_TOIR_SCENARIO.md`](APPLICATION_TOIR_SCENARIO.md).
 Fact-check дека v7: [`PITCH_V7_FACTCHECK.md`](PITCH_V7_FACTCHECK.md).
-Дек подачи: `SynAPS_GridPlan.pptx` (14 слайдов).
-Воспроизводимый 12-слайдовый evidence-дек: `SynAPS_v8_Evidence.pptx`
-(`python scripts/build_deck.py`).
+Дек подачи: `SynAPS_GridPlan.pptx`. Извлечённый текст: `DECK_TEXT.txt`.
 
 Приём: **7–25 сентября 2026**. Живая страница:
 [https://www.etechhubspb.ru/accelerator](https://www.etechhubspb.ru/accelerator).
@@ -106,7 +104,7 @@ TRL 4 по ISO 16290: лабораторные фикстуры, не пилот
 | 21–22 сен | УГТ / IP | `UGT_GOST_R_58048.md`, `IP_AND_OPEN_CORE.md` |
 | 22–23 сен | Pilot one-pager | `PILOT_ONEPAGER.md` (владелец площадки всё ещё пуст) |
 | 23–24 сен | Red team с экспертами | бриф есть (`REDTEAM_DEFENSE_BRIEF.md`); сессия **не** проведена |
-| 24 сен | Freeze реестра и подача | сверить `CLAIMS_REGISTRY.md`; подать **v8**, не v7 |
+| 24 сен | Freeze реестра и подача | сверить `CLAIMS_REGISTRY.md`; подать `SynAPS_GridPlan.pptx`, не v7 |
 
 ## Источники
 

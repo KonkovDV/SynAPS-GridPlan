@@ -57,15 +57,8 @@ jobs:
         run: |
           python scripts/export_test_count.py
           git diff --exit-code -- docs/TEST_COUNT.txt
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: "22"
-          cache: npm
-      - name: Rebuild pitch from jury_report and compare extracted text
-        run: |
-          npm ci
-          python scripts/build_deck.py
-          python scripts/extract_deck_text.py --check
+      - name: Submission deck text matches docs/DECK_TEXT.txt
+        run: python scripts/extract_deck_text.py --check
       - name: Schema and SBOM inventories are current
         run: |
           python scripts/export_pydantic_schema.py

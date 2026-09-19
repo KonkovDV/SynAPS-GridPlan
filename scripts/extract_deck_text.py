@@ -1,4 +1,4 @@
-"""Extract comparable text from the committed pitch pptx."""
+"""Extract comparable text from the committed submission pptx."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DECK = ROOT / "SynAPS_v8_Evidence.pptx"
+DECK = ROOT / "SynAPS_GridPlan.pptx"
 OUT = ROOT / "docs" / "DECK_TEXT.txt"
 A_T = "{http://schemas.openxmlformats.org/drawingml/2006/main}t"
 CSLD = "{http://schemas.openxmlformats.org/presentationml/2006/main}cSld"

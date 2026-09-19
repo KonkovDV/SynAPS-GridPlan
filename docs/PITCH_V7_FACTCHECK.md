@@ -1,9 +1,7 @@
 # Факт-чек `SynAPS_v7_Dark.pptx`
 
 > **Архив.** Этот файл — разбор отозванного дека v7, не пакет подачи.
-> Актуальный пакет подачи: `SynAPS_GridPlan.pptx`. Воспроизводимый
-> 12-слайдовый evidence-дек: `SynAPS_v8_Evidence.pptx`
-> (`python scripts/build_deck.py`).
+> Актуальный пакет подачи: `SynAPS_GridPlan.pptx`.
 
 Источник: корень репозитория, 22 слайда, прочитано 2026-09-18.
 Продукт в git: **0.1.8**. Реестр: [`CLAIMS_REGISTRY.md`](CLAIMS_REGISTRY.md).
@@ -12,8 +10,7 @@
 приписывает GridPlan чужой benchmark LLM и регуляторный ГОСТ, которого у
 стандарта нет, и называет партнёрами организации без документов.
 
-Честная замена: `SynAPS_v8_Evidence.pptx` (12 слайдов,
-`python scripts/build_deck.py`). Бинарь v7 в git не кладём.
+Честная замена: `SynAPS_GridPlan.pptx`. Бинарь v7 в git не кладём.
 
 Архивный PDF марафона — [`../_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`](../_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf)
 (срез 0.1.4). Его тоже не подавать в Энерготехнохаб.

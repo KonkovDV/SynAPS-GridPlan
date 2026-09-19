@@ -1,8 +1,0 @@
-{
-  "name": "synaps-gridplan-deck",
-  "private": true,
-  "description": "Pitch rebuild for SynAPS-GridPlan (not the Python package)",
-  "dependencies": {
-    "pptxgenjs": "3.12.0"
-  }
-}

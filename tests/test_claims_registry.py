@@ -7,8 +7,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = ROOT / "docs" / "CLAIMS_REGISTRY.md"
+GATED_HEADING = "## CI-gated (README)"
 README = ROOT / "README.md"
-DECK_BUILDER = ROOT / "scripts" / "build_pitch_v8.js"
 
 HEADER = (
     "claim_id",
@@ -17,8 +17,6 @@ HEADER = (
     "команда воспроизведения",
     "статус",
 )
-GATED_HEADING = "## CI-gated (дек и README)"
-CLAIM_ID_RE = re.compile(r"\b([A-Z][A-Z0-9]*\d+)\b")
 TOKEN_RE = re.compile(r"`([^`]+)`|https?://\S+|[A-Za-z0-9_./\\-]+\.(?:py|md|toml|txt|pptx|json)")
 
 
@@ -78,18 +76,14 @@ def test_gated_artifacts_exist_for_repo_paths() -> None:
     assert missing == []
 
 
-def test_readme_and_deck_builder_tag_gated_ids() -> None:
+def test_readme_tags_gated_ids() -> None:
     readme = README.read_text(encoding="utf-8")
-    builder = DECK_BUILDER.read_text(encoding="utf-8")
     rows = parse_gated_rows(REGISTRY.read_text(encoding="utf-8"))
-    deck_ids = {"V1", "V2", "V3", "B1", "B2", "B3", "B4", "B5", "B7", "P6", "P8", "M6"}
     readme_ids = {"V1", "V2", "V3", "B1", "B2", "B3", "B4", "B5", "T1", "P6"}
     for row in rows:
         cid = row["claim_id"]
         if cid in readme_ids:
             assert cid in readme, cid
-        if cid in deck_ids:
-            assert cid in builder, cid
 
 
 def _numbers_from_claim(text: str) -> list[str]:
@@ -103,10 +97,9 @@ def _numbers_from_claim(text: str) -> list[str]:
     return out
 
 
-def test_numeric_claims_in_readme_and_builder_carry_claim_id() -> None:
+def test_numeric_claims_in_readme_carry_claim_id() -> None:
     rows = parse_gated_rows(REGISTRY.read_text(encoding="utf-8"))
     readme = README.read_text(encoding="utf-8")
-    builder = DECK_BUILDER.read_text(encoding="utf-8")
     freq: dict[str, int] = {}
     for row in rows:
         for number in _numbers_from_claim(row["текст"]):
@@ -121,7 +114,6 @@ def test_numeric_claims_in_readme_and_builder_carry_claim_id() -> None:
                 continue
             if freq.get(number, 0) > 1:
                 continue
-            for label, surface in (("README", readme), ("deck-builder", builder)):
-                if number in surface and cid not in surface:
-                    missing.append(f"{label} has {number} without {cid}")
+            if number in readme and cid not in readme:
+                missing.append(f"README has {number} without {cid}")
     assert missing == []
