@@ -79,7 +79,7 @@ def test_gated_artifacts_exist_for_repo_paths() -> None:
 def test_readme_tags_gated_ids() -> None:
     readme = README.read_text(encoding="utf-8")
     rows = parse_gated_rows(REGISTRY.read_text(encoding="utf-8"))
-    readme_ids = {"V1", "V2", "V3", "B1", "B2", "B3", "B4", "B5", "T1", "P6"}
+    readme_ids = {"V1", "V2", "V3", "B1", "B2", "B3", "B4", "B5", "B7", "T1", "P6", "P8"}
     for row in rows:
         cid = row["claim_id"]
         if cid in readme_ids:
