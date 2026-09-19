@@ -42,20 +42,15 @@ def test_deck_facts_match_committed_jury_and_versions() -> None:
     assert jury["cpsat_hard"] == 0
 
 
-def test_committed_deck_metadata_and_slide_titles() -> None:
+def test_committed_deck_text_matches_submission_pptx() -> None:
     extract = _load("gridplan_extract_deck", "scripts/extract_deck_text.py")
-    deck = ROOT / "SynAPS_v8_Evidence.pptx"
-    core = extract.core_fields(deck)
-    assert core["creator"] == "Коньков Д.В."
-    assert core["last_modified_by"] == "Коньков Д.В."
-    assert "Ivan" not in core["last_modified_by"]
-    assert core["company"] == "SynAPS"
-    titles = [title for title, _text in extract.slide_blobs(deck)]
-    assert titles[0] != "Презентация PowerPoint"
-    assert len(set(titles)) == len(titles)
+    deck = ROOT / "SynAPS_GridPlan.pptx"
+    assert deck.is_file()
+    assert not (ROOT / "SynAPS_v8_Evidence.pptx").exists()
     text = extract.render(deck)
     committed = (ROOT / "docs" / "DECK_TEXT.txt").read_text(encoding="utf-8")
     assert text == committed
-    builder = (ROOT / "scripts" / "build_pitch_v8.js").read_text(encoding="utf-8")
-    assert "FACTS.git_describe" in builder
-    assert "Ivan Ivanov" not in builder
+    assert "CPSAT-30" in text
+    assert "0.1.8" in text
+    assert "107" in text
+    assert "etechhubspb.ru/accelerator" in text

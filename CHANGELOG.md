@@ -2,21 +2,20 @@
 
 ## Unreleased
 
-- **docs**: 14-slide submission pack `SynAPS_GridPlan.pptx` is in the
-  repo root. The CI-rebuilt 12-slide evidence deck remains
-  `SynAPS_v8_Evidence.pptx`.
+- **docs**: dropped `SynAPS_v8_Evidence.pptx`. Submission pack is
+  `SynAPS_GridPlan.pptx`. CI diffs extracted text (`docs/DECK_TEXT.txt`);
+  it does not rebuild a 12-slide pptx.
 
 - **docs**: marathon pitch PDF left the repo root (sliced at 0.1.4 /
   `94b5048`). Path: `_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`.
   Dropped from the sdist include list. Not an Energotechhub packet.
 
-- **docs**: pitch rebuild `python scripts/build_deck.py` reads
-  `jury_report.md` + `versions.py` + `git describe`; footer is not a
-  hardcoded 0.1.8. Extracted text: `docs/DECK_TEXT.txt`.
+- **docs**: extracted pitch text: `docs/DECK_TEXT.txt` (from
+  `SynAPS_GridPlan.pptx`).
 
 - **docs**: CI-gated claims table in `docs/CLAIMS_REGISTRY.md` (`claim_id`,
   artifact, reproduce command, status). `tests/test_claims_registry.py`
-  fails when a tagged lab number in README/deck builder lacks its id.
+  fails when a tagged lab number in README lacks its id.
 
 - **docs**: executable banned-claim list (`docs/BANNED_CLAIMS.txt`,
   `python scripts/lint_claims.py`). Live pack uses the `versions.py` TRL
@@ -37,8 +36,8 @@
 - **docs**: Energotechhub working note (`docs/ETECHHUB_APPLICATION.md`):
   live URL `/accelerator` (not `/accelerator2026`), official broker names,
   v7 pitch retracts, no second claims file at repo root. 25 Sep is this
-  accelerator, not Academy «10th stream». Honest 12-slide deck
-  ``SynAPS_v8_Evidence.pptx`` (``scripts/build_pitch_v8.js``). Retracted
+  accelerator, not Academy «10th stream». Submission deck
+  ``SynAPS_GridPlan.pptx``. Retracted
   unverifiable Sep 2026 «Zhao / Gupta TPWRS» rows from ``PRACTICE.md``.
 
 - **docs**: truth pass 2026-09-18 — claims registry, GOST R 58048 vs ISO 16290,
