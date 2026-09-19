@@ -1,7 +1,9 @@
 # Факт-чек `SynAPS_v7_Dark.pptx`
 
 > **Архив.** Этот файл — разбор отозванного дека v7, не пакет подачи.
-> Актуальный дек: `SynAPS_v8_Evidence.pptx` (`python scripts/build_deck.py`).
+> Актуальный пакет подачи: `SynAPS_GridPlan.pptx`. Воспроизводимый
+> 12-слайдовый evidence-дек: `SynAPS_v8_Evidence.pptx`
+> (`python scripts/build_deck.py`).
 
 Источник: корень репозитория, 22 слайда, прочитано 2026-09-18.
 Продукт в git: **0.1.8**. Реестр: [`CLAIMS_REGISTRY.md`](CLAIMS_REGISTRY.md).

@@ -8,7 +8,8 @@
 > [`docs/APPLICATION_TOIR_SCENARIO.md`](docs/APPLICATION_TOIR_SCENARIO.md).
 > Текущая целевая программа (приём до **25.09.2026**):
 > [`docs/ETECHHUB_APPLICATION.md`](docs/ETECHHUB_APPLICATION.md);
-> дек подачи — `SynAPS_v8_Evidence.pptx`, не v7 и не архивный PDF марафона
+> дек подачи — `SynAPS_GridPlan.pptx`; evidence-дек из git —
+> `SynAPS_v8_Evidence.pptx`; не v7 и не архивный PDF марафона
 > (`_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`, срез 0.1.4).
 >
 > ПАО «Россети» в анонсе 30.07.2026 — соорганизатор **программы**, не партнёр
