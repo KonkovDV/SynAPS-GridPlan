@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **docs**: GitHub README lists the 14-slide submission pack, Energotechhub
+  window [P6], prize ceiling [P8], CP-SAT section D, and native travel
+  boundary; Academy 10th stream is marked past its published close.
+
 - **docs**: dropped `SynAPS_v8_Evidence.pptx`. Submission pack is
   `SynAPS_GridPlan.pptx`. CI diffs extracted text (`docs/DECK_TEXT.txt`);
   it does not rebuild a 12-slide pptx.
