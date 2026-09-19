@@ -8,7 +8,8 @@
 > [`docs/APPLICATION_TOIR_SCENARIO.md`](docs/APPLICATION_TOIR_SCENARIO.md).
 > Текущая целевая программа (приём до **25.09.2026**):
 > [`docs/ETECHHUB_APPLICATION.md`](docs/ETECHHUB_APPLICATION.md);
-> дек подачи — `SynAPS_v8_Evidence.pptx`, не v7 и не этот PDF марафона.
+> дек подачи — `SynAPS_v8_Evidence.pptx`, не v7 и не архивный PDF марафона
+> (`_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`, срез 0.1.4).
 >
 > ПАО «Россети» в анонсе 30.07.2026 — соорганизатор **программы**, не партнёр
 > и не заказчик продукта. Подписанного пилота нет. Рыночные суммы ниже —
@@ -141,7 +142,7 @@ ISO 16290:2013 (космические системы), **самооценка �
 | CLI exit 2 = fail-closed (`small --seed 42`) | README, `tests/test_cli_baselines.py` | live |
 | Python и Rust сходятся по kind доменного слоя | `tests/test_native_parity.py` | prototype |
 | Версия пакета = pin SynAPS в `pyproject.toml` | CLI `version`, `tests/test_version_pins.py` | live |
-| Исторический питч марафона (не пакет Академии, не сверка 0.1.8) | [`SynAPS-GridPlan.pdf`](SynAPS-GridPlan.pdf) | архив |
+| Исторический питч марафона (не пакет Академии, не сверка 0.1.8) | [`_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`](_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf) | архив |
 
 РЭС «Северный» копирует **типы** объектов. Длительности в фикстуре —
 синтетические. Ссылка на «СТО 34.01-24» как на таблицу норм длительностей

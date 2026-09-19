@@ -76,7 +76,6 @@ include = [
   "/PRACTICE.md",
   "/CONTRIBUTING.md",
   "/CITATION.cff",
-  "/SynAPS-GridPlan.pdf",
   "/SECURITY.md",
   "/AGENTS.md",
   "/AUDIT.md",

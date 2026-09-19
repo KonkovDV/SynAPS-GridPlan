@@ -11,6 +11,8 @@
 - `APPLICATION.md`
 - `benchmark/results/jury_report.md` (FIFO 107 / GREED 0 на синтетике)
 - `benchmark/results/emergency_day_report.md` (FIFO 27 / GREED 0 на синтетике)
+- `SynAPS-GridPlan-marathon-0.1.4.pdf` — питч марафона со среза **0.1.4**
+  (`94b5048`, 04.09.2026). Не пакет Энерготехнохаба и не сверка 0.1.8.
 
 Копировать в поля формы МИК в августе 2026: `06_IMOSCOW_COPY.md`.
 

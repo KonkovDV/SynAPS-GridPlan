@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **docs**: marathon pitch PDF left the repo root (sliced at 0.1.4 /
+  `94b5048`). Path: `_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`.
+  Dropped from the sdist include list. Not an Energotechhub packet.
+
 - **docs**: pitch rebuild `python scripts/build_deck.py` reads
   `jury_report.md` + `versions.py` + `git describe`; footer is not a
   hardcoded 0.1.8. Extracted text: `docs/DECK_TEXT.txt`.
