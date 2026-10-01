@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **bench**: synthetic modes `scale-2k` and `scale-5k` (2 000 and 5 000 jobs,
+  campaign packing). `benchmark/scale_budget.py` records wall time and the
+  tracemalloc peak. CI requires a verified GREED plan on `scale-2k`. On
+  `scale-5k` the pinned GREED time cap stops the solve; that log is not a
+  claims-registry row.
+
 - **docs**: GitHub README lists the 14-slide submission pack, Energotechhub
   window [P6], prize ceiling [P8], CP-SAT section D, and native travel
   boundary; Academy 10th stream is marked past its published close.

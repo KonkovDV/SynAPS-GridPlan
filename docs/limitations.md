@@ -55,4 +55,10 @@
     finding. Default `synthesize --mode small --seed 42` + GREED exits **2**.
     That is fail-closed. Verified small seed on this pin: **12**. Contest
     instance: `benchmark/jury_benchmark.py`.
+22. `scale-2k` and `scale-5k` build 2 000 and 5 000 synthetic jobs with the
+    same campaign packing as `medium` / `stress`. `benchmark/scale_budget.py`
+    prints wall time and the tracemalloc peak. CI requires a verified GREED
+    plan for `scale-2k` inside the wall budget. On `scale-5k` the pinned GREED
+    hits its own time cap and does not verify; that run is logged with
+    `--allow-unverified` and is not a `CLAIMS_REGISTRY` row.
 
