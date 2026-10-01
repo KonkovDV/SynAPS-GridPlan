@@ -41,6 +41,7 @@ DataProvenance = Literal[
 ]
 ClaimLevel = Literal["experiment", "benchmark", "pilot_candidate", "production_verified"]
 
+
 def _precedence_shape_issues(jobs: list[MaintenanceJob]) -> list[str]:
     """Reject cycles and branches. The compiler only emits linear chains."""
 
