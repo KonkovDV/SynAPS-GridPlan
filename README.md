@@ -26,11 +26,11 @@ fail-closed чекер на Python; Rust реализует **доменный**
 | Запрещённые формулировки | [`docs/BANNED_CLAIMS.txt`](docs/BANNED_CLAIMS.txt), CI: `python scripts/lint_claims.py` |
 | Границы | [docs/LIMITS.md](docs/LIMITS.md) |
 | Пакет подачи | [`SynAPS_GridPlan.pptx`](SynAPS_GridPlan.pptx) (извлечённый текст: [`docs/DECK_TEXT.txt`](docs/DECK_TEXT.txt)) |
-| Энерготехнохаб (приём 7–25.09.2026) [P6] | [docs/ETECHHUB_APPLICATION.md](docs/ETECHHUB_APPLICATION.md), страница [etechhubspb.ru/accelerator](https://www.etechhubspb.ru/accelerator) |
+| Энерготехнохаб [P6] | Приём **продлён до 2 октября 2026 включительно**; оценка и собеседования 3–11 октября; Демо-день 14–20 декабря [P7]. Сверка 01.10.2026: страница [etechhubspb.ru/accelerator](https://www.etechhubspb.ru/accelerator) и [новость МФТИ от 29.09](https://www.mipt.ru/news/iz-nauki-v-promyshlennost-mfti-i-energotekhnokhab-peterburg-zapuskayut-programmu-po-vnedreniyu-tekhn). Факт подачи GridPlan в git не зафиксирован. Записка: [docs/ETECHHUB_APPLICATION.md](docs/ETECHHUB_APPLICATION.md) (даты в ней от 18.09, устарели) |
 | Приз программы | 1 500 000 ₽ — потолок *eligibility* в анонсе СПбПУ, не выплата GridPlan [P8] |
 | Одна фраза заявки | [docs/APPLICATION_TOIR_SCENARIO.md](docs/APPLICATION_TOIR_SCENARIO.md) |
 | Дек v7 (не отправлять) | [docs/PITCH_V7_FACTCHECK.md](docs/PITCH_V7_FACTCHECK.md) |
-| Академия инноваторов, 10-й поток | опубликованный приём до **14.09.2026**; на сверке 18.09 срок прошёл. Не путать с 25.09 Энерготехнохаба. Записка: [ACADEMY_APPLICATION.md](ACADEMY_APPLICATION.md) |
+| Академия инноваторов, 10-й поток | опубликованный приём до **14.09.2026**; на сверке 18.09 срок прошёл. Не путать со сроком Энерготехнохаба. Записка: [ACADEMY_APPLICATION.md](ACADEMY_APPLICATION.md) |
 | Исторический пакет другой программы | [APPLICATION.md](APPLICATION.md): марафон «Энергия будущего». PDF 0.1.4: [`_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`](_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf) — не пакет подачи |
 | Практика | [PRACTICE.md](PRACTICE.md) |
 | Аудит | [AUDIT.md](AUDIT.md) |
@@ -52,6 +52,7 @@ documented GridPlan customer.
 | [`docs/LIMITS.md`](docs/LIMITS.md) | границы; приоритет над питчем |
 | [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md) | единственный реестр цифр |
 | [`docs/DECK_TEXT.txt`](docs/DECK_TEXT.txt) | текст дека, который диффит CI |
+| [`docs/AI_WORK_PLAN_2026_10_01.md`](docs/AI_WORK_PLAN_2026_10_01.md) | триаж, Red Team, Murder Board и план работ после сверки 01.10.2026 |
 
 Не пакет подачи: отозванный v7 ([факт-чек](docs/PITCH_V7_FACTCHECK.md)),
 архивный PDF марафона в `_SUBMIT_MIK_2026_08_18/`, нумерованный каталог
@@ -60,6 +61,49 @@ documented GridPlan customer.
 CI на `main`: Python 3.12 и 3.13, Rust, lockfile. Гейты: pytest, `lint_claims.py`,
 снимок [`docs/TEST_COUNT.txt`](docs/TEST_COUNT.txt) [T1], текст дека,
 `jury_report.md` (включая раздел D / CP-SAT), паритет native на `res_severny`.
+
+## Состояние на 1 октября 2026
+
+Перепроверка `main` на `f56e693` локально (Windows, Python 3.12.10, OR-Tools 9.15):
+весь набор pytest из [T1] прошёл, включая `slow` CP-SAT; `cargo test --locked`,
+clippy и rustfmt зелёные; ruff и mypy по `src tests scripts`, `lint_claims.py`
+и `extract_deck_text.py --check` проходят. Это прогон одной машины, не CI.
+
+Что требует внимания:
+
+- Открытые PR Dependabot ([#42](https://github.com/KonkovDV/SynAPS-GridPlan/pull/42),
+  [#43](https://github.com/KonkovDV/SynAPS-GridPlan/pull/43)) красные: CI сверяет
+  `sbom/cyclonedx-native.json` с `Cargo.lock`, а Dependabot инвентарь не пересобирает.
+- Апстрим SynAPS ушёл на три коммита вперёд от пина `6178c93` [V2]; пин не обновлялся.
+
+Пробелы контура, подтверждённые пробами Red Team 01.10.2026 (поведение 0.1.8,
+исправления не выпущены):
+
+- **Солвер не видит смены бригад.** Адаптер не передаёт `Crew.shift_calendar` в
+  `WorkCenter.calendar` пиннутого SynAPS. Чекер смены проверяет, поэтому план со
+  сменами честно отклоняется, но GREED и CP-SAT его не строят. Во всех фикстурах,
+  включая РЭС «Северный», бригады доступны круглосуточно.
+- **Часть жёстких правил есть только в постпроверке.** Взаимоисключение отключений
+  одного актива, запреты пар отключений и остаток ЗИП не закодированы в модели
+  солвера. Отказ GREED на `--seed 42` (`ASSET_OVERLAP`) показывает именно это.
+- **`check` перепроверяет допустимость и не подтверждает оптимальность.**
+  Импортированный `optimal` понижается до `feasible`; исходный ярлык пишется
+  в `claimed_status` (`optimality_origin=imported_not_reproven`). Native `check`
+  статус из файла не копирует.
+- **Часть полей каталога не влияет на вердикт.** `voltage_level`,
+  `parent_asset_id`, `coordinates`, `failure_modes`, `warehouse_location`
+  попадают в `unenforced_fields`. `lead_time_min` запрещает старт только при
+  нулевом остатке и без даты пополнения; остаток он не создаёт. Граница:
+  [docs/LIMITS.md](docs/LIMITS.md).
+- **Граф предшествования — только линейная цепочка.** Цикл, join и fan-out
+  отвергаются при загрузке и в Python, и в native. Случайно допустимый порядок
+  больше не выглядит проверенным планом.
+- **Базовая линия слабая.** Календарный FIFO не знает окон отключения и переездов.
+  Разрыв FIFO/GREED — отрыв от нижней планки, не выигрыш у диспетчера.
+- **Чекер независим не полностью.** `constraints.py` берёт вывод legacy-заморозок
+  из `adapter.py`; общая ошибка там затронет и компиляцию, и проверку.
+
+План устранения и вопросы для защиты: [`docs/AI_WORK_PLAN_2026_10_01.md`](docs/AI_WORK_PLAN_2026_10_01.md).
 
 ## Что делает и чего не делает
 
@@ -285,6 +329,7 @@ docs/LIMITS.md              границы продукта
 docs/CLAIMS_REGISTRY.md     реестр утверждений
 docs/DECK_TEXT.txt          извлечённый текст пакета подачи
 docs/TEST_COUNT.txt         снимок pytest --collect-only
+docs/AI_WORK_PLAN_2026_10_01.md  триаж и план работ после сверки 01.10.2026
 SynAPS_GridPlan.pptx        пакет подачи (14 слайдов)
 scripts/                    lint_claims, extract_deck_text, evidence_bundle
 AUDIT.md                    доказательства аудита и оставшиеся gate

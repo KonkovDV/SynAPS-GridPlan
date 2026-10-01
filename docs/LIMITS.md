@@ -21,6 +21,18 @@
   false` даже при чистом домене (GREED: домен 0, Python `verified_feasible`
   true). Слой движка (у FIFO — часть из 107 жёстких нарушений) считает только
   Python/SynAPS.
+- **Декоративные поля каталога.** `Asset.voltage_level`, `parent_asset_id`,
+  `coordinates`, `failure_modes` и `SparePart.warehouse_location` принимаются
+  и попадают в `metadata.unenforced_fields` (kind `UNENFORCED_FIELD`). На
+  вердикт не влияют. `lead_time_min` — жёсткое правило только при нулевом
+  usable-остатке и без `replenishment_date`: старт раньше
+  `planning_horizon_start + lead_time_min` даёт `SPARE_PART_NOT_YET_AVAILABLE`.
+  Задержка не увеличивает остаток: после этого момента нулевой остаток
+  по-прежнему `SPARE_PART_SHORTAGE`. Ненулевой остаток или заданная
+  `replenishment_date` оставляют `lead_time_min` предупреждением. То же
+  жёсткое правило считает native `check`.
+- **Предшествование — линейные цепочки.** Цикл, две входящие или две исходящие
+  дуги отвергаются при загрузке. Компилятор не строит DAG с join или fan-out.
 - **Не заявлены:** N-1, SAIDI, живой EL5, INFIMUM, партнёрство с ПАО «Россети»,
   внедрение на объекте, «первые в нише».
 - **Архивный PDF марафона не пакет подачи.** Срез 0.1.4 (`94b5048`) лежит в

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from synaps_gridplan.baselines import plan_with_config
 from synaps_gridplan.model import (
     Asset,
@@ -111,21 +113,48 @@ def test_replenishment_violation_does_not_mask_shortage() -> None:
     assert "SPARE_PART_SHORTAGE" in kinds
 
 
-def test_fan_in_precedence_is_fail_closed() -> None:
-    """Two predecessors from different chains: SynAPS cannot express fan-in;
-    the post-check must flag any violating plan (capability is documented)."""
+def test_fan_in_precedence_rejected_at_ingest() -> None:
+    """Join is not compiled. Accepting it let a lucky order look verified."""
     a, c = _asset(), _crew()
     p1 = _job("P1", a, kind=JobKind.PREVENTIVE)
     p2 = _job("P2", a, kind=JobKind.PREVENTIVE)
     j = _job("J", a, kind=JobKind.INSPECTION, predecessor_job_ids=[p1.id, p2.id])
-    p = GridPlanProblem(
-        assets=[a],
-        crews=[c],
-        jobs=[p1, p2, j],
-        planning_horizon_start=T0,
-        planning_horizon_end=T0 + HORIZON,
-    )
-    o = plan_with_config(p, solver_config="GREED", apply_frozen=False)
-    kinds = o.metadata["gridplan_violation_kinds"]
-    assert not o.verified_feasible
-    assert "PRECEDENCE_VIOLATION" in kinds
+    with pytest.raises(ValueError, match="only linear chains"):
+        GridPlanProblem(
+            assets=[a],
+            crews=[c],
+            jobs=[p1, p2, j],
+            planning_horizon_start=T0,
+            planning_horizon_end=T0 + HORIZON,
+        )
+
+
+def test_fan_out_precedence_rejected_at_ingest() -> None:
+    a, c = _asset(), _crew()
+    head = _job("HEAD", a, kind=JobKind.PREVENTIVE)
+    left = _job("L", a, predecessor_job_ids=[head.id])
+    right = _job("R", a, predecessor_job_ids=[head.id])
+    with pytest.raises(ValueError, match="HEAD has 2 successors"):
+        GridPlanProblem(
+            assets=[a],
+            crews=[c],
+            jobs=[head, left, right],
+            planning_horizon_start=T0,
+            planning_horizon_end=T0 + HORIZON,
+        )
+
+
+def test_precedence_cycle_rejected_at_ingest() -> None:
+    a, c = _asset(), _crew()
+    left = _job("L", a)
+    right = _job("R", a)
+    left = left.model_copy(update={"predecessor_job_ids": [right.id]})
+    right = right.model_copy(update={"predecessor_job_ids": [left.id]})
+    with pytest.raises(ValueError, match="precedence cycle: L -> R"):
+        GridPlanProblem(
+            assets=[a],
+            crews=[c],
+            jobs=[left, right],
+            planning_horizon_start=T0,
+            planning_horizon_end=T0 + HORIZON,
+        )
