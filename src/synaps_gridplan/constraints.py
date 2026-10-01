@@ -47,8 +47,12 @@ def _compiled_jobs_match(
             expected.extend(parts)
         else:
             expected.append(head)
-    compiled = {op.id for op in schedule_problem.operations}
-    return len(expected) == len(set(expected)) and set(expected) == compiled
+    compiled_ids = [op.id for op in schedule_problem.operations]
+    return (
+        len(expected) == len(set(expected))
+        and len(compiled_ids) == len(expected)
+        and set(compiled_ids) == set(expected)
+    )
 
 
 def _operation_job_ids(problem: GridPlanProblem, id_map: dict[str, UUID]) -> dict[UUID, UUID]:
