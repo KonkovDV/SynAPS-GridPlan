@@ -8,6 +8,10 @@
   `scale-5k` the pinned GREED time cap stops the solve; that log is not a
   claims-registry row.
 
+- **ci**: Dependabot lockfile pull requests rebuild `sbom/` with the generator
+  from the base commit and push that inventory back. `contents: write` is
+  limited to that job. Every other pull request still fails if `sbom/` does
+  not match the lockfiles.
 - **fix**: the checker no longer imports the compiler for legacy window locks.
   `legacy_window_frozen_assignments` lives in `legacy_freeze.py`; the compiler
   projects those same rows onto operation ids. A second fitting window does
