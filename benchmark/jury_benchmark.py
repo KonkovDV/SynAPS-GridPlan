@@ -269,6 +269,15 @@ def render_md(r: dict) -> str:
         )
     churn = b["churn"]
     slot_changes = churn["moved"] + churn["added"] + churn["removed"]
+    version_line = (
+        f"Версия GridPlan {r['gridplan_version']}, "
+        f"SynAPS `{r['synaps_commit'][:12]}`, "
+        f"ISO 16290 TRL {r.get('iso16290_trl', 4)}."
+    )
+    fifo_assigned = f"{a['fifo']['assigned']} / {inst['jobs']}"
+    greed_assigned = f"{a['greed']['assigned']} / {inst['jobs']}"
+    fifo_hard = a["fifo"]["hard_violation_count"]
+    greed_hard = a["greed"]["hard_violation_count"]
     e = r.get("scenario_e")
     e_section = ""
     if e:
@@ -282,7 +291,7 @@ def render_md(r: dict) -> str:
     return f"""# Демо-бенчмарк SynAPS-GridPlan
 
 Синтетический РЭС «Северный» (открытые нормы и типы объектов, не данные ПАО «Россети»).
-Версия GridPlan {r["gridplan_version"]}, SynAPS `{r["synaps_commit"][:12]}`, ISO 16290 TRL {r.get("iso16290_trl", 4)}.
+{version_line}
 GREED/FIFO — эвристики: `heuristic_feasible`, не `optimal`.
 
 **Состав:** {inst["jobs"]} работ, {inst["crews"]} бригад, {inst["assets"]} активов,
@@ -292,8 +301,8 @@ GREED/FIFO — эвристики: `heuristic_feasible`, не `optimal`.
 
 | Показатель | FIFO | GREED |
 | --- | --- | --- |
-| Работ назначено | {a["fifo"]["assigned"]} / {inst["jobs"]} | {a["greed"]["assigned"]} / {inst["jobs"]} |
-| Жёстких нарушений | **{a["fifo"]["hard_violation_count"]}** | **{a["greed"]["hard_violation_count"]}** |
+| Работ назначено | {fifo_assigned} | {greed_assigned} |
+| Жёстких нарушений | **{fifo_hard}** | **{greed_hard}** |
 | Проверка | {_mark(fifo_ok)} | {_mark(greed_ok)} |
 | Время, с | {a["fifo"]["wall_time_s"]} | {a["greed"]["wall_time_s"]} |
 
