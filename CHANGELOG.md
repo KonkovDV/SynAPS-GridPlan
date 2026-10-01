@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **ci**: `ruff check` includes `benchmark/`. Five overlong lines in the jury
+  and «Северный» report templates moved into locals; the rendered markdown
+  is unchanged. `ruff format` still covers `src`, `tests`, and `scripts` only.
+
+- **docs**: `AUDIT.md` §9 records the 1 October 2026 truth pass. The 48 Rust
+  tests belong to native `6dde1ce`; this tree has 58 `#[test]` functions.
+  The 23–24 September red-team session still has no protocol. The Energotechhub
+  registry row on `f56e693` is still the 18 September snapshot; the programme
+  page that day showed intake through 2 October 2026 inclusive.
+
 - **docs**: GitHub README lists the 14-slide submission pack, Energotechhub
   window [P6], prize ceiling [P8], CP-SAT section D, and native travel
   boundary; Academy 10th stream is marked past its published close.
