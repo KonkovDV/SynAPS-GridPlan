@@ -194,11 +194,15 @@ pub fn check_plan(
                 job_id: Some(job.id),
             });
         }
+        let occupancy_start = a
+            .start
+            .checked_sub_signed(Duration::minutes(i64::from(a.setup_minutes.max(0))))
+            .unwrap_or(DateTime::<Utc>::UNIX_EPOCH);
         out.extend(catalog_field_violations(
             job,
             crew,
             assets_by_id.get(&job.asset_id).copied(),
-            a.start,
+            occupancy_start,
             a.end,
         ));
         if let Some(release) = job.release_date {
