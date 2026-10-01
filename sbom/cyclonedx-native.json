@@ -812,12 +812,12 @@
     {
       "type": "library",
       "name": "thiserror",
-      "version": "2.0.20",
-      "purl": "pkg:cargo/thiserror@2.0.20",
+      "version": "2.0.21",
+      "purl": "pkg:cargo/thiserror@2.0.21",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "ec86235f5fcc2a73650310756d2ac5b138a5780bbbdfae3eeccec992c435ba4f"
+          "content": "09e52cb86a36cede5cb101bf8908837b3e4c6e5e59fe7fd85c23fb56200d189e"
         }
       ],
       "description": "registry+https://github.com/rust-lang/crates.io-index"
@@ -825,12 +825,12 @@
     {
       "type": "library",
       "name": "thiserror-impl",
-      "version": "2.0.20",
-      "purl": "pkg:cargo/thiserror-impl@2.0.20",
+      "version": "2.0.21",
+      "purl": "pkg:cargo/thiserror-impl@2.0.21",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "bc04cd3e1236dd4a98afca4569f2deb3f120e5422a4023be2cb683f8486292af"
+          "content": "fe5197923287db20a58125f0bc85c062f7f2c892de97b18c356f9efb14b28524"
         }
       ],
       "description": "registry+https://github.com/rust-lang/crates.io-index"
