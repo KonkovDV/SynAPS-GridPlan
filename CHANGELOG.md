@@ -8,6 +8,11 @@
   that same instance then has 0 hard violations (section E). Heuristic, not
   a CP-SAT optimum.
 
+- **test**: the pinned engine occupies an auxiliary resource for setup-matrix
+  minutes before processing, on every assignment after the first on that
+  crew. Asset exclusivity and pair bans stay domain post-checks
+  (`docs/LIMITS.md`).
+
 - **docs**: GitHub README lists the 14-slide submission pack, Energotechhub
   window [P6], prize ceiling [P8], CP-SAT section D, and native travel
   boundary; Academy 10th stream is marked past its published close.
