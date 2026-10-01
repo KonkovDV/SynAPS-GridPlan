@@ -58,4 +58,9 @@
     not a substitute: on this pin the engine charges that resource for
     setup-matrix minutes before processing starts, so crew travel would
     count as an outage. Pair bans stay in the same post-check.
+22. `FIFO-W` reads shift, availability, approved outage windows, travel, and
+    predecessor finish. Empty crew calendars stay round-the-clock. It does
+    not model asset exclusivity except by sitting inside those windows.
+    Synthetic `res_severny` has empty crew calendars; section E of
+    `benchmark/results/jury_report.md` is that instance, not a shift roster.
 
