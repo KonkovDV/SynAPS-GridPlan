@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **ci**: the scale-5k wall budget is 1200s. The pinned GREED cap still
+  stops the solve; the domain check of that partial plan is what the wall
+  clock measures. The run stays `--allow-unverified` and is not a claims row.
+
 - **bench**: synthetic modes `scale-2k` and `scale-5k` (2 000 and 5 000 jobs,
   campaign packing). `benchmark/scale_budget.py` records wall time and the
   tracemalloc peak. CI requires a verified GREED plan on `scale-2k`. On

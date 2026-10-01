@@ -69,7 +69,7 @@ def test_scale_modes_build_two_and_five_thousand_jobs() -> None:
 def test_ci_keeps_the_scale_budget_off_the_claim_fixture_step() -> None:
     text = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "python benchmark/scale_budget.py --mode scale-2k --budget-s 480" in text
-    assert "scale-5k --budget-s 300 --allow-unverified" in text
+    assert "scale-5k --budget-s 1200 --allow-unverified" in text
     fixtures = text.split("Claim fixtures still run")[1].split("Evidence bundle")[0]
     assert "scale_budget" not in fixtures
 

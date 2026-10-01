@@ -71,6 +71,7 @@
     same campaign packing as `medium` / `stress`. `benchmark/scale_budget.py`
     prints wall time and the tracemalloc peak. CI requires a verified GREED
     plan for `scale-2k` inside the wall budget. On `scale-5k` the pinned GREED
-    hits its own time cap and does not verify; that run is logged with
-    `--allow-unverified` and is not a `CLAIMS_REGISTRY` row.
+    hits its own time cap and does not verify. The wall clock is then the
+    domain check of that partial plan, so the CI budget is 1200s with
+    `--allow-unverified`. That log is not a `CLAIMS_REGISTRY` row.
 
