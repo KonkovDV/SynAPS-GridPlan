@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **fix**: crew shifts are visible to the solver. `WorkCenter.calendar` is the
+  intersection of `shift_calendar` and `availability` (both empty means
+  round-the-clock; a disjoint pair does not fall back to round-the-clock).
+  Python and native checks use occupancy `[start - setup, end]`. A job longer
+  than one open interval becomes a chain of day parts; the outage hull runs
+  from the first part's start to the last part's end.
+
 - **fix**: a precedence cycle, join, or fan-out is rejected when the problem
   loads, in Python and native. The compiler only builds linear chains, so a
   lucky order is no longer reported as verified.
