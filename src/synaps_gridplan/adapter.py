@@ -569,9 +569,7 @@ def _day_part_minutes(
     crews = {crew.id: crew for crew in problem.crews}
     longest = 0
     for crew_id in eligible:
-        minutes = longest_open_minutes(
-            crews[crew_id], horizon_start=problem.planning_horizon_start
-        )
+        minutes = longest_open_minutes(crews[crew_id], horizon_start=problem.planning_horizon_start)
         if minutes is None:
             return [job.duration_min]
         longest = max(longest, minutes)

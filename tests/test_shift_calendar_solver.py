@@ -169,4 +169,3 @@ def test_day_parts_of_a_long_job_fit_moscow_shifts() -> None:
                 occupancy >= row.start and assignment.end_time <= row.end
                 for row in outcome.schedule_problem.work_centers[0].calendar
             ), config
-

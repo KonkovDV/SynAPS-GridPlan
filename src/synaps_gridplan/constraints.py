@@ -40,9 +40,7 @@ def _compiled_jobs_match(
     expected: list[UUID] = []
     for job in problem.jobs:
         head = id_map[f"job:{job.id}"]
-        parts = [
-            id_map[key] for key in sorted(supplied) if key.startswith(f"job:{job.id}:part:")
-        ]
+        parts = [id_map[key] for key in sorted(supplied) if key.startswith(f"job:{job.id}:part:")]
         if parts:
             if parts[0] != head:
                 return False
