@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **fix**: crew shifts are visible to the solver. `WorkCenter.calendar` is the
+  intersection of `shift_calendar` and `availability` (both empty means
+  round-the-clock; a disjoint pair does not fall back to round-the-clock).
+  Python and native checks use occupancy `[start - setup, end]`. A job longer
+  than one open interval becomes a chain of day parts; the outage hull runs
+  from the first part's start to the last part's end.
+
 - **docs**: GitHub README lists the 14-slide submission pack, Energotechhub
   window [P6], prize ceiling [P8], CP-SAT section D, and native travel
   boundary; Academy 10th stream is marked past its published close.

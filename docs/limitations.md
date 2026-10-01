@@ -11,11 +11,14 @@
 4. **Frozen:** explicit `FrozenAssignment` is authoritative; legacy frozen
    windows still invent first-eligible crew (partial).
 5. **Travel** is setup-matrix minutes, not full crew routing (VRP).
-6. **Shifts / calendars / safety / service area** are **notary-hard when
-   non-empty** (`SHIFT_CALENDAR_VIOLATION`, `SAFETY_CONSTRAINT_MISMATCH`,
-   `SERVICE_AREA_MISMATCH`). Empty remains unconstrained. They are **not**
-   decision variables inside SynAPS GREED/CP-SAT search — the contour fails
-   closed after the fact. Do not claim shift-aware construction.
+6. **Shifts** are compiled into `WorkCenter.calendar`: the intersection of
+   `shift_calendar` and `availability`. Both empty means 24/7. Occupancy
+   `[start - setup, end]` must sit in one interval, the same formula as the
+   pinned engine. A job longer than every open interval becomes a chain of
+   day parts on the same asset; the outage is the hull from the first start
+   to the last end. Spare stock and skills are required once, on the first
+   part. An immutable freeze stays one placement. **Safety and service
+   area** stay post-check only. This is not a labour-law roster.
 7. **No customer EAM / SCADA / GIS** integration.
 8. Heuristic solvers (`GREED`, `BEAM`, `ALNS`, `RHC`) map to
    `heuristic_feasible` and must not be called optimal without proof.
