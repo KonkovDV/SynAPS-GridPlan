@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **ci**: Dependabot lockfile pull requests rebuild `sbom/` with the generator
+  from the base commit and push that inventory back. `contents: write` is
+  limited to that job. Every other pull request still fails if `sbom/` does
+  not match the lockfiles.
+
 - **docs**: GitHub README lists the 14-slide submission pack, Energotechhub
   window [P6], prize ceiling [P8], CP-SAT section D, and native travel
   boundary; Academy 10th stream is marked past its published close.
