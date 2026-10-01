@@ -6,7 +6,9 @@ import re
 import sys
 from pathlib import Path
 
+from synaps_gridplan.adapter import to_schedule_problem
 from synaps_gridplan.baselines import plan_with_config
+from synaps_gridplan.planner import plan_maintenance
 from synaps_gridplan.report import ru_violation_counts
 from synaps_gridplan.synthetic import synthesize_feeder
 from synaps_gridplan.versions import GRIDPLAN_VERSION, SYNAPS_COMMIT
@@ -15,6 +17,23 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "benchmark"))
 
 from jury_benchmark import _ok, claims_pass, render_md  # noqa: E402
+from shift_slice import build_res_severny_shifts, render_section_e  # noqa: E402
+
+
+def test_shift_slice_renders_section_e() -> None:
+    problem = build_res_severny_shifts()
+    schedule, _ = to_schedule_problem(problem)
+    assert [op.base_duration_min for op in schedule.operations] == [540, 60]
+    greed = plan_maintenance(problem, solver_config="GREED")
+    cpsat = plan_maintenance(problem, solver_config="CPSAT-10")
+    text = render_section_e(
+        greed_ok=bool(greed.verified_feasible),
+        cpsat_ok=bool(cpsat.verified_feasible),
+        part_count=len(schedule.operations),
+    )
+    assert text.startswith("## F. Смены 08–17 МСК")
+    assert "| verified_feasible | да | да |" in text
+    assert greed.verified_feasible and cpsat.verified_feasible
 
 
 def _payload(*, greed_verified: bool, greed_viol: int, repair_verified: bool) -> dict:
@@ -184,6 +203,23 @@ def test_committed_jury_report_matches_pin() -> None:
     wall = re.search(r"\| Время, с \| ([0-9.]+) \|", d_sec)
     assert wall is not None
     assert "не другой датасет" in text
+
+
+def test_fifo_w_section_matches_the_same_res_severny_instance() -> None:
+    report = (ROOT / "benchmark" / "results" / "jury_report.md").read_text(encoding="utf-8")
+    section = report.split("## E. FIFO-W на том же инстансе")[1]
+    assert "пустые" in section
+    assert "не оптимум" in section
+    from res_severny_benchmark import build_res_problem
+
+    problem = build_res_problem()
+    assert all(not crew.shift_calendar and not crew.availability for crew in problem.crews)
+    outcome = plan_with_config(problem, solver_config="FIFO-W", apply_frozen=False)
+    assert len(outcome.schedule.assignments) == len(problem.jobs) == 55
+    assert outcome.hard_violation_count == 0
+    assert outcome.verified_feasible is True
+    assert "| Жёстких нарушений | 0 |" in section
+    assert "| Проверка | да |" in section
 
 
 def test_fifo_serialized_layers_match_hard_count() -> None:

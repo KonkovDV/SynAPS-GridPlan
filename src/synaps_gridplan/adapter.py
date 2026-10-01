@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
-from datetime import datetime, timedelta
+from datetime import datetime
 from uuid import UUID, uuid5
 
 from synaps.model import (
@@ -15,10 +15,25 @@ from synaps.model import (
     Order,
     ScheduleProblem,
     SetupEntry,
+    ShiftInterval,
     State,
     WorkCenter,
 )
 
+from synaps_gridplan.crew_calendar import (
+    compiled_crew_windows,
+    day_part_minutes,
+    longest_open_minutes,
+)
+from synaps_gridplan.legacy_freeze import (
+    approved_outage_windows as _approved_outage_windows,
+)
+from synaps_gridplan.legacy_freeze import (
+    eligible_crew_ids as _eligible_crews,
+)
+from synaps_gridplan.legacy_freeze import (
+    legacy_window_frozen_assignments,
+)
 from synaps_gridplan.model import (
     Asset,
     FrozenAssignment,
@@ -75,18 +90,6 @@ def _lookup_travel_minutes(
     if not problem.travel_minutes:
         return 0
     raise ValueError(f"travel_minutes missing for {from_loc}|{to_loc} (crew home {home})")
-
-
-def _approved_outage_windows(
-    job: MaintenanceJob, windows: list[OutageWindow]
-) -> list[OutageWindow]:
-    return [
-        window
-        for window in windows
-        if window.approved
-        and job.id not in window.forbidden_job_ids
-        and (not window.allowed_job_ids or job.id in window.allowed_job_ids)
-    ]
 
 
 def _job_clearance_bounds(
@@ -159,94 +162,36 @@ def compile_frozen_assignments(
     return frozen
 
 
-def legacy_window_frozen_assignments(problem: GridPlanProblem) -> list[FrozenAssignment]:
-    """Domain locks implied by legacy ``outage_windows[].frozen``.
-
-    Explicit ``FrozenAssignment`` rows still win for the same job. Independent
-    check must honour these locks; otherwise a moved slot can look verified.
-    """
-
-    windows = [window for window in problem.outage_windows if window.frozen and window.approved]
-    if not windows:
-        return []
-
-    jobs_by_asset: dict[UUID, list[MaintenanceJob]] = defaultdict(list)
-    for job in problem.jobs:
-        jobs_by_asset[job.asset_id].append(job)
-
-    out: list[FrozenAssignment] = []
-    seen: set[UUID] = set()
-    for window in windows:
-        for job in jobs_by_asset.get(window.asset_id, []):
-            if job.id in seen:
-                continue
-            if not job.interruption_required or not _approved_outage_windows(job, [window]):
-                continue
-            eligible = list(job.eligible_crew_ids) or _eligible_crews(job, problem)
-            if not eligible:
-                continue
-            end = window.start + timedelta(minutes=job.duration_min)
-            if end > window.end:
-                continue
-            seen.add(job.id)
-            out.append(
-                FrozenAssignment(
-                    job_id=job.id,
-                    crew_id=eligible[0],
-                    start=window.start,
-                    end=end,
-                    source="frozen_outage_window",
-                    frozen_reason="legacy_window_freeze",
-                    immutable=True,
-                    data_provenance=window.data_provenance,
-                )
-            )
-    return out
-
-
 def frozen_assignments_from_windows(
     problem: GridPlanProblem,
     schedule: ScheduleProblem,
     id_map: dict[str, UUID],
 ) -> list[Assignment]:
-    """Legacy helper: pin jobs on frozen windows to window.start + first eligible crew.
+    """Project shared window locks onto compiled operation ids.
 
-    Prefer explicit ``FrozenAssignment`` rows. This path is retained for v1 inputs.
+    The placement comes from ``legacy_window_frozen_assignments``. Explicit
+    ``FrozenAssignment`` rows still win in ``compile_frozen_assignments``.
     """
-
-    windows = [w for w in problem.outage_windows if w.frozen and w.approved]
-    if not windows:
-        return []
-
-    jobs_by_asset: dict[UUID, list[MaintenanceJob]] = defaultdict(list)
-    for job in problem.jobs:
-        jobs_by_asset[job.asset_id].append(job)
 
     ops_by_id = {op.id: op for op in schedule.operations}
     frozen: list[Assignment] = []
-    for window in windows:
-        for job in jobs_by_asset.get(window.asset_id, []):
-            if not job.interruption_required or not _approved_outage_windows(job, [window]):
-                continue
-            op_id = id_map.get(f"job:{job.id}")
-            if op_id is None:
-                continue
-            op = ops_by_id[op_id]
-            if not op.eligible_wc_ids:
-                continue
-            start = window.start
-            end = start + timedelta(minutes=op.base_duration_min)
-            if end > window.end:
-                continue
-            frozen.append(
-                Assignment(
-                    operation_id=op_id,
-                    work_center_id=op.eligible_wc_ids[0],
-                    start_time=start,
-                    end_time=end,
-                    setup_minutes=0,
-                )
+    for lock in legacy_window_frozen_assignments(problem):
+        op_id = id_map.get(f"job:{lock.job_id}")
+        wc_id = id_map.get(f"crew:{lock.crew_id}")
+        if op_id is None or wc_id is None:
+            continue
+        op = ops_by_id.get(op_id)
+        if op is None or wc_id not in op.eligible_wc_ids:
+            continue
+        frozen.append(
+            Assignment(
+                operation_id=op_id,
+                work_center_id=wc_id,
+                start_time=lock.start,
+                end_time=lock.end,
+                setup_minutes=0,
             )
+        )
     return frozen
 
 
@@ -331,6 +276,12 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
             code=crew.code,
             capability_group=",".join(sorted(crew.qualifications)) or "general",
             max_parallel=crew.max_parallel,
+            calendar=[
+                ShiftInterval(start=start, end=end)
+                for start, end in compiled_crew_windows(
+                    crew, horizon_start=problem.planning_horizon_start
+                )
+            ],
             domain_attributes={
                 "gridplan_crew_id": str(crew.id),
                 "home_location_code": crew.home_location_code,
@@ -423,62 +374,89 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
         id_map[f"order:{head.id}"] = order.id
 
         prev_op_id: UUID | None = None
-        for seq, job in enumerate(chain):
+        seq = 0
+        crews_by_id_local = {crew.id: crew for crew in problem.crews}
+        for job in chain:
             job_asset = assets_by_id[job.asset_id]
             loc = job_asset.location_code or job_asset.code
             eligible = list(job.eligible_crew_ids) or _eligible_crews(job, problem)
-            eligible_wc_ids = [id_map[f"crew:{crew_id}"] for crew_id in eligible]
             op_earliest, op_latest = _job_clearance_bounds(
                 job, windows_by_asset.get(job.asset_id, [])
             )
-
-            operation = Operation(
-                id=_sid("job", str(job.id)),
-                order_id=order.id,
-                seq_in_order=seq,
-                state_id=state_by_loc[loc],
-                base_duration_min=job.duration_min,
-                eligible_wc_ids=eligible_wc_ids,
-                predecessor_op_id=prev_op_id,
-                earliest_start=op_earliest,
-                latest_finish=op_latest,
-                domain_attributes={
-                    "gridplan_job_id": str(job.id),
-                    "location_code": loc,
-                    "asset_code": job_asset.code,
-                    "kind": job.kind.value,
-                    "risk_score": (
-                        job.risk_override.risk_score
-                        if job.risk_override is not None
-                        else job_asset.risk.risk_score
-                    ),
-                },
-            )
-            operations.append(operation)
-            id_map[f"job:{job.id}"] = operation.id
-            prev_op_id = operation.id
-
-            for skill in job.required_qualifications:
-                skill_key = f"skill:{skill}"
-                if skill_key in id_map:
-                    aux_requirements.append(
-                        OperationAuxRequirement(
-                            operation_id=operation.id,
-                            aux_resource_id=id_map[skill_key],
-                            quantity_needed=1,
+            parts = _day_part_minutes(problem, job, eligible)
+            for index, part_min in enumerate(parts):
+                fitting = [
+                    crew_id
+                    for crew_id in eligible
+                    if (
+                        longest := longest_open_minutes(
+                            crews_by_id_local[crew_id],
+                            horizon_start=problem.planning_horizon_start,
                         )
                     )
-            for spare_id in job.spare_part_ids:
-                spare_key = f"spare:{spare_id}"
-                if spare_key in id_map:
-                    aux_requirements.append(
-                        OperationAuxRequirement(
-                            operation_id=operation.id,
-                            aux_resource_id=id_map[spare_key],
-                            # one stock unit per listed spare; BOM quantity is out of scope
-                            quantity_needed=1,
+                    is None
+                    or longest >= part_min
+                ]
+                chosen = fitting or list(eligible)
+                eligible_wc_ids = [id_map[f"crew:{crew_id}"] for crew_id in chosen]
+                op_id = (
+                    _sid("job", str(job.id))
+                    if len(parts) == 1
+                    else _sid("job", str(job.id), str(index))
+                )
+                operation = Operation(
+                    id=op_id,
+                    order_id=order.id,
+                    seq_in_order=seq,
+                    state_id=state_by_loc[loc],
+                    base_duration_min=part_min,
+                    eligible_wc_ids=eligible_wc_ids,
+                    predecessor_op_id=prev_op_id,
+                    earliest_start=op_earliest,
+                    latest_finish=op_latest,
+                    domain_attributes={
+                        "gridplan_job_id": str(job.id),
+                        "gridplan_part_index": index,
+                        "gridplan_part_count": len(parts),
+                        "location_code": loc,
+                        "asset_code": job_asset.code,
+                        "kind": job.kind.value,
+                        "risk_score": (
+                            job.risk_override.risk_score
+                            if job.risk_override is not None
+                            else job_asset.risk.risk_score
+                        ),
+                    },
+                )
+                operations.append(operation)
+                if index == 0:
+                    id_map[f"job:{job.id}"] = operation.id
+                if len(parts) > 1:
+                    id_map[f"job:{job.id}:part:{index}"] = operation.id
+                prev_op_id = operation.id
+                seq += 1
+                if index != 0:
+                    continue
+                for skill in job.required_qualifications:
+                    skill_key = f"skill:{skill}"
+                    if skill_key in id_map:
+                        aux_requirements.append(
+                            OperationAuxRequirement(
+                                operation_id=operation.id,
+                                aux_resource_id=id_map[skill_key],
+                                quantity_needed=1,
+                            )
                         )
-                    )
+                for spare_id in job.spare_part_ids:
+                    spare_key = f"spare:{spare_id}"
+                    if spare_key in id_map:
+                        aux_requirements.append(
+                            OperationAuxRequirement(
+                                operation_id=operation.id,
+                                aux_resource_id=id_map[spare_key],
+                                quantity_needed=1,
+                            )
+                        )
 
     setup_matrix: list[SetupEntry] = []
     for wc in work_centers:
@@ -514,6 +492,29 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
         planning_horizon_end=problem.planning_horizon_end,
     )
     return schedule, id_map
+
+
+def _day_part_minutes(
+    problem: GridPlanProblem, job: MaintenanceJob, eligible: list[UUID]
+) -> list[int]:
+    """One duration, or day parts when every eligible crew has a finite shift.
+
+    A round-the-clock crew can take the whole job, so the job stays one
+    operation. An immutable freeze is also one placement.
+    """
+
+    if any(row.job_id == job.id and row.immutable for row in problem.frozen_assignments):
+        return [job.duration_min]
+    crews = {crew.id: crew for crew in problem.crews}
+    longest = 0
+    for crew_id in eligible:
+        minutes = longest_open_minutes(crews[crew_id], horizon_start=problem.planning_horizon_start)
+        if minutes is None:
+            return [job.duration_min]
+        longest = max(longest, minutes)
+    if longest <= 0:
+        return [job.duration_min]
+    return day_part_minutes(job.duration_min, longest)
 
 
 def _job_chains(jobs: list[MaintenanceJob]) -> list[list[MaintenanceJob]]:
@@ -569,11 +570,3 @@ def _job_chains(jobs: list[MaintenanceJob]) -> list[list[MaintenanceJob]]:
             chains.append([job])
             seen.add(job.id)
     return chains
-
-
-def _eligible_crews(job: MaintenanceJob, problem: GridPlanProblem) -> list[UUID]:
-    required = set(job.required_qualifications)
-    selected = [crew.id for crew in problem.crews if required.issubset(set(crew.qualifications))]
-    if not selected and not required:
-        return [crew.id for crew in problem.crews]
-    return selected

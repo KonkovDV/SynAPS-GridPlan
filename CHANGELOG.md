@@ -6,6 +6,49 @@
   from the base commit and push that inventory back. `contents: write` is
   limited to that job. Every other pull request still fails if `sbom/` does
   not match the lockfiles.
+- **fix**: the checker no longer imports the compiler for legacy window locks.
+  `legacy_window_frozen_assignments` lives in `legacy_freeze.py`; the compiler
+  projects those same rows onto operation ids. A second fitting window does
+  not add a second lock.
+
+- **fix**: crew shifts are visible to the solver. `WorkCenter.calendar` is the
+  intersection of `shift_calendar` and `availability` (both empty means
+  round-the-clock; a disjoint pair does not fall back to round-the-clock).
+  Python and native checks use occupancy `[start - setup, end]`. A job longer
+  than one open interval becomes a chain of day parts; the outage hull runs
+  from the first part's start to the last part's end.
+
+- **fix**: a precedence cycle, join, or fan-out is rejected when the problem
+  loads, in Python and native. The compiler only builds linear chains, so a
+  lucky order is no longer reported as verified.
+
+- **fix**: zero on-hand stock plus `lead_time_min` and no `replenishment_date`
+  rejects a start before `planning_horizon_start + lead_time_min`
+  (`SPARE_PART_NOT_YET_AVAILABLE`) in Python and native `check`. The delay
+  does not create stock. On-hand stock, a replenishment date, and the
+  decorative catalog fields (`voltage_level`, `parent_asset_id`,
+  `coordinates`, `failure_modes`, `warehouse_location`) are listed in
+  `unenforced_fields` and do not change the verdict.
+
+- **fix**: `check` no longer republishes an imported `optimal` status. Feasibility
+  is recomputed; the file's label is kept as `claimed_status` with
+  `optimality_origin=imported_not_reproven`. Native `check` still emits no status.
+
+- **docs**: Energotechhub intake on the programme page is 7 September–2 October
+  2026 inclusive (extended past 25 September). P6/P7/P11 refreshed 2026-10-01.
+  Working notes and the 1 October triage live in `docs/AI_WORK_PLAN_2026_10_01.md`.
+
+- **bench**: FIFO-W places a ready job inside a shift and an approved outage
+  window, after travel, and not before its predecessor finishes. On synthetic
+  `res_severny` the crew calendars are empty, so the shift rule is idle there;
+  that same instance then has 0 hard violations (section E). Heuristic, not
+  a CP-SAT optimum.
+
+- **test**: the pinned engine occupies an auxiliary resource for setup-matrix
+  minutes before processing, on every assignment after the first on that
+  crew. Asset exclusivity and pair bans stay domain post-checks
+  (`docs/LIMITS.md`).
+>>>>>>> origin/main
 
 - **docs**: GitHub README lists the 14-slide submission pack, Energotechhub
   window [P6], prize ceiling [P8], CP-SAT section D, and native travel

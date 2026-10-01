@@ -7,7 +7,8 @@
 Исторический пакет марафона (20.08.2026): [`../APPLICATION.md`](../APPLICATION.md).
 Подготовка к Академии: [`../ACADEMY_APPLICATION.md`](../ACADEMY_APPLICATION.md).
 Целевая программа **сейчас**: Научно-технологический акселератор
-«Энерготехнохаб Петербург», приём до **25 сентября 2026**
+«Энерготехнохаб Петербург», приём до **2 октября 2026** включительно
+(сверка 01.10.2026; на 18.09 страница показывала 25 сентября)
 ([страница](https://www.etechhubspb.ru/accelerator)). Записка:
 [`ETECHHUB_APPLICATION.md`](ETECHHUB_APPLICATION.md). Дек v7 не отправлять:
 [`PITCH_V7_FACTCHECK.md`](PITCH_V7_FACTCHECK.md).
