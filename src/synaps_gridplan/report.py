@@ -262,6 +262,18 @@ def _as_markdown(outcome: PlanOutcome) -> str:
     if not gp:
         lines.append("- none recorded at GridPlan layer")
     lines.append("")
+    notes = meta.get("unenforced_fields") or []
+    if notes:
+        lines.extend(["## Stored fields with no effect", ""])
+        for row in notes[:_TRUNCATION_LIMIT]:
+            lines.append(
+                f"- `{display_text(row.get('field'))}` {display_text(row.get('ref'))}: "
+                f"{display_text(row.get('message'))}"
+            )
+        if len(notes) > _TRUNCATION_LIMIT:
+            hidden = len(notes) - _TRUNCATION_LIMIT
+            lines.append(f"- _… ещё {hidden} полей без эффекта (полный список в JSON-отчёте)_")
+        lines.append("")
     if engine:
         lines.append("Engine (SynAPS) hard violations:")
         for v in engine[:_TRUNCATION_LIMIT]:

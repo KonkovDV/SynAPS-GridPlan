@@ -15,10 +15,16 @@ from synaps.model import (
     Order,
     ScheduleProblem,
     SetupEntry,
+    ShiftInterval,
     State,
     WorkCenter,
 )
 
+from synaps_gridplan.crew_calendar import (
+    compiled_crew_windows,
+    day_part_minutes,
+    longest_open_minutes,
+)
 from synaps_gridplan.legacy_freeze import (
     approved_outage_windows as _approved_outage_windows,
 )
@@ -270,6 +276,12 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
             code=crew.code,
             capability_group=",".join(sorted(crew.qualifications)) or "general",
             max_parallel=crew.max_parallel,
+            calendar=[
+                ShiftInterval(start=start, end=end)
+                for start, end in compiled_crew_windows(
+                    crew, horizon_start=problem.planning_horizon_start
+                )
+            ],
             domain_attributes={
                 "gridplan_crew_id": str(crew.id),
                 "home_location_code": crew.home_location_code,
@@ -362,62 +374,89 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
         id_map[f"order:{head.id}"] = order.id
 
         prev_op_id: UUID | None = None
-        for seq, job in enumerate(chain):
+        seq = 0
+        crews_by_id_local = {crew.id: crew for crew in problem.crews}
+        for job in chain:
             job_asset = assets_by_id[job.asset_id]
             loc = job_asset.location_code or job_asset.code
             eligible = list(job.eligible_crew_ids) or _eligible_crews(job, problem)
-            eligible_wc_ids = [id_map[f"crew:{crew_id}"] for crew_id in eligible]
             op_earliest, op_latest = _job_clearance_bounds(
                 job, windows_by_asset.get(job.asset_id, [])
             )
-
-            operation = Operation(
-                id=_sid("job", str(job.id)),
-                order_id=order.id,
-                seq_in_order=seq,
-                state_id=state_by_loc[loc],
-                base_duration_min=job.duration_min,
-                eligible_wc_ids=eligible_wc_ids,
-                predecessor_op_id=prev_op_id,
-                earliest_start=op_earliest,
-                latest_finish=op_latest,
-                domain_attributes={
-                    "gridplan_job_id": str(job.id),
-                    "location_code": loc,
-                    "asset_code": job_asset.code,
-                    "kind": job.kind.value,
-                    "risk_score": (
-                        job.risk_override.risk_score
-                        if job.risk_override is not None
-                        else job_asset.risk.risk_score
-                    ),
-                },
-            )
-            operations.append(operation)
-            id_map[f"job:{job.id}"] = operation.id
-            prev_op_id = operation.id
-
-            for skill in job.required_qualifications:
-                skill_key = f"skill:{skill}"
-                if skill_key in id_map:
-                    aux_requirements.append(
-                        OperationAuxRequirement(
-                            operation_id=operation.id,
-                            aux_resource_id=id_map[skill_key],
-                            quantity_needed=1,
+            parts = _day_part_minutes(problem, job, eligible)
+            for index, part_min in enumerate(parts):
+                fitting = [
+                    crew_id
+                    for crew_id in eligible
+                    if (
+                        longest := longest_open_minutes(
+                            crews_by_id_local[crew_id],
+                            horizon_start=problem.planning_horizon_start,
                         )
                     )
-            for spare_id in job.spare_part_ids:
-                spare_key = f"spare:{spare_id}"
-                if spare_key in id_map:
-                    aux_requirements.append(
-                        OperationAuxRequirement(
-                            operation_id=operation.id,
-                            aux_resource_id=id_map[spare_key],
-                            # one stock unit per listed spare; BOM quantity is out of scope
-                            quantity_needed=1,
+                    is None
+                    or longest >= part_min
+                ]
+                chosen = fitting or list(eligible)
+                eligible_wc_ids = [id_map[f"crew:{crew_id}"] for crew_id in chosen]
+                op_id = (
+                    _sid("job", str(job.id))
+                    if len(parts) == 1
+                    else _sid("job", str(job.id), str(index))
+                )
+                operation = Operation(
+                    id=op_id,
+                    order_id=order.id,
+                    seq_in_order=seq,
+                    state_id=state_by_loc[loc],
+                    base_duration_min=part_min,
+                    eligible_wc_ids=eligible_wc_ids,
+                    predecessor_op_id=prev_op_id,
+                    earliest_start=op_earliest,
+                    latest_finish=op_latest,
+                    domain_attributes={
+                        "gridplan_job_id": str(job.id),
+                        "gridplan_part_index": index,
+                        "gridplan_part_count": len(parts),
+                        "location_code": loc,
+                        "asset_code": job_asset.code,
+                        "kind": job.kind.value,
+                        "risk_score": (
+                            job.risk_override.risk_score
+                            if job.risk_override is not None
+                            else job_asset.risk.risk_score
+                        ),
+                    },
+                )
+                operations.append(operation)
+                if index == 0:
+                    id_map[f"job:{job.id}"] = operation.id
+                if len(parts) > 1:
+                    id_map[f"job:{job.id}:part:{index}"] = operation.id
+                prev_op_id = operation.id
+                seq += 1
+                if index != 0:
+                    continue
+                for skill in job.required_qualifications:
+                    skill_key = f"skill:{skill}"
+                    if skill_key in id_map:
+                        aux_requirements.append(
+                            OperationAuxRequirement(
+                                operation_id=operation.id,
+                                aux_resource_id=id_map[skill_key],
+                                quantity_needed=1,
+                            )
                         )
-                    )
+                for spare_id in job.spare_part_ids:
+                    spare_key = f"spare:{spare_id}"
+                    if spare_key in id_map:
+                        aux_requirements.append(
+                            OperationAuxRequirement(
+                                operation_id=operation.id,
+                                aux_resource_id=id_map[spare_key],
+                                quantity_needed=1,
+                            )
+                        )
 
     setup_matrix: list[SetupEntry] = []
     for wc in work_centers:
@@ -453,6 +492,29 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
         planning_horizon_end=problem.planning_horizon_end,
     )
     return schedule, id_map
+
+
+def _day_part_minutes(
+    problem: GridPlanProblem, job: MaintenanceJob, eligible: list[UUID]
+) -> list[int]:
+    """One duration, or day parts when every eligible crew has a finite shift.
+
+    A round-the-clock crew can take the whole job, so the job stays one
+    operation. An immutable freeze is also one placement.
+    """
+
+    if any(row.job_id == job.id and row.immutable for row in problem.frozen_assignments):
+        return [job.duration_min]
+    crews = {crew.id: crew for crew in problem.crews}
+    longest = 0
+    for crew_id in eligible:
+        minutes = longest_open_minutes(crews[crew_id], horizon_start=problem.planning_horizon_start)
+        if minutes is None:
+            return [job.duration_min]
+        longest = max(longest, minutes)
+    if longest <= 0:
+        return [job.duration_min]
+    return day_part_minutes(job.duration_min, longest)
 
 
 def _job_chains(jobs: list[MaintenanceJob]) -> list[list[MaintenanceJob]]:

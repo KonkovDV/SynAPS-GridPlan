@@ -7,7 +7,7 @@ Popovic et al., CP 2022). Power-flow / CSA is a different system.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -15,6 +15,7 @@ from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
 from synaps_gridplan.legacy_freeze import legacy_window_frozen_assignments
 from synaps_gridplan.model import FrozenAssignment, GridPlanProblem, MaintenanceJob, SparePart
+from synaps_gridplan.unenforced import spare_earliest_use
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,57 @@ class ConstraintViolation:
     message: str
     job_id: UUID | None = None
     details: dict[str, Any] | None = None
+
+
+def _compiled_jobs_match(
+    problem: GridPlanProblem,
+    schedule_problem: ScheduleProblem,
+    id_map: dict[str, UUID],
+) -> bool:
+    """Job keys stay one per job. Day parts add ``job:<id>:part:<n>`` operations."""
+
+    keys = {f"job:{row.id}" for row in problem.jobs}
+    supplied = {key for key in id_map if key.startswith("job:")}
+    base = {key for key in supplied if ":part:" not in key}
+    if base != keys or any(id_map.get(key) is None for key in keys):
+        return False
+    expected: list[UUID] = []
+    for job in problem.jobs:
+        head = id_map[f"job:{job.id}"]
+        parts = [id_map[key] for key in sorted(supplied) if key.startswith(f"job:{job.id}:part:")]
+        if parts:
+            if parts[0] != head:
+                return False
+            expected.extend(parts)
+        else:
+            expected.append(head)
+    compiled_ids = [op.id for op in schedule_problem.operations]
+    return (
+        len(expected) == len(set(expected))
+        and len(compiled_ids) == len(expected)
+        and set(compiled_ids) == set(expected)
+    )
+
+
+def _operation_job_ids(problem: GridPlanProblem, id_map: dict[str, UUID]) -> dict[UUID, UUID]:
+    out: dict[UUID, UUID] = {}
+    for job in problem.jobs:
+        head = id_map.get(f"job:{job.id}")
+        if head is not None:
+            out[head] = job.id
+        prefix = f"job:{job.id}:part:"
+        for key, op_id in id_map.items():
+            if key.startswith(prefix):
+                out[op_id] = job.id
+    return out
+
+
+def _part_operation_ids(job_id: UUID, id_map: dict[str, UUID]) -> list[UUID]:
+    parts = [id_map[key] for key in sorted(id_map) if key.startswith(f"job:{job_id}:part:")]
+    if parts:
+        return parts
+    head = id_map.get(f"job:{job_id}")
+    return [head] if head is not None else []
 
 
 def check_gridplan_constraints(
@@ -49,9 +101,16 @@ def check_gridplan_constraints(
             ConstraintViolation(kind="INVALID_PROBLEM", message="problem failed domain validation")
         ]
 
+    if not _compiled_jobs_match(problem, schedule_problem, id_map):
+        return [
+            ConstraintViolation(
+                kind="INVALID_ID_MAP",
+                message="job mapping must be complete, injective and match compilation",
+            )
+        ]
+
     # The adapter is a trust boundary too: missing/aliased IDs must not erase work.
     for prefix, rows, compiled_ids in (
-        ("job", problem.jobs, [op.id for op in schedule_problem.operations]),
         ("crew", problem.crews, [wc.id for wc in schedule_problem.work_centers]),
     ):
         keys = {f"{prefix}:{row.id}" for row in rows}
@@ -76,7 +135,7 @@ def check_gridplan_constraints(
     crews_by_id = {c.id: c for c in problem.crews}
     assets_by_id = {a.id: a for a in problem.assets}
     spares_by_id = {s.id: s for s in problem.spare_parts}
-    op_to_job = {id_map[f"job:{j.id}"]: j.id for j in problem.jobs if f"job:{j.id}" in id_map}
+    op_to_job = _operation_job_ids(problem, id_map)
     crew_of_wc = {id_map[f"crew:{c.id}"]: c.id for c in problem.crews if f"crew:{c.id}" in id_map}
 
     for asn in result.assignments:
@@ -134,12 +193,13 @@ def check_gridplan_constraints(
                     job_id=job_id,
                 )
             )
+        setup_minutes = max(0, int(getattr(asn, "setup_minutes", 0) or 0))
         violations.extend(
             _catalog_field_violations(
                 job=job,
                 crew=crew,
                 asset=assets_by_id.get(job.asset_id),
-                start=asn.start_time,
+                start=asn.start_time - timedelta(minutes=setup_minutes),
                 end=asn.end_time,
             )
         )
@@ -167,6 +227,12 @@ def check_gridplan_constraints(
                 )
             )
 
+        scheduled_min = int((asn.end_time - asn.start_time).total_seconds() // 60)
+        part_count = 1
+        for operation in schedule_problem.operations:
+            if operation.id == asn.operation_id:
+                part_count = int(operation.domain_attributes.get("gridplan_part_count") or 1)
+                break
         if asn.end_time <= asn.start_time or job.duration_min < 1:
             violations.append(
                 ConstraintViolation(
@@ -175,7 +241,7 @@ def check_gridplan_constraints(
                     job_id=job_id,
                 )
             )
-        elif int((asn.end_time - asn.start_time).total_seconds() // 60) < job.duration_min:
+        elif part_count == 1 and scheduled_min < job.duration_min:
             violations.append(
                 ConstraintViolation(
                     kind="SHORT_DURATION",
@@ -198,6 +264,32 @@ def check_gridplan_constraints(
                         f"after latest_finish {job.latest_finish.isoformat()}"
                     ),
                     job_id=job_id,
+                )
+            )
+
+    covered_minutes: dict[UUID, int] = {}
+    for asn in result.assignments:
+        covered_id = op_to_job.get(asn.operation_id)
+        if covered_id is None or asn.end_time <= asn.start_time:
+            continue
+        covered_minutes[covered_id] = covered_minutes.get(covered_id, 0) + int(
+            (asn.end_time - asn.start_time).total_seconds() // 60
+        )
+    for job in problem.jobs:
+        part_count = 0
+        for operation in schedule_problem.operations:
+            if str(operation.domain_attributes.get("gridplan_job_id")) != str(job.id):
+                continue
+            part_count = int(operation.domain_attributes.get("gridplan_part_count") or 1)
+        if part_count > 1 and covered_minutes.get(job.id, 0) < job.duration_min:
+            violations.append(
+                ConstraintViolation(
+                    kind="SHORT_DURATION",
+                    message=(
+                        f"job {job.external_ref} day parts cover "
+                        f"{covered_minutes.get(job.id, 0)} min, duration_min={job.duration_min}"
+                    ),
+                    job_id=job.id,
                 )
             )
 
@@ -227,7 +319,7 @@ def check_gridplan_constraints(
     )
 
     # Completeness: a dropped job must not yield verified_feasible.
-    all_op_ids = {id_map[f"job:{j.id}"] for j in problem.jobs}
+    all_op_ids = {op_id for job in problem.jobs for op_id in _part_operation_ids(job.id, id_map)}
     assigned_op_ids = [a.operation_id for a in result.assignments]
     seen_ops: set[UUID] = set()
     for op_id in assigned_op_ids:
@@ -241,8 +333,7 @@ def check_gridplan_constraints(
             )
         seen_ops.add(op_id)
     for job in problem.jobs:
-        mapped_op = id_map.get(f"job:{job.id}")
-        if mapped_op is not None and mapped_op not in seen_ops:
+        if any(op_id not in seen_ops for op_id in _part_operation_ids(job.id, id_map)):
             violations.append(
                 ConstraintViolation(
                     kind="UNSCHEDULED_JOB",
@@ -377,8 +468,8 @@ def _asset_overlap_violations(
     op_to_job: dict[UUID, UUID],
     jobs_by_id: dict[UUID, MaintenanceJob],
 ) -> list[ConstraintViolation]:
-    """Two interruption jobs on the same asset cannot overlap in time."""
-    per_asset: dict[UUID, list[tuple[datetime, datetime, MaintenanceJob]]] = {}
+    """Interruption work on one asset uses the hull of that job's day parts."""
+    per_job: dict[UUID, tuple[datetime, datetime, MaintenanceJob]] = {}
     for asn in result.assignments:
         job_id = op_to_job.get(asn.operation_id)
         if job_id is None:
@@ -386,7 +477,15 @@ def _asset_overlap_violations(
         job = jobs_by_id[job_id]
         if not job.interruption_required:
             continue
-        per_asset.setdefault(job.asset_id, []).append((asn.start_time, asn.end_time, job))
+        current = per_job.get(job.id)
+        if current is None:
+            per_job[job.id] = (asn.start_time, asn.end_time, job)
+        else:
+            per_job[job.id] = (min(current[0], asn.start_time), max(current[1], asn.end_time), job)
+
+    per_asset: dict[UUID, list[tuple[datetime, datetime, MaintenanceJob]]] = {}
+    for start, end, job in per_job.values():
+        per_asset.setdefault(job.asset_id, []).append((start, end, job))
 
     out: list[ConstraintViolation] = []
     for asset_id, spans in per_asset.items():
@@ -475,7 +574,11 @@ def _simultaneous_outage_ban_violations(
         job = jobs_by_id[job_id]
         if not job.interruption_required:
             continue
-        scheduled[job_id] = (asn.start_time, asn.end_time)
+        current = scheduled.get(job_id)
+        if current is None:
+            scheduled[job_id] = (asn.start_time, asn.end_time)
+        else:
+            scheduled[job_id] = (min(current[0], asn.start_time), max(current[1], asn.end_time))
 
     by_asset: dict[UUID, list[MaintenanceJob]] = {}
     for job in problem.jobs:
@@ -683,14 +786,17 @@ def _spare_violations(
             spare = spares_by_id.get(spare_id)
             if spare is None:
                 continue
-            if spare.replenishment_date is not None and asn.start_time < spare.replenishment_date:
+            gate = spare_earliest_use(problem, spare)
+            if gate is not None and asn.start_time < gate[0]:
+                earliest, reason = gate
+                if reason == "replenishment":
+                    detail = f"before replenishment {earliest.isoformat()}"
+                else:
+                    detail = f"before lead time {earliest.isoformat()} (usable stock is 0)"
                 out.append(
                     ConstraintViolation(
                         kind="SPARE_PART_NOT_YET_AVAILABLE",
-                        message=(
-                            f"job {job.external_ref} uses {spare.code} before replenishment "
-                            f"{spare.replenishment_date.isoformat()}"
-                        ),
+                        message=f"job {job.external_ref} uses {spare.code} {detail}",
                         job_id=job.id,
                     )
                 )
