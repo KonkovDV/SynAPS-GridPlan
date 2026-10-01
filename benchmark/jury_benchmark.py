@@ -69,6 +69,9 @@ def claims_pass(results: dict) -> bool:
     d = results.get("scenario_d")
     if d is not None:
         ok = ok and _ok(d) and d.get("status") == "optimal"
+    e = results.get("scenario_e")
+    if e is not None:
+        ok = ok and _ok(e["greed"]) and _ok(e["cpsat"])
     return ok
 
 
@@ -182,6 +185,19 @@ def run(*, with_cpsat: bool = False) -> dict:
                 [a.model_dump(mode="json") for a in cpsat.schedule.assignments]
             ),
         }
+    from shift_slice import build_res_severny_shifts
+
+    shift_problem = build_res_severny_shifts()
+    greed_e, t_greed_e = _timed(lambda: plan_with_config(shift_problem, solver_config="GREED"))
+    cpsat_e, t_cpsat_e = _timed(
+        lambda: plan_with_config(shift_problem, solver_config="CPSAT-10", apply_frozen=False)
+    )
+    results["scenario_e"] = {
+        "dataset": "res_severny_shifts",
+        "part_count": len(greed_e.schedule_problem.operations),
+        "greed": _snapshot(greed_e, t_greed_e),
+        "cpsat": _snapshot(cpsat_e, t_cpsat_e),
+    }
     (RESULTS / "jury_results.json").write_text(
         json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8"
     )
@@ -262,6 +278,16 @@ def render_md(r: dict) -> str:
     greed_assigned = f"{a['greed']['assigned']} / {inst['jobs']}"
     fifo_hard = a["fifo"]["hard_violation_count"]
     greed_hard = a["greed"]["hard_violation_count"]
+    e = r.get("scenario_e")
+    e_section = ""
+    if e:
+        from shift_slice import render_section_e
+
+        e_section = "\n" + render_section_e(
+            greed_ok=_ok(e["greed"]),
+            cpsat_ok=_ok(e["cpsat"]),
+            part_count=int(e["part_count"]),
+        )
     return f"""# Демо-бенчмарк SynAPS-GridPlan
 
 Синтетический РЭС «Северный» (открытые нормы и типы объектов, не данные ПАО «Россети»).
@@ -326,7 +352,7 @@ GREED, расшифровка:
 
 Контур — слой формализуемых ограничений (бригады, окна, явные запреты пар, заморозка ПЛ),
 как слой 1 TMS Hydro-Québec (CP 2022). Потокораспределение вне продукта. Таблица: `PRACTICE.md`.
-{d_section}
+{d_section}{e_section}
 """
 
 

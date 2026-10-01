@@ -7,7 +7,7 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand, ValueEnum};
 
 use synaps_gridplan_rs::bridge::{default_bridge_note, solve_greed_via_python};
-use synaps_gridplan_rs::constraints::check_plan;
+use synaps_gridplan_rs::constraints::{check_plan, unenforced_fields};
 use synaps_gridplan_rs::fifo::plan_fifo;
 use synaps_gridplan_rs::model::{FrozenAssignment, GridPlanProblem};
 use synaps_gridplan_rs::report::{render_csv, render_markdown};
@@ -138,6 +138,7 @@ fn run(cli: Cli) -> Result<ExitCode, String> {
                 "unsupported_constraints": unsupported_constraints,
                 "hard_violation_count": violations.len(),
                 "violations": violations,
+                "unenforced_fields": unenforced_fields(&problem),
                 "claim_level": "experiment",
                 "engine": "synaps_gridplan_rs"
             });
