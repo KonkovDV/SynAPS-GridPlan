@@ -40,15 +40,19 @@ def synthesize_feeder(
     Data provenance: **synthetic**. Not customer data. Not a plant pilot.
     Fully deterministic for a fixed ``seed`` (stable digests, uuid5 ids).
 
-    ``medium`` / ``stress`` / ``disruption`` are packed so GREED can verify
-    (one chain per asset, one outage, stock ≥ demand). ``small`` keeps the
-    overlapping-outage construction used by the fail-closed CLI demo.
+    ``medium`` / ``stress`` / ``disruption`` / ``scale-2k`` / ``scale-5k`` use the
+    campaign packing (one chain per asset, one outage, stock ≥ demand).
+    ``small`` keeps the overlapping-outage construction used by the fail-closed
+    CLI demo. ``scale-2k`` and ``scale-5k`` are generator sizes; a verified
+    solve is a budget run, not a standing claim.
     """
 
     presets = {
         "small": (12, 30, 4, 14),
         "medium": (n_assets, n_jobs, n_crews, horizon_days),
         "stress": (80, 600, 15, 45),
+        "scale-2k": (250, 2000, 50, 60),
+        "scale-5k": (500, 5000, 80, 90),
         "disruption": (40, 200, 10, 30),
         "infeasible": (8, 40, 1, 7),
         "frozen-conflict": (10, 24, 3, 14),
@@ -113,6 +117,8 @@ def synthesize_feeder(
         "small": (6, 4, 2),
         "medium": (20, 15, 8),
         "stress": (30, 20, 12),
+        "scale-2k": (1, 1, 1),
+        "scale-5k": (1, 1, 1),
         "disruption": (20, 15, 8),
         "infeasible": (0, 0, 0),
         "frozen-conflict": (10, 8, 4),
@@ -141,7 +147,7 @@ def synthesize_feeder(
         ),
     ]
 
-    campaign = mode in {"medium", "stress", "disruption"}
+    campaign = mode in {"medium", "stress", "disruption", "scale-2k", "scale-5k"}
     if campaign:
         jobs, outages, spares, travel = _campaign_feasible(
             seed=seed,
