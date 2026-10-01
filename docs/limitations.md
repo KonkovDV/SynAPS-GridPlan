@@ -55,4 +55,9 @@
     finding. Default `synthesize --mode small --seed 42` + GREED exits **2**.
     That is fail-closed. Verified small seed on this pin: **12**. Contest
     instance: `benchmark/jury_benchmark.py`.
+22. `FIFO-W` reads shift, availability, approved outage windows, travel, and
+    predecessor finish. Empty crew calendars stay round-the-clock. It does
+    not model asset exclusivity except by sitting inside those windows.
+    Synthetic `res_severny` has empty crew calendars; section E of
+    `benchmark/results/jury_report.md` is that instance, not a shift roster.
 

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **bench**: FIFO-W places a ready job inside a shift and an approved outage
+  window, after travel, and not before its predecessor finishes. On synthetic
+  `res_severny` the crew calendars are empty, so the shift rule is idle there;
+  that same instance then has 0 hard violations (section E). Heuristic, not
+  a CP-SAT optimum.
+
 - **docs**: GitHub README lists the 14-slide submission pack, Energotechhub
   window [P6], prize ceiling [P8], CP-SAT section D, and native travel
   boundary; Academy 10th stream is marked past its published close.
