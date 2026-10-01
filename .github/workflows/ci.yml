@@ -35,7 +35,7 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Ruff
         run: |
-          python -m ruff check src tests scripts
+          python -m ruff check src tests scripts benchmark
           python -m ruff format --check src tests scripts
       - name: Mypy
         run: python -m mypy src/synaps_gridplan
@@ -67,6 +67,25 @@ jobs:
           python scripts/export_pydantic_schema.py
           python scripts/export_sbom.py
           git diff --exit-code -- schemas/gridplan.pydantic.problem.json sbom/
+
+  scale-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          python -m pip install -e ".[dev]"
+      - name: GREED budget on 2000 and 5000 synthetic jobs
+        run: |
+          python benchmark/scale_budget.py --mode scale-2k --budget-s 480
+          python benchmark/scale_budget.py --mode scale-5k --budget-s 1200 --allow-unverified
 
   lockfile:
     runs-on: ubuntu-latest
