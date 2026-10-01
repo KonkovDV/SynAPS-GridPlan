@@ -727,6 +727,10 @@ def _render_md(r: dict) -> str:
     same_mark = "да" if c["two_runs_identical"] else "нет"
     cpsat_mark = "доказан" if proven else "лимит времени"
     cpsat_det = "да" if d["two_runs_identical"] and not d["determinism_violated"] else "нет"
+    assigned_fifo = f"{a['fifo']['assigned']} / {inst['jobs']}"
+    assigned_greed = f"{a['greed']['assigned']} / {inst['jobs']}"
+    slots_changed = b["churn"]["moved"] + b["churn"]["added"] + b["churn"]["removed"]
+    disrupted_n = len(b["disrupted_jobs"])
     return f"""# Демо: РЭС «Северный» — месячный график ТОиР
 
 Синтетическая схема 110/35/10 кВ и типовые нормы длительностей (СТО 34.01-24,
@@ -742,7 +746,7 @@ def _render_md(r: dict) -> str:
 
 | Показатель | FIFO | GREED |
 | --- | --- | --- |
-| Работ назначено | {a["fifo"]["assigned"]} / {inst["jobs"]} | {a["greed"]["assigned"]} / {inst["jobs"]} |
+| Работ назначено | {assigned_fifo} | {assigned_greed} |
 | Жёстких нарушений | **{fifo_n}** | **{greed_n}** |
 | Проверка | {"да" if fifo_ok else "нет"} | {"да" if greed_ok else "нет"} |
 | Работы на критических активах | — | {a["critical_jobs_served"]} |
@@ -776,7 +780,7 @@ GREED на этой синтетике собирает график без жё
 | Заявок ПЛ сдвинуто | **{b["frozen_moved"]}** |
 | План восстановлен | {repair_mark} |
 | Оконная работа вернулась в окно | {window_mark} |
-| Слотов изменено (из {len(b["disrupted_jobs"])} сорванных) | {b["churn"]["moved"] + b["churn"]["added"] + b["churn"]["removed"]} |
+| Слотов изменено (из {disrupted_n} сорванных) | {slots_changed} |
 | Время, с | {b["wall_time_s"]} |
 
 На этом прогоне замороженные заявки не сдвинуты, если «Заявок ПЛ сдвинуто» = 0.
