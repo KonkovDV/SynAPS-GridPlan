@@ -13,7 +13,12 @@ from uuid import UUID
 
 from synaps.model import Assignment, ObjectiveValues, ScheduleResult, SolverStatus
 
-from synaps_gridplan.adapter import compile_frozen_assignments, to_schedule_problem
+from synaps_gridplan.adapter import (
+    _approved_outage_windows,
+    _lookup_travel_minutes,
+    compile_frozen_assignments,
+    to_schedule_problem,
+)
 from synaps_gridplan.fingerprint import fingerprint_payload
 from synaps_gridplan.model import SCHEMA_VERSION, GridPlanProblem
 from synaps_gridplan.planner import PlanOutcome, _wrap
@@ -162,6 +167,282 @@ def plan_fifo(
     )
 
 
+def _intersect_intervals(
+    left: list[tuple[datetime, datetime]],
+    right: list[tuple[datetime, datetime]],
+) -> list[tuple[datetime, datetime]]:
+    rows: list[tuple[datetime, datetime]] = []
+    for start_a, end_a in left:
+        for start_b, end_b in right:
+            start = max(start_a, start_b)
+            end = min(end_a, end_b)
+            if end > start:
+                rows.append((start, end))
+    rows.sort()
+    return rows
+
+
+def _crew_open_intervals(
+    crew: Any,
+    *,
+    horizon_start: datetime,
+    horizon_end: datetime,
+) -> list[tuple[datetime, datetime]]:
+    """Shift ∩ availability, clipped to the horizon.
+
+    Both calendars empty means round-the-clock. A disjoint pair does not.
+    """
+
+    shifts = [(row.start, row.end) for row in crew.shift_calendar]
+    availability = [(row.start, row.end) for row in crew.availability]
+    if not shifts and not availability:
+        rows = [(horizon_start, horizon_end)]
+    elif shifts and availability:
+        rows = _intersect_intervals(shifts, availability)
+    else:
+        rows = shifts or availability
+    clipped: list[tuple[datetime, datetime]] = []
+    for start, end in rows:
+        start = max(start, horizon_start)
+        end = min(end, horizon_end)
+        if end > start:
+            clipped.append((start, end))
+    clipped.sort()
+    return clipped
+
+
+def _job_slots(
+    problem: GridPlanProblem,
+    job: Any,
+    crew_open: list[tuple[datetime, datetime]],
+) -> list[tuple[datetime, datetime]]:
+    release = job.release_date or problem.planning_horizon_start
+    finish_cap = job.latest_finish or problem.planning_horizon_end
+    slots: list[tuple[datetime, datetime]] = []
+    for start, end in crew_open:
+        start = max(start, release, problem.planning_horizon_start)
+        end = min(end, finish_cap, problem.planning_horizon_end)
+        if end > start:
+            slots.append((start, end))
+    if job.interruption_required:
+        approved = _approved_outage_windows(
+            job,
+            [window for window in problem.outage_windows if window.asset_id == job.asset_id],
+        )
+        if approved:
+            slots = _intersect_intervals(slots, [(window.start, window.end) for window in approved])
+    return slots
+
+
+def _processing_start(
+    slots: list[tuple[datetime, datetime]],
+    *,
+    free_at: datetime,
+    travel_min: int,
+    duration_min: int,
+    not_before: datetime,
+) -> datetime | None:
+    """Earliest processing start whose travel and work both sit in one slot.
+
+    ``not_before`` is the latest predecessor finish. Travel may run while a
+    predecessor on another crew is still working; processing may not.
+    """
+
+    travel = timedelta(minutes=max(0, travel_min))
+    duration = timedelta(minutes=duration_min)
+    for start, end in slots:
+        processing = max(free_at + travel, start + travel, not_before)
+        if processing + duration <= end:
+            return processing
+    return None
+
+
+def plan_fifo_w(
+    problem: GridPlanProblem,
+    *,
+    apply_frozen: bool = False,
+) -> PlanOutcome:
+    """Earliest-due among ready jobs, inside shifts, after travel.
+
+    Travel is inside the open interval: processing starts at least
+    ``travel_min`` after the interval opens and after the crew is free.
+    A successor waits until its predecessors are placed. Unplaced jobs stay
+    unscheduled. Heuristic, never optimal.
+    """
+
+    schedule_problem, id_map = to_schedule_problem(problem)
+    ops = {op.id: op for op in schedule_problem.operations}
+    job_of_op = {id_map[f"job:{job.id}"]: job for job in problem.jobs if f"job:{job.id}" in id_map}
+    assets = {asset.id: asset for asset in problem.assets}
+    crews = list(schedule_problem.work_centers)
+    domain_crews = {crew.id: crew for crew in problem.crews}
+    crew_of_wc = {
+        wc.id: domain_crews[UUID(str(wc.domain_attributes["gridplan_crew_id"]))] for wc in crews
+    }
+    crew_free: dict[UUID, datetime] = {wc.id: problem.planning_horizon_start for wc in crews}
+    crew_loc: dict[UUID, str] = {wc.id: "idle" for wc in crews}
+    job_end: dict[UUID, datetime] = {}
+    open_by_wc = {
+        wc.id: _crew_open_intervals(
+            crew_of_wc[wc.id],
+            horizon_start=problem.planning_horizon_start,
+            horizon_end=problem.planning_horizon_end,
+        )
+        for wc in crews
+    }
+
+    ordered_jobs = sorted(
+        problem.jobs,
+        key=lambda job: (
+            job.due_date or problem.planning_horizon_end,
+            job.external_ref,
+            str(job.id),
+        ),
+    )
+    assignments: list[Assignment] = []
+    frozen_ops: set[UUID] = set()
+    placed_jobs: set[UUID] = set()
+    if apply_frozen:
+        for asn in compile_frozen_assignments(problem, schedule_problem, id_map):
+            if asn.operation_id in frozen_ops:
+                continue
+            assignments.append(asn)
+            frozen_ops.add(asn.operation_id)
+            prev = crew_free.get(asn.work_center_id, problem.planning_horizon_start)
+            if asn.end_time > prev:
+                crew_free[asn.work_center_id] = asn.end_time
+            frozen_job = job_of_op.get(asn.operation_id)
+            if frozen_job is not None:
+                placed_jobs.add(frozen_job.id)
+                job_end[frozen_job.id] = asn.end_time
+                asset = assets.get(frozen_job.asset_id)
+                if asset is not None:
+                    crew_loc[asn.work_center_id] = asset.location_code or asset.code
+
+    remaining = [
+        job
+        for job in ordered_jobs
+        if id_map.get(f"job:{job.id}") not in frozen_ops and id_map.get(f"job:{job.id}") in ops
+    ]
+    crew_code = {wc.id: wc.code for wc in crews}
+    while remaining:
+        ready = [
+            job for job in remaining if all(pred in placed_jobs for pred in job.predecessor_job_ids)
+        ]
+        if not ready:
+            break
+        job = ready[0]
+        remaining.remove(job)
+        op_id = id_map[f"job:{job.id}"]
+        op = ops[op_id]
+        asset = assets[job.asset_id]
+        to_loc = asset.location_code or asset.code
+        not_before = problem.planning_horizon_start
+        for pred_id in job.predecessor_job_ids:
+            pred_end = job_end.get(pred_id)
+            if pred_end is not None and pred_end > not_before:
+                not_before = pred_end
+        eligible = list(op.eligible_wc_ids) or [wc.id for wc in crews]
+        best_wc: UUID | None = None
+        best_start: datetime | None = None
+        best_travel = 0
+        for wc_id in eligible:
+            domain = crew_of_wc[wc_id]
+            home = domain.home_location_code or domain.code
+            travel = _lookup_travel_minutes(
+                problem,
+                from_loc=crew_loc.get(wc_id, "idle"),
+                to_loc=to_loc,
+                home=home,
+            )
+            start = _processing_start(
+                _job_slots(problem, job, open_by_wc.get(wc_id, [])),
+                free_at=crew_free.get(wc_id, problem.planning_horizon_start),
+                travel_min=travel,
+                duration_min=op.base_duration_min,
+                not_before=not_before,
+            )
+            if start is None:
+                continue
+            code = crew_code.get(wc_id, "")
+            best_code = crew_code.get(best_wc, "") if best_wc is not None else ""
+            if (
+                best_start is None
+                or start < best_start
+                or (start == best_start and (code, str(wc_id)) < (best_code, str(best_wc)))
+            ):
+                best_wc = wc_id
+                best_start = start
+                best_travel = travel
+        if best_wc is None or best_start is None:
+            continue
+        end = best_start + timedelta(minutes=op.base_duration_min)
+        assignments.append(
+            Assignment(
+                operation_id=op_id,
+                work_center_id=best_wc,
+                start_time=best_start,
+                end_time=end,
+                setup_minutes=best_travel,
+            )
+        )
+        crew_free[best_wc] = end
+        crew_loc[best_wc] = to_loc
+        placed_jobs.add(job.id)
+        job_end[job.id] = end
+
+    unscheduled = len(schedule_problem.operations) - len(assignments)
+    coverage = (
+        len(assignments) / len(schedule_problem.operations) if schedule_problem.operations else 1.0
+    )
+    makespan = 0.0
+    if assignments:
+        t0 = min(item.start_time for item in assignments)
+        t1 = max(item.end_time for item in assignments)
+        makespan = (t1 - t0).total_seconds() / 60.0
+    tardiness = 0.0
+    for assignment in assignments:
+        due_job = job_of_op.get(assignment.operation_id)
+        if (
+            due_job is not None
+            and due_job.due_date is not None
+            and assignment.end_time > due_job.due_date
+        ):
+            tardiness += (assignment.end_time - due_job.due_date).total_seconds() / 60.0
+    status = (
+        SolverStatus.INFEASIBLE
+        if not assignments and schedule_problem.operations
+        else SolverStatus.FEASIBLE
+    )
+    result = ScheduleResult(
+        solver_name="FIFO-W",
+        status=status,
+        assignments=assignments,
+        objective=ObjectiveValues(
+            makespan_minutes=makespan,
+            total_tardiness_minutes=tardiness,
+            coverage=coverage,
+            unscheduled_operations=unscheduled,
+        ),
+        metadata={
+            "baseline": "fifo_w_windows_travel_shifts",
+            "metric_tag": "synthetic_experiment",
+            "config_hash": fingerprint_payload(
+                {"solver_config": "FIFO-W", "synaps_commit": SYNAPS_COMMIT}
+            ),
+        },
+    )
+    return _wrap(
+        result,
+        id_map,
+        "FIFO-W",
+        schedule_problem,
+        problem,
+        expected_frozen=list(problem.frozen_assignments),
+        kwargs_for_hash={"apply_frozen": apply_frozen},
+    )
+
+
 def plan_with_config(
     problem: GridPlanProblem,
     *,
@@ -173,6 +454,8 @@ def plan_with_config(
 
     if solver_config.upper() == "FIFO":
         return plan_fifo(problem, apply_frozen=apply_frozen)
+    if solver_config.upper() == "FIFO-W":
+        return plan_fifo_w(problem, apply_frozen=apply_frozen)
     from synaps_gridplan.planner import plan_maintenance
 
     return plan_maintenance(
@@ -183,4 +466,4 @@ def plan_with_config(
     )
 
 
-__all__ = ["plan_fifo", "plan_with_config", "SCHEMA_VERSION"]
+__all__ = ["plan_fifo", "plan_fifo_w", "plan_with_config", "SCHEMA_VERSION"]

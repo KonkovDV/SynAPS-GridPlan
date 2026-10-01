@@ -41,7 +41,7 @@ def render_section_e(*, greed_ok: bool, cpsat_ok: bool, part_count: int) -> str:
     greed = "да" if greed_ok else "нет"
     cpsat = "да" if cpsat_ok else "нет"
     return (
-        "## E. Смены 08–17 МСК (res_severny_shifts)\n\n"
+        "## F. Смены 08–17 МСК (res_severny_shifts)\n\n"
         "Отдельный синтетический срез, не месячный план «Северный» и не те же 55 работ. "
         "Смена 08:00–17:00 по Москве, два дня, переезд 0. Работа 600 минут длиннее смены "
         f"и собрана в {part_count} дневные части одной цепочки. "
