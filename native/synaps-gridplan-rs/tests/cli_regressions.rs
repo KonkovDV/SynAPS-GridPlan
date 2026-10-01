@@ -85,6 +85,77 @@ fn assert_rejected(output: &Output, code: i32) {
 }
 
 #[test]
+fn check_rejects_precedence_cycle() {
+    let mut problem = problem();
+    problem["jobs"].as_array_mut().unwrap().push(json!({
+        "id": "22222222-2222-2222-2222-222222222222",
+        "external_ref": "K",
+        "asset_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "duration_min": 60,
+        "predecessor_job_ids": ["11111111-1111-1111-1111-111111111111"]
+    }));
+    problem["jobs"][0]["predecessor_job_ids"] = json!(["22222222-2222-2222-2222-222222222222"]);
+    let output = check(&problem, &json!({"assignments": [assignment()]}));
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    let err = String::from_utf8_lossy(&output.stderr);
+    assert!(err.contains("precedence cycle"), "{err}");
+}
+
+#[test]
+fn check_zero_stock_lead_time_blocks_and_on_hand_stock_only_warns() {
+    let spare_id = "55555555-5555-5555-5555-555555555555";
+    let mut blocked = problem();
+    blocked["spare_parts"] = json!([{
+        "id": spare_id,
+        "code": "S",
+        "available_quantity": 0,
+        "lead_time_min": 120
+    }]);
+    blocked["jobs"][0]["spare_part_ids"] = json!([spare_id]);
+    let output = check(&blocked, &json!({"assignments": [assignment()]}));
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    let payload: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let kinds: Vec<_> = payload["violations"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|row| row["kind"].as_str().unwrap())
+        .collect();
+    assert!(kinds.contains(&"SPARE_PART_NOT_YET_AVAILABLE"));
+    assert!(kinds.contains(&"SPARE_PART_SHORTAGE"));
+    assert!(payload["unenforced_fields"].as_array().unwrap().is_empty());
+
+    let mut stocked = blocked;
+    stocked["spare_parts"][0]["available_quantity"] = json!(1);
+    stocked["spare_parts"][0]["warehouse_location"] = json!("yard");
+    let output = check(&stocked, &json!({"assignments": [assignment()]}));
+    assert!(output.status.success(), "{output:?}");
+    let payload: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(payload["verified_feasible"], json!(true));
+    let fields: Vec<_> = payload["unenforced_fields"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|row| row["field"].as_str().unwrap())
+        .collect();
+    assert!(fields.contains(&"SparePart.lead_time_min"));
+    assert!(fields.contains(&"SparePart.warehouse_location"));
+}
+
+#[test]
+fn check_does_not_echo_imported_optimal_status() {
+    let mut plan = native_result();
+    plan["status"] = json!("optimal");
+    plan["solver_config"] = json!("CPSAT-30");
+    let output = check(&problem(), &plan);
+    assert!(output.status.success(), "{output:?}");
+    let payload: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(payload["verified_feasible"], json!(true));
+    assert!(payload.get("status").is_none());
+    assert!(payload.get("claim_status").is_none());
+}
+
+#[test]
 fn check_accepts_all_three_supported_plan_shapes() {
     for plan in [
         json!({"assignments": [assignment()]}),

@@ -1,0 +1,89 @@
+name: dependabot-sbom
+
+# Dependabot updates a lockfile and leaves sbom/ stale, so CI fails the
+# inventory diff. This job writes the inventory back onto that PR.
+# A GITHUB_TOKEN push does not start pull_request workflows; workflow_dispatch
+# on ci.yml is the exception that runs the required checks on the new commit.
+#
+# The generator is the copy on the base SHA. The pull request contributes only
+# its lockfiles. contents: write and actions: write belong to this job alone.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  refresh:
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Trusted generator (base SHA)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Pull request tree
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Rebuild SBOM from the PR lockfiles
+        run: |
+          cp pr/requirements-lock.txt trusted/requirements-lock.txt
+          cp pr/native/synaps-gridplan-rs/Cargo.lock trusted/native/synaps-gridplan-rs/Cargo.lock
+          PYTHONPATH=trusted/src python trusted/scripts/export_sbom.py
+          cp trusted/sbom/cyclonedx-python.json trusted/sbom/cyclonedx-native.json trusted/sbom/README.md pr/sbom/
+
+      - name: Commit SBOM when the inventory changed
+        id: publish
+        working-directory: pr
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -eu
+          git add -- sbom
+          if git diff --cached --quiet; then
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python <<'PY'
+          import subprocess
+          import sys
+
+          names = subprocess.check_output(
+              ["git", "diff", "--cached", "--name-only"], text=True
+          ).splitlines()
+          bad = [name for name in names if name and not name.startswith("sbom/")]
+          if bad:
+              sys.exit("refusing to commit paths outside sbom/: " + ", ".join(bad))
+          PY
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "chore: refresh SBOM for the Dependabot lockfile bump"
+          git push origin "HEAD:${HEAD_REF}"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Run CI on the SBOM commit
+        if: steps.publish.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/dispatches" \
+            -f "ref=${HEAD_REF}"

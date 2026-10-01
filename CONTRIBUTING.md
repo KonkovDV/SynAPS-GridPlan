@@ -28,6 +28,11 @@ python scripts/export_sbom.py
 python scripts/scan_secrets.py
 ```
 
+Dependabot cargo and Actions bumps do not edit `sbom/`. The `dependabot-sbom`
+workflow regenerates that inventory from the base commit's generator and pushes
+the result. Any other pull request still fails CI when `sbom/` disagrees with
+the lockfiles.
+
 Native contour:
 
 ```bash
