@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **fix**: the checker no longer imports the compiler for legacy window locks.
+  `legacy_window_frozen_assignments` lives in `legacy_freeze.py`; the compiler
+  projects those same rows onto operation ids. A second fitting window does
+  not add a second lock.
+
 - **fix**: crew shifts are visible to the solver. `WorkCenter.calendar` is the
   intersection of `shift_calendar` and `availability` (both empty means
   round-the-clock; a disjoint pair does not fall back to round-the-clock).
@@ -39,6 +44,7 @@
   minutes before processing, on every assignment after the first on that
   crew. Asset exclusivity and pair bans stay domain post-checks
   (`docs/LIMITS.md`).
+>>>>>>> origin/main
 
 - **docs**: GitHub README lists the 14-slide submission pack, Energotechhub
   window [P6], prize ceiling [P8], CP-SAT section D, and native travel
