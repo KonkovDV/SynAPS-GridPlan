@@ -11,11 +11,14 @@
 4. **Frozen:** explicit `FrozenAssignment` is authoritative; legacy frozen
    windows still invent first-eligible crew (partial).
 5. **Travel** is setup-matrix minutes, not full crew routing (VRP).
-6. **Shifts / calendars / safety / service area** are **notary-hard when
-   non-empty** (`SHIFT_CALENDAR_VIOLATION`, `SAFETY_CONSTRAINT_MISMATCH`,
-   `SERVICE_AREA_MISMATCH`). Empty remains unconstrained. They are **not**
-   decision variables inside SynAPS GREED/CP-SAT search — the contour fails
-   closed after the fact. Do not claim shift-aware construction.
+6. **Shifts** are compiled into `WorkCenter.calendar`: the intersection of
+   `shift_calendar` and `availability`. Both empty means 24/7. Occupancy
+   `[start - setup, end]` must sit in one interval, the same formula as the
+   pinned engine. A job longer than every open interval becomes a chain of
+   day parts on the same asset; the outage is the hull from the first start
+   to the last end. Spare stock and skills are required once, on the first
+   part. An immutable freeze stays one placement. **Safety and service
+   area** stay post-check only. This is not a labour-law roster.
 7. **No customer EAM / SCADA / GIS** integration.
 8. Heuristic solvers (`GREED`, `BEAM`, `ALNS`, `RHC`) map to
    `heuristic_feasible` and must not be called optimal without proof.
@@ -54,8 +57,17 @@
 21. GREED does not model asset exclusivity. `ASSET_OVERLAP` is a checker
     finding. Default `synthesize --mode small --seed 42` + GREED exits **2**.
     That is fail-closed. Verified small seed on this pin: **12**. Contest
-    instance: `benchmark/jury_benchmark.py`.
-22. `scale-2k` and `scale-5k` build 2 000 and 5 000 synthetic jobs with the
+    instance: `benchmark/jury_benchmark.py`. An asset `AuxiliaryResource` is
+    not a substitute: on this pin the engine charges that resource for
+    setup-matrix minutes before processing starts, so crew travel would
+    count as an outage. Pair bans stay in the same post-check.
+22. `FIFO-W` reads shift, availability, approved outage windows, travel, and
+    predecessor finish. Empty crew calendars stay round-the-clock. It does
+    not model asset exclusivity except by sitting inside those windows.
+    Synthetic `res_severny` has empty crew calendars; section E of
+    `benchmark/results/jury_report.md` is that instance. The 08:00–17:00
+    slice is section F, not a labour roster.
+23. `scale-2k` and `scale-5k` build 2 000 and 5 000 synthetic jobs with the
     same campaign packing as `medium` / `stress`. `benchmark/scale_budget.py`
     prints wall time and the tracemalloc peak. CI requires a verified GREED
     plan for `scale-2k` inside the wall budget. On `scale-5k` the pinned GREED

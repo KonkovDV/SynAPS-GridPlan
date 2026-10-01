@@ -6,7 +6,7 @@
 > Реестр утверждений: [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md).
 > Актуальная формулировка (один сценарий ТОиР):
 > [`docs/APPLICATION_TOIR_SCENARIO.md`](docs/APPLICATION_TOIR_SCENARIO.md).
-> Текущая целевая программа (приём до **25.09.2026**):
+> Текущая целевая программа (приём до **2 октября 2026** включительно, сверка 01.10):
 > [`docs/ETECHHUB_APPLICATION.md`](docs/ETECHHUB_APPLICATION.md);
 > дек подачи — `SynAPS_GridPlan.pptx`; не v7 и не архивный PDF марафона
 > (`_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`, срез 0.1.4).

@@ -17,6 +17,7 @@ from synaps_gridplan.fingerprint import fingerprint_payload
 from synaps_gridplan.model import FrozenAssignment, GridPlanProblem
 from synaps_gridplan.practice import practice_snapshot
 from synaps_gridplan.risk_metrics import compute_risk_metrics
+from synaps_gridplan.unenforced import unenforced_fields
 from synaps_gridplan.versions import GRIDPLAN_VERSION, ISO16290_TRL, SYNAPS_COMMIT
 
 
@@ -308,12 +309,25 @@ def recheck_plan(
     )
     meta = dict(outcome.metadata)
     meta["verification_origin"] = "independent_recheck"
+    # The file's OPTIMAL is not a proof. Recheck establishes feasibility only.
+    status = outcome.status
+    checked_schedule = outcome.schedule
+    imported_optimal = (
+        schedule.status == SolverStatus.OPTIMAL or status == SolverStatus.OPTIMAL.value
+    )
+    if imported_optimal and status == SolverStatus.OPTIMAL.value:
+        meta["claimed_status"] = SolverStatus.OPTIMAL.value
+        meta["optimality_origin"] = "imported_not_reproven"
+        if meta.get("claim_status") == SolverStatus.OPTIMAL.value:
+            meta["claim_status"] = SolverStatus.FEASIBLE.value
+        status = SolverStatus.FEASIBLE.value
+        checked_schedule = schedule.model_copy(update={"status": SolverStatus.FEASIBLE})
     return PlanOutcome(
         schema_version=outcome.schema_version,
         solver_config=outcome.solver_config,
-        status=outcome.status,
+        status=status,
         verified_feasible=outcome.verified_feasible,
-        schedule=outcome.schedule,
+        schedule=checked_schedule,
         schedule_problem=outcome.schedule_problem,
         id_map=outcome.id_map,
         hard_violation_count=outcome.hard_violation_count,
@@ -402,6 +416,7 @@ def _wrap(
             ],
             "risk_proxy": risk,
             "claim_status": claim_status,
+            "unenforced_fields": unenforced_fields(problem),
             "optimality_note": (
                 "Допустимое найденное решение без доказательства оптимальности"
                 if claim_status == "heuristic_feasible"

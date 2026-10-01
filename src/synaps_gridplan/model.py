@@ -41,6 +41,64 @@ DataProvenance = Literal[
 ]
 ClaimLevel = Literal["experiment", "benchmark", "pilot_candidate", "production_verified"]
 
+
+def _precedence_shape_issues(jobs: list[MaintenanceJob]) -> list[str]:
+    """Reject cycles and branches. The compiler only emits linear chains."""
+
+    by_id = {job.id: job for job in jobs}
+    issues: list[str] = []
+    if len(by_id) != len(jobs):
+        return issues
+    successors: dict[UUID, list[UUID]] = {}
+    indegree = {job.id: 0 for job in jobs}
+    for job in jobs:
+        if len(job.predecessor_job_ids) > 1:
+            issues.append(
+                f"job {job.external_ref} has {len(job.predecessor_job_ids)} predecessors; "
+                "only linear chains are supported"
+            )
+        for pred in job.predecessor_job_ids:
+            if pred not in by_id:
+                continue
+            successors.setdefault(pred, []).append(job.id)
+            indegree[job.id] += 1
+    for pred, children in successors.items():
+        if len(children) > 1:
+            issues.append(
+                f"job {by_id[pred].external_ref} has {len(children)} successors; "
+                "only linear chains are supported"
+            )
+    pending = [job_id for job_id, degree in indegree.items() if degree == 0]
+    seen = 0
+    while pending:
+        node = pending.pop()
+        seen += 1
+        for nxt in successors.get(node, []):
+            indegree[nxt] -= 1
+            if indegree[nxt] == 0:
+                pending.append(nxt)
+    if seen == len(jobs):
+        return issues
+    residual = {job_id for job_id, degree in indegree.items() if degree > 0}
+    if not residual:
+        issues.append("precedence cycle")
+        return issues
+    start = min(residual, key=lambda job_id: by_id[job_id].external_ref)
+    path: list[UUID] = []
+    index: dict[UUID, int] = {}
+    cursor: UUID | None = start
+    while cursor is not None and cursor not in index and cursor in residual:
+        index[cursor] = len(path)
+        path.append(cursor)
+        cursor = next((nxt for nxt in successors.get(cursor, []) if nxt in residual), None)
+    if cursor is not None and cursor in index:
+        names = [by_id[job_id].external_ref for job_id in path[index[cursor] :]]
+        issues.append("precedence cycle: " + " -> ".join(names))
+    else:
+        issues.append("precedence cycle")
+    return issues
+
+
 # Maximum number of cross-reference errors reported in one ValidationError message.
 # Errors beyond this limit are counted but not listed; a suffix names the overflow.
 _CROSS_REFS_LIMIT = 20
@@ -411,6 +469,7 @@ class GridPlanProblem(GridPlanModel):
                     issues.append(f"job {job.external_ref} references unknown spare {spare_id}")
             if job.duration_min < 1:
                 issues.append(f"job {job.external_ref} has non-positive duration")
+        issues.extend(_precedence_shape_issues(self.jobs))
         for window in self.outage_windows:
             if window.asset_id not in asset_ids:
                 issues.append(f"outage window references unknown asset {window.asset_id}")

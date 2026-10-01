@@ -3,7 +3,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use uuid::Uuid;
 
 use crate::SCHEMA_VERSION;
@@ -445,6 +445,7 @@ impl GridPlanProblem {
                 }
             }
         }
+        issues.extend(precedence_shape_issues(&self.jobs));
         for window in &self.outage_windows {
             if !asset_ids.contains(&window.asset_id) {
                 issues.push("outage window unknown asset".into());
@@ -490,6 +491,107 @@ impl GridPlanProblem {
             Err(issues[..issues.len().min(20)].join("; "))
         }
     }
+}
+
+fn precedence_shape_issues(jobs: &[MaintenanceJob]) -> Vec<String> {
+    let mut issues = Vec::new();
+    let mut successors: HashMap<Uuid, Vec<Uuid>> = HashMap::new();
+    let mut indegree: HashMap<Uuid, usize> = jobs.iter().map(|job| (job.id, 0)).collect();
+    let job_ids: HashSet<Uuid> = indegree.keys().copied().collect();
+    if job_ids.len() != jobs.len() {
+        return issues;
+    }
+    for job in jobs {
+        if job.predecessor_job_ids.len() > 1 {
+            issues.push(format!(
+                "job {} has {} predecessors; only linear chains are supported",
+                job.external_ref,
+                job.predecessor_job_ids.len()
+            ));
+        }
+        for pred in &job.predecessor_job_ids {
+            if !job_ids.contains(pred) {
+                continue;
+            }
+            successors.entry(*pred).or_default().push(job.id);
+            *indegree.entry(job.id).or_insert(0) += 1;
+        }
+    }
+    for (pred, children) in &successors {
+        if children.len() > 1 {
+            let name = jobs
+                .iter()
+                .find(|job| job.id == *pred)
+                .map(|job| job.external_ref.as_str())
+                .unwrap_or("?");
+            issues.push(format!(
+                "job {name} has {} successors; only linear chains are supported",
+                children.len()
+            ));
+        }
+    }
+    let mut pending: Vec<Uuid> = indegree
+        .iter()
+        .filter(|(_, degree)| **degree == 0)
+        .map(|(job_id, _)| *job_id)
+        .collect();
+    let mut seen = 0usize;
+    while let Some(node) = pending.pop() {
+        seen += 1;
+        let Some(nexts) = successors.get(&node) else {
+            continue;
+        };
+        for nxt in nexts {
+            let degree = indegree.entry(*nxt).or_insert(0);
+            *degree = degree.saturating_sub(1);
+            if *degree == 0 {
+                pending.push(*nxt);
+            }
+        }
+    }
+    if seen == jobs.len() {
+        return issues;
+    }
+    let residual: HashSet<Uuid> = indegree
+        .iter()
+        .filter(|(_, degree)| **degree > 0)
+        .map(|(job_id, _)| *job_id)
+        .collect();
+    let by_ref: HashMap<Uuid, &str> = jobs
+        .iter()
+        .map(|job| (job.id, job.external_ref.as_str()))
+        .collect();
+    let Some(mut start) = residual.iter().next().copied() else {
+        issues.push("precedence cycle".into());
+        return issues;
+    };
+    for job_id in &residual {
+        if by_ref.get(job_id) < by_ref.get(&start) {
+            start = *job_id;
+        }
+    }
+    let mut path = Vec::new();
+    let mut index: HashMap<Uuid, usize> = HashMap::new();
+    let mut node = Some(start);
+    while let Some(current) = node {
+        if index.contains_key(&current) || !residual.contains(&current) {
+            break;
+        }
+        index.insert(current, path.len());
+        path.push(current);
+        node = successors
+            .get(&current)
+            .and_then(|nexts| nexts.iter().copied().find(|nxt| residual.contains(nxt)));
+    }
+    if let Some(current) = node {
+        if let Some(at) = index.get(&current) {
+            let names: Vec<&str> = path[*at..].iter().map(|id| by_ref[id]).collect();
+            issues.push(format!("precedence cycle: {}", names.join(" -> ")));
+            return issues;
+        }
+    }
+    issues.push("precedence cycle".into());
+    issues
 }
 
 fn validate_calendar_rows(
