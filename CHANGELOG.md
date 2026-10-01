@@ -9,6 +9,26 @@
   than one open interval becomes a chain of day parts; the outage hull runs
   from the first part's start to the last part's end.
 
+- **fix**: a precedence cycle, join, or fan-out is rejected when the problem
+  loads, in Python and native. The compiler only builds linear chains, so a
+  lucky order is no longer reported as verified.
+
+- **fix**: zero on-hand stock plus `lead_time_min` and no `replenishment_date`
+  rejects a start before `planning_horizon_start + lead_time_min`
+  (`SPARE_PART_NOT_YET_AVAILABLE`) in Python and native `check`. The delay
+  does not create stock. On-hand stock, a replenishment date, and the
+  decorative catalog fields (`voltage_level`, `parent_asset_id`,
+  `coordinates`, `failure_modes`, `warehouse_location`) are listed in
+  `unenforced_fields` and do not change the verdict.
+
+- **fix**: `check` no longer republishes an imported `optimal` status. Feasibility
+  is recomputed; the file's label is kept as `claimed_status` with
+  `optimality_origin=imported_not_reproven`. Native `check` still emits no status.
+
+- **docs**: Energotechhub intake on the programme page is 7 September–2 October
+  2026 inclusive (extended past 25 September). P6/P7/P11 refreshed 2026-10-01.
+  Working notes and the 1 October triage live in `docs/AI_WORK_PLAN_2026_10_01.md`.
+
 - **bench**: FIFO-W places a ready job inside a shift and an approved outage
   window, after travel, and not before its predecessor finishes. On synthetic
   `res_severny` the crew calendars are empty, so the shift rule is idle there;

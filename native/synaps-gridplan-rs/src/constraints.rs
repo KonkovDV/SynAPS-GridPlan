@@ -9,7 +9,7 @@ use crate::model::{
     Asset, Crew, CrewCalendarWindow, FrozenAssignment, GridPlanProblem, MaintenanceJob,
 };
 use crate::schedule::Assignment;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Violation {
@@ -619,6 +619,23 @@ fn spare_violations(
                         job_id: Some(job.id),
                     });
                 }
+            } else if spare.usable_quantity() == 0 && spare.lead_time_min > 0 {
+                let blocked = match Duration::try_minutes(i64::from(spare.lead_time_min))
+                    .and_then(|delta| problem.planning_horizon_start.checked_add_signed(delta))
+                {
+                    Some(earliest) => start < earliest,
+                    None => true,
+                };
+                if blocked {
+                    out.push(Violation {
+                        kind: "SPARE_PART_NOT_YET_AVAILABLE".into(),
+                        message: format!(
+                            "job {} uses {} before lead time (usable stock is 0)",
+                            job.external_ref, spare.code
+                        ),
+                        job_id: Some(job.id),
+                    });
+                }
             }
             let used = consumption.entry(*spare_id).or_insert(0);
             *used = used.saturating_add(1);
@@ -641,6 +658,88 @@ fn spare_violations(
         }
     }
     out
+}
+
+fn note(field: &str, refer: &str, message: &str) -> Value {
+    json!({
+        "kind": "UNENFORCED_FIELD",
+        "field": field,
+        "ref": refer,
+        "message": message,
+    })
+}
+
+/// Non-default catalog values that do not change the domain verdict.
+/// Same rules as ``synaps_gridplan.unenforced``.
+pub fn unenforced_fields(problem: &GridPlanProblem) -> Vec<Value> {
+    let mut rows = Vec::new();
+    for asset in &problem.assets {
+        if !asset.voltage_level.trim().is_empty() {
+            rows.push(note(
+                "Asset.voltage_level",
+                &asset.code,
+                "stored, not checked",
+            ));
+        }
+        if asset.parent_asset_id.is_some() {
+            rows.push(note(
+                "Asset.parent_asset_id",
+                &asset.code,
+                "stored, not checked; no parent-outage coupling",
+            ));
+        }
+        if asset
+            .coordinates
+            .as_ref()
+            .is_some_and(|coords| !coords.is_empty())
+        {
+            rows.push(note(
+                "Asset.coordinates",
+                &asset.code,
+                "stored, not checked; not a travel source",
+            ));
+        }
+        if !asset.failure_modes.is_empty() {
+            rows.push(note(
+                "Asset.failure_modes",
+                &asset.code,
+                "stored, not checked; separate from the risk proxy",
+            ));
+        }
+    }
+    for spare in &problem.spare_parts {
+        if !spare.warehouse_location.trim().is_empty() {
+            rows.push(note(
+                "SparePart.warehouse_location",
+                &spare.code,
+                "stored, not checked; not a travel node",
+            ));
+        }
+        if spare.lead_time_min > 0 && spare.replenishment_date.is_some() {
+            rows.push(note(
+                "SparePart.lead_time_min",
+                &spare.code,
+                "ignored because replenishment_date is set",
+            ));
+        } else if spare.lead_time_min > 0 && spare.usable_quantity() > 0 {
+            rows.push(note(
+                "SparePart.lead_time_min",
+                &spare.code,
+                "ignored because usable stock is already on hand",
+            ));
+        }
+    }
+    rows.sort_by(|left, right| {
+        (
+            left["field"].as_str().unwrap_or(""),
+            left["ref"].as_str().unwrap_or(""),
+        )
+            .cmp(&(
+                right["field"].as_str().unwrap_or(""),
+                right["ref"].as_str().unwrap_or(""),
+            ))
+    });
+    rows
 }
 
 fn frozen_violations(

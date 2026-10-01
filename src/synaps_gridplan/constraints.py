@@ -15,6 +15,7 @@ from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
 from synaps_gridplan.adapter import legacy_window_frozen_assignments
 from synaps_gridplan.model import FrozenAssignment, GridPlanProblem, MaintenanceJob, SparePart
+from synaps_gridplan.unenforced import spare_earliest_use
 
 
 @dataclass(frozen=True)
@@ -785,14 +786,17 @@ def _spare_violations(
             spare = spares_by_id.get(spare_id)
             if spare is None:
                 continue
-            if spare.replenishment_date is not None and asn.start_time < spare.replenishment_date:
+            gate = spare_earliest_use(problem, spare)
+            if gate is not None and asn.start_time < gate[0]:
+                earliest, reason = gate
+                if reason == "replenishment":
+                    detail = f"before replenishment {earliest.isoformat()}"
+                else:
+                    detail = f"before lead time {earliest.isoformat()} (usable stock is 0)"
                 out.append(
                     ConstraintViolation(
                         kind="SPARE_PART_NOT_YET_AVAILABLE",
-                        message=(
-                            f"job {job.external_ref} uses {spare.code} before replenishment "
-                            f"{spare.replenishment_date.isoformat()}"
-                        ),
+                        message=f"job {job.external_ref} uses {spare.code} {detail}",
                         job_id=job.id,
                     )
                 )

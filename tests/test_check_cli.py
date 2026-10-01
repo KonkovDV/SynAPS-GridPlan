@@ -60,6 +60,34 @@ def test_check_recomputes_verification_and_ignores_saved_success(tmp_path: Path)
     assert "problem" in checked
 
 
+def test_check_demotes_imported_optimal_without_reproving_it(tmp_path: Path) -> None:
+    """A saved ``optimal`` label is a claim. Recheck proves feasibility only."""
+
+    problem = _tiny_problem()
+    outcome = plan_fifo(problem)
+    assert outcome.ok
+    problem_path = tmp_path / "problem.json"
+    result_path = tmp_path / "result.json"
+    checked_path = tmp_path / "checked.json"
+    problem_path.write_text(problem.model_dump_json(), encoding="utf-8")
+    payload = _result_payload(outcome)
+    payload["outcome"]["solver_config"] = "CPSAT-30"
+    payload["outcome"]["status"] = "optimal"
+    payload["schedule"]["status"] = "optimal"
+    payload["schedule"]["solver_name"] = "CPSAT-30"
+    result_path.write_text(json.dumps(payload), encoding="utf-8")
+    assert main(["check", str(problem_path), str(result_path), "-o", str(checked_path)]) == 0
+    checked = json.loads(checked_path.read_text(encoding="utf-8"))
+    assert checked["outcome"]["status"] == "feasible"
+    assert checked["schedule"]["status"] == "feasible"
+    assert checked["outcome"]["verified_feasible"] is True
+    meta = checked["outcome"]["metadata"]
+    assert meta["claimed_status"] == "optimal"
+    assert meta["optimality_origin"] == "imported_not_reproven"
+    assert meta["claim_status"] != "optimal"
+    assert meta["verification_origin"] == "independent_recheck"
+
+
 def test_check_does_not_trust_a_false_verified_flag(tmp_path: Path) -> None:
     problem = _tiny_problem()
     outcome = plan_fifo(problem)
