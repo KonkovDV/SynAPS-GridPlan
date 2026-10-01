@@ -186,6 +186,23 @@ def test_committed_jury_report_matches_pin() -> None:
     assert "не другой датасет" in text
 
 
+def test_fifo_w_section_matches_the_same_res_severny_instance() -> None:
+    report = (ROOT / "benchmark" / "results" / "jury_report.md").read_text(encoding="utf-8")
+    section = report.split("## E. FIFO-W на том же инстансе")[1]
+    assert "пустые" in section
+    assert "не оптимум" in section
+    from res_severny_benchmark import build_res_problem
+
+    problem = build_res_problem()
+    assert all(not crew.shift_calendar and not crew.availability for crew in problem.crews)
+    outcome = plan_with_config(problem, solver_config="FIFO-W", apply_frozen=False)
+    assert len(outcome.schedule.assignments) == len(problem.jobs) == 55
+    assert outcome.hard_violation_count == 0
+    assert outcome.verified_feasible is True
+    assert "| Жёстких нарушений | 0 |" in section
+    assert "| Проверка | да |" in section
+
+
 def test_fifo_serialized_layers_match_hard_count() -> None:
     problem = synthesize_feeder(mode="small", seed=21)
     outcome = plan_with_config(problem, solver_config="FIFO", apply_frozen=False)

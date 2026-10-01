@@ -54,5 +54,13 @@
 21. GREED does not model asset exclusivity. `ASSET_OVERLAP` is a checker
     finding. Default `synthesize --mode small --seed 42` + GREED exits **2**.
     That is fail-closed. Verified small seed on this pin: **12**. Contest
-    instance: `benchmark/jury_benchmark.py`.
+    instance: `benchmark/jury_benchmark.py`. An asset `AuxiliaryResource` is
+    not a substitute: on this pin the engine charges that resource for
+    setup-matrix minutes before processing starts, so crew travel would
+    count as an outage. Pair bans stay in the same post-check.
+22. `FIFO-W` reads shift, availability, approved outage windows, travel, and
+    predecessor finish. Empty crew calendars stay round-the-clock. It does
+    not model asset exclusivity except by sitting inside those windows.
+    Synthetic `res_severny` has empty crew calendars; section E of
+    `benchmark/results/jury_report.md` is that instance, not a shift roster.
 
