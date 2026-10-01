@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **fix**: the checker no longer imports the compiler for legacy window locks.
+  `legacy_window_frozen_assignments` lives in `legacy_freeze.py`; the compiler
+  projects those same rows onto operation ids. A second fitting window does
+  not add a second lock.
+
 - **docs**: GitHub README lists the 14-slide submission pack, Energotechhub
   window [P6], prize ceiling [P8], CP-SAT section D, and native travel
   boundary; Academy 10th stream is marked past its published close.

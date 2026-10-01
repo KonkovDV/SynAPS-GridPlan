@@ -13,7 +13,7 @@ from uuid import UUID
 
 from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
-from synaps_gridplan.adapter import legacy_window_frozen_assignments
+from synaps_gridplan.legacy_freeze import legacy_window_frozen_assignments
 from synaps_gridplan.model import FrozenAssignment, GridPlanProblem, MaintenanceJob, SparePart
 
 
