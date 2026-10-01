@@ -14,12 +14,12 @@ from uuid import UUID
 from synaps.model import Assignment, ObjectiveValues, ScheduleResult, SolverStatus
 
 from synaps_gridplan.adapter import (
-    _approved_outage_windows,
     _lookup_travel_minutes,
     compile_frozen_assignments,
     to_schedule_problem,
 )
 from synaps_gridplan.fingerprint import fingerprint_payload
+from synaps_gridplan.legacy_freeze import approved_outage_windows as _approved_outage_windows
 from synaps_gridplan.model import SCHEMA_VERSION, GridPlanProblem
 from synaps_gridplan.planner import PlanOutcome, _wrap
 from synaps_gridplan.versions import SYNAPS_COMMIT
