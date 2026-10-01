@@ -99,6 +99,8 @@ def _run(argv: list[str] | None = None) -> int:
             "small",
             "medium",
             "stress",
+            "scale-2k",
+            "scale-5k",
             "disruption",
             "infeasible",
             "frozen-conflict",
