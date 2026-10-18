@@ -127,6 +127,7 @@ def test_render_cpsat_section_stays_on_the_same_instance() -> None:
     }
     text = render_md(payload)
     assert "## D. CP-SAT на том же инстансе" in text
+    assert "скомпилированная модель" in text
     assert "scale-фидером" in text
     assert "Оптимальность GREED из scenario A не следует" in text
     assert "abababababababab…" in text
@@ -189,6 +190,9 @@ def test_committed_jury_report_matches_pin() -> None:
     assert _section_count_sum(greed_sec) == greed_n
     assert "## D. CP-SAT на том же инстансе" in text
     d_sec = text.split("## D. CP-SAT на том же инстансе")[1].split("## ")[0]
+    assert "скомпилированная модель" in d_sec
+    limits = (ROOT / "docs" / "limitations.md").read_text(encoding="utf-8")
+    assert "скомпилированная модель" in limits
     assert "`CPSAT-30`" in d_sec
     assert "| status | optimal |" in d_sec
     assert "| verified_feasible | да |" in d_sec

@@ -74,4 +74,9 @@
     hits its own time cap and does not verify. The wall clock is then the
     domain check of that partial plan, so the CI budget is 1200s with
     `--allow-unverified`. That log is not a `CLAIMS_REGISTRY` row.
+24. CP-SAT `OPTIMAL` is the compiled model: makespan of that formulation.
+    Asset exclusivity, pair bans, and spare stock are not in it; they stay
+    post-checks. Section D of `benchmark/results/jury_report.md` names that
+    boundary (`скомпилированная модель`). The status is not an optimum of the
+    full domain contract.
 
