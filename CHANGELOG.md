@@ -2,12 +2,16 @@
 
 ## Unreleased
 
+- **feat**: JSON intake refuses prose and a spare with no quantity. The
+  labeled sample reports 1/2 of emitted JSON passing `PlanOutcome.ok`.
+  That fraction is not a claims row.
+
 - **docs**: a memo lists the Russian software-registry rules read on
   18 October 2026. Inclusion is not claimed, and the repository has no
   registry number.
 
 - **docs**: the 18 October executor plan records what landed that day.
-  The upstream aux change and the measured JSON extractor stay open.
+  The upstream aux change stays open.
 
 - **docs**: a note on Government Decree 86 treats the annual and monthly
   approval dates as an analogy for dispatch objects. The product does not
