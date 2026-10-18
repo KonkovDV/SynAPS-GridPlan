@@ -4,350 +4,233 @@
   <img src="docs/synaps-gridplan-logo.jpg" alt="SynAPS-GridPlan" width="720">
 </p>
 
-Воспроизводимое лабораторное ядро планирования работ **ТОиР**: генерация
-графика отдельно, независимая проверка отдельно. Бригады, окна отключения,
-ЗИП, заморозка согласованных заявок ПЛ и явные запреты «эти два аппарата
-не должны быть отключены сразу». Поиск слотов —
-[SynAPS](https://github.com/KonkovDV/SynAPS). Проверка правил — отдельный
-fail-closed чекер на Python; Rust реализует **доменный** контур с тестами
-паритета, но не весь чекер движка SynAPS.
+GridPlan составляет график работ по техническому обслуживанию и ремонту
+и отдельно проверяет, выдержал ли график записанные правила. В задаче есть
+бригада и её квалификация, окно отключения, запасная часть, уже согласованная
+строка плана и прямой запрет: эти два аппарата нельзя отключать вместе.
+Свободный слот ищет [SynAPS](https://github.com/KonkovDV/SynAPS). Свои правила
+считает отдельная проверка. Пока она не сошлась, план не принят.
 
 [![CI main](https://github.com/KonkovDV/SynAPS-GridPlan/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/KonkovDV/SynAPS-GridPlan/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB.svg)](https://www.python.org/)
 
-Если питч, заявка или этот README расходятся с [docs/LIMITS.md](docs/LIMITS.md)
-— верен LIMITS.
+Если этот текст, дек или заявка разойдутся с [docs/LIMITS.md](docs/LIMITS.md),
+верен LIMITS.
 
 | | |
 | --- | --- |
-| Базовая версия | **0.1.8** [V1] |
-| Базовая ветка | `main` |
+| Версия | **0.1.8** [V1] |
+| Ветка | `main` |
 | Пин SynAPS | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) [V2] |
-| Зрелость | **TRL 4 по ISO 16290: лабораторные фикстуры, не пилот на предприятии** (`versions.py`) [V3]. Не сертификат, **не ГОСТ Р 58048 УГТ4/5**. |
-| Счёт pytest | [`docs/TEST_COUNT.txt`](docs/TEST_COUNT.txt) (`python -m pytest --collect-only -q`) [T1] |
-| Реестр утверждений | [docs/CLAIMS_REGISTRY.md](docs/CLAIMS_REGISTRY.md) — verified / assumption / target / withdrawn |
-| Запрещённые формулировки | [`docs/BANNED_CLAIMS.txt`](docs/BANNED_CLAIMS.txt), CI: `python scripts/lint_claims.py` |
-| Границы | [docs/LIMITS.md](docs/LIMITS.md) |
-| Пакет подачи | [`SynAPS_GridPlan.pptx`](SynAPS_GridPlan.pptx) (извлечённый текст: [`docs/DECK_TEXT.txt`](docs/DECK_TEXT.txt)) |
-| Энерготехнохаб [P6] | Приём **продлён до 2 октября 2026 включительно**; оценка и собеседования 3–11 октября; Демо-день 14–20 декабря [P7]. Сверка 01.10.2026: страница [etechhubspb.ru/accelerator](https://www.etechhubspb.ru/accelerator) и [новость МФТИ от 29.09](https://www.mipt.ru/news/iz-nauki-v-promyshlennost-mfti-i-energotekhnokhab-peterburg-zapuskayut-programmu-po-vnedreniyu-tekhn). Факт подачи GridPlan в git не зафиксирован. Записка: [docs/ETECHHUB_APPLICATION.md](docs/ETECHHUB_APPLICATION.md) (даты в ней от 18.09, устарели) |
-| Приз программы | 1 500 000 ₽ — потолок *eligibility* в анонсе СПбПУ, не выплата GridPlan [P8] |
-| Одна фраза заявки | [docs/APPLICATION_TOIR_SCENARIO.md](docs/APPLICATION_TOIR_SCENARIO.md) |
-| Дек v7 (не отправлять) | [docs/PITCH_V7_FACTCHECK.md](docs/PITCH_V7_FACTCHECK.md) |
-| Академия инноваторов, 10-й поток | опубликованный приём до **14.09.2026**; на сверке 18.09 срок прошёл. Не путать со сроком Энерготехнохаба. Записка: [ACADEMY_APPLICATION.md](ACADEMY_APPLICATION.md) |
-| Исторический пакет другой программы | [APPLICATION.md](APPLICATION.md): марафон «Энергия будущего». PDF 0.1.4: [`_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf`](_SUBMIT_MIK_2026_08_18/SynAPS-GridPlan-marathon-0.1.4.pdf) — не пакет подачи |
-| Практика | [PRACTICE.md](PRACTICE.md) |
-| Аудит | [AUDIT.md](AUDIT.md) |
-| УГТ / IP / пилот | [ГОСТ Р 58048](docs/UGT_GOST_R_58048.md), [IP и open-core](docs/IP_AND_OPEN_CORE.md), [one-pager пилота](docs/PILOT_ONEPAGER.md) |
-| Автор в git | один: Коньков Д.В. ([CITATION.cff](CITATION.cff)). Предметный эксперт ТОиР в репозитории не назван |
+| Зрелость | **TRL 4 по ISO 16290: лабораторные фикстуры, не пилот на предприятии** [V3]. Самооценка. Не сертификат и не ГОСТ Р 58048 |
+| Проверки | снимок [`docs/TEST_COUNT.txt`](docs/TEST_COUNT.txt) [T1] |
+| Цифры | только [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md) |
+| Автор | Коньков Д.В., [`CITATION.cff`](CITATION.cff) |
 
-English: crew- and window-constrained maintenance scheduling on SynAPS, with an
-independent domain checker. Lab fixtures only. Not N-1, not SAIDI, not a plant
-pilot. TRL 4 per ISO 16290: lab fixtures, not a plant pilot. Not GOST R 58048
-certification. 187-FZ (KII) compliance is not claimed. ПАО «Россети» is not a
-documented GridPlan customer.
+English: crew- and window-constrained maintenance scheduling on SynAPS, with a
+checker that does not trust the search. Laboratory fixtures. TRL 4 per ISO 16290
+is a self-assessment, not a plant pilot and not GOST R 58048 certification.
+187-FZ (KII) compliance is not claimed. ПАО «Россети» is not a documented customer.
 
-## Что открывать на GitHub
+> На синтетических фикстурах GridPlan собирает график и проверяет бригаду, окно,
+> квалификацию, линейную цепочку работ, замороженную строку и явный запрет пары.
+> Промышленная выгрузка, диспетчерский пилот и электрический расчёт сети сюда
+> не входят.
 
-| Файл | Зачем |
-| --- | --- |
-| [`SynAPS_GridPlan.pptx`](SynAPS_GridPlan.pptx) | пакет подачи (14 слайдов) |
-| [`benchmark/results/jury_report.md`](benchmark/results/jury_report.md) | FIFO 107 / GREED 0 / CPSAT-30 на одном синтетическом JSON [B1] [B2] [B3] |
-| [`docs/LIMITS.md`](docs/LIMITS.md) | границы; приоритет над питчем |
-| [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md) | единственный реестр цифр |
-| [`docs/DECK_TEXT.txt`](docs/DECK_TEXT.txt) | текст дека, который диффит CI |
-| [`docs/AI_WORK_PLAN_2026_10_18.md`](docs/AI_WORK_PLAN_2026_10_18.md) | живой контракт исполнителя. Снимок 1 октября с исполнения снят |
+## С чего начать
 
-Не пакет подачи: отозванный v7 ([факт-чек](docs/PITCH_V7_FACTCHECK.md)),
-архивный PDF марафона в `_SUBMIT_MIK_2026_08_18/`, нумерованный каталог
-`docs/00`–`docs/29` (исторические записки, не источник цифр).
-
-CI на `main`: Python 3.12 и 3.13, Rust, lockfile. Гейты: pytest, `lint_claims.py`,
-снимок [`docs/TEST_COUNT.txt`](docs/TEST_COUNT.txt) [T1], текст дека,
-`jury_report.md` (включая раздел D / CP-SAT), паритет native на `res_severny`.
-
-## Состояние на 18 октября 2026
-
-Сверка README с кодом на `main`. Это не новый бенчмарк и не строка реестра.
-Прогон 1 октября на `f56e693` остаётся в снимке плана и в `AUDIT.md`.
-
-- **Смены компилируются.** `compiled_crew_windows` пишет пересечение
-  `Crew.shift_calendar` и `availability` в `WorkCenter.calendar`. Пустые оба
-  списка означают круглосуточную доступность. Пустое пересечение двух непустых
-  списков круглосуточным режимом не становится. У синтетического РЭС «Северный»
-  календари бригад пусты, поэтому на этой фикстуре правило смены простаивает.
-- **Часть жёстких правил есть только в постпроверке.** Взаимоисключение
-  отключений одного актива, запрет пары и складской остаток не входят в
-  скомпилированную модель. Отказ GREED на `--seed 42` (`ASSET_OVERLAP`)
-  показывает именно это. `OPTIMAL` у CP-SAT — оптимум этой модели по makespan,
-  не всего доменного контракта. Раздел D `jury_report.md` это называет.
-- **`check` перепроверяет допустимость и не подтверждает оптимальность.**
-  Импортированный `optimal` понижается до `feasible`; исходный ярлык пишется
-  в `claimed_status` (`optimality_origin=imported_not_reproven`). Native `check`
-  статус из файла не копирует.
-- **Часть полей каталога не влияет на вердикт.** `voltage_level`,
-  `parent_asset_id`, `coordinates`, `failure_modes`, `warehouse_location`
-  попадают в `unenforced_fields`. `lead_time_min` запрещает старт только при
-  нулевом остатке и без даты пополнения; остаток он не создаёт. Граница:
-  [docs/LIMITS.md](docs/LIMITS.md).
-- **Граф предшествования — только линейная цепочка.** Цикл, join и fan-out
-  отвергаются при загрузке и в Python, и в native.
-- **Календарный FIFO не знает окон и переездов.** `FIFO-W` читает смены,
-  доступность, окна, переезд и предшественника. Это эвристика, не оптимум.
-  Разрыв FIFO/GREED — отрыв от нижней планки, не выигрыш у диспетчера.
-- **Заморозки чекер берёт из `legacy_freeze`.** Общий вывод больше не сидит
-  в `adapter.py`.
-- **Пин SynAPS остаётся** [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) [V2].
-  Решение не сдвигать его записано в `AUDIT.md`.
-- **Ветки Dependabot, которые 1 октября расходились с SBOM, влиты.**
-  `sbom/cyclonedx-native.json` по-прежнему должен совпадать с `Cargo.lock`.
-- **`extract_problem` принимает JSON постановки.** Проза и ЗИП без количества
-  отвергаются. Доля JSON, прошедших `check` на размеченной выборке, не является
-  строкой `CLAIMS_REGISTRY` и не измеряет точность чтения текста заявки.
-- **`index.html` лежит в репозитории.** `lint_claims.py` читает HTML наравне
-  с Markdown.
-
-Живой контракт исполнителя: [`docs/AI_WORK_PLAN_2026_10_18.md`](docs/AI_WORK_PLAN_2026_10_18.md).
-Снимок [`docs/AI_WORK_PLAN_2026_10_01.md`](docs/AI_WORK_PLAN_2026_10_01.md) с исполнения снят.
-
-## Что делает и чего не делает
-
-**Делает.** Назначает бригады на работы при квалификациях, согласованных окнах
-отключения, одной единице ЗИП на перечисленную позицию, линейных цепочках
-предшественников, замороженных строках ПЛ и явных запретах пары активов.
-Второй контур проверки, независимый от поиска, отклоняет план с жёстким
-нарушением. В Python принимать результат следует по `outcome.ok`: допустимый
-статус, `verified_feasible=true` и ноль жёстких нарушений одновременно.
-Поле `schedule.status` само по себе недостаточно.
-
-**Не делает.** Нет модуля трудового права, нет СНиП, нет норм непрерывного
-отдыха. Нет SCADA, EMS, GIS, прогноза отказов, N-1 / потокораспределения,
-оптимизации SAIDI, ЗИП как BOM-количества, графов предшественников с join /
-fan-out, замены ЕАМ / 1С:ТОИР. `Crew.shift_calendar` — окна доступности, не
-ростер смен. Оценка риска в отчёте — справочный прокси невыполненных работ,
-не измеренное снижение вероятности аварии. Ночные 5k-прогоны ядра SynAPS —
-другой домен.
-
-```mermaid
-flowchart LR
-  A[JSON постановка] --> B[SynAPS: GREED / FIFO / CP-SAT]
-  B --> C[Чекер движка + доменные правила Python]
-  C --> E{статус и все проверки пройдены?}
-  E -->|да| F[verified_feasible]
-  E -->|нет| G[отказ в подтверждении]
-  A --> D[Rust: FIFO + доменные правила]
-  D --> H[отдельный ограниченный контур]
-```
-
-Мировая практика (Hydro-Québec TMS: формализуемые правила отдельно от
-power-flow; публичный кейс Hexaly/PosAm/ČEZ — field workforce, другой класс
-продукта): [PRACTICE.md](PRACTICE.md). Явный запрет двух отключений не
-сертифицирует Tier III. Электрическая безопасность **вне скоупа**. Ни одна
-из названных систем не является клиентом, партнёром или внедрением GridPlan.
-
-## Пять минут для жюри
+Нужен Python 3.12 или новее. SynAPS ставится тем коммитом, который записан
+в версии, а не кончиком чужой ветки `main`.
 
 ```bash
-python -m pip install -e ".[dev]" --force-reinstall
+python -m pip install -e ".[dev]"
 python -m synaps_gridplan version
+python -m synaps_gridplan synthesize --mode small --seed 12 -o feeder.json
+python -m synaps_gridplan solve feeder.json --solver GREED -o result.json
+python -m synaps_gridplan check feeder.json result.json
+```
+
+`version` печатает `0.1.8` и пин `6178c93…`. Код 0 у `solve` и `check` значит,
+что план подтверждён. Тот же маленький фидер с `--seed 42` выходит с кодом 2:
+поиск нашёл размещение, проверка нашла `ASSET_OVERLAP`. Так продукт и должен
+себя вести.
+
+```bash
 python benchmark/jury_benchmark.py --cpsat
 python scripts/lint_claims.py
-python scripts/extract_deck_text.py --check
 python scripts/evidence_bundle.py --skip-pytest
 ```
 
-`version` должен напечатать `0.1.8` и пин `6178c93…`. `jury_benchmark.py --cpsat`
-пишет разделы A–D в `benchmark/results/jury_report.md` на **том же**
-синтетическом РЭС «Северный». `evidence_bundle.py` без `--skip-pytest`
-прогоняет pytest, jury и CP-SAT. JSON пишется в `benchmark/results/`
-(gitignore). Не складывать этот прогон с аварийными сутками или scale-фидером.
-Время стены в отчёте — машина прогона, не SLA [B7].
+Отчёт жюри пишется в `benchmark/results/jury_report.md` на одном и том же
+синтетическом РЭС «Северный». Время стены в отчёте — машина прогона, не норма
+обслуживания [B7]. `evidence_bundle.py` без `--skip-pytest` гоняет ещё и pytest.
 
-| Что увидеть | Команда / файл |
+| Код | Когда |
 | --- | --- |
-| GREED на синтетическом РЭС «Северный» проходит проверку, календарный FIFO — нет | `benchmark/results/jury_report.md` |
-| CPSAT-30 на том же JSON: `optimal`, 0 жёстких, dual bound = makespan | тот же отчёт, раздел D; `python benchmark/jury_benchmark.py --cpsat` |
-| Fail-closed: GREED на `small --seed 42` пишет план и выходит **2** (`ASSET_OVERLAP`) | блок ниже |
-| Тот же маленький фидер, но проверенный | `--seed 12`, exit **0** |
-| Текст дека совпадает с git | `python scripts/extract_deck_text.py --check` |
-| Мировая практика, без претензии на пилот | `python -m synaps_gridplan practice` |
+| **0** | Команда прошла. У `solve`, `disrupt` и `check` это ещё и подтверждённый план |
+| **2** | План не прошёл проверку, либо сломались аргументы или ввод |
+| **1** | Неперехваченная ошибка окружения |
 
-Демо теперь выходит с кодом 2, если положительные утверждения о GREED,
-перепланировании, сохранении заморозки или детерминизме не подтверждены.
-Успешное создание Markdown не считается успешным экспериментом.
-
-Если `source` указывает в `site-packages`, а не в `<репо>/src/synaps_gridplan`:
+Если `version` показывает код из `site-packages`, а не из этого дерева:
 
 ```bash
 python -m pip install -e ".[dev]" --force-reinstall --no-deps
 ```
 
-## Доказательства (синтетика)
+## Как устроен контур
 
-| Результат | Где |
+```mermaid
+flowchart LR
+  A[JSON постановки] --> B[Компиляция в задачу SynAPS]
+  B --> C[GREED, FIFO или CP-SAT]
+  C --> D[Проверка движка и правил GridPlan]
+  D --> E[outcome.ok]
+```
+
+В Python план принимают по `outcome.ok`. Для этого сразу три условия: статус
+допустимый, `verified_feasible` и ноль жёстких нарушений. Поля `schedule.status`
+самого по себе мало. Команда `report` показывает сохранённый файл и не
+проверяет его заново. Повторная проверка — `check`.
+
+Смены бригады входят в календарь солвера: берётся пересечение
+`shift_calendar` и `availability`. Пустые оба списка — бригада доступна
+круглые сутки. Если два непустых календаря не пересекаются, бригада в этот
+период закрыта. У синтетического РЭС «Северный» календари пусты, поэтому
+на этой фикстуре правило смены простаивает. Календарь — окна доступности,
+не ростер трудового права.
+
+| Солвер | Что делает | Можно ли сказать «оптимум» |
+| --- | --- | --- |
+| `GREED` | быстрая эвристика | нет |
+| `FIFO` | календарная нижняя планка, окна и переезд не читает | нет |
+| `FIFO-W` | учитывает смены, доступность, окна, переезд и предшественника | нет |
+| `CPSAT-30` | makespan скомпилированной модели [B3] | да, только если OR-Tools доказал `OPTIMAL` и жёстких нарушений ноль |
+
+Оптимум CP-SAT — скомпилированная модель и критерий makespan. Взаимоисключение
+актива, запрет пары и складской остаток в эту модель не входят: их ловит
+проверка после поиска. Раздел D отчёта жюри говорит об этом прямо.
+Импортированное слово `optimal` проверка понижает до `feasible` и сохраняет
+исходный ярлык в `claimed_status`.
+
+Предшествование — линейная цепочка. Цикл, слияние и развилка отвергаются
+при загрузке. Разрыв между FIFO и GREED — отрыв от слабой планки, не победа
+над диспетчером.
+
+Rust повторяет доменные правила и свой FIFO. Чекер движка SynAPS он не
+заменяет. На `res_severny` матрица переездов непуста, поэтому native
+`verified_feasible` остаётся ложным даже при чистом домене. Обнулять минуты
+переезда, чтобы получить зелёный флаг, не нужно. Граница контура —
+[native README](native/synaps-gridplan-rs/README.md).
+
+## Лаборатория
+
+Один прогон — один JSON. Аварийные сутки и масштабный фидер с РЭС «Северный»
+не складываются.
+
+| Что получилось | Где смотреть |
 | --- | --- |
-| [B1] [B2] РЭС «Северный» (55 работ, 7 бригад, 39 активов): FIFO **107** жёстких нарушений, GREED **0** | `tests/test_res_severny.py`, `benchmark/results/jury_report.md` |
-| [B3] CP-SAT (`CPSAT-30`) на том же JSON: `optimal`, 0 жёстких, dual bound = makespan. GREED makespan совпал в пределах 1 мин; оптимальность эвристики не утверждается | `test_res_cpsat_proves_optimal_makespan` (маркер `slow`), раздел D `jury_report.md` |
-| Перепланирование не двигает замороженные строки ПЛ | Scenario B, те же тесты |
-| Native Rust `check` на `res_severny`: доменный паритет kind с Python; `verified_feasible` у native остаётся false, потому что `travel_minutes` непуста | `tests/test_native_parity.py` |
-| Блок ГРЭС (синтетика, не станция): GREED чист, FIFO нет | `tests/test_gres_block.py` |
-| Два ввода в зал (не М9): GREED чист; оба ввода сразу — `SIMULTANEOUS_OUTAGE_BAN` | `tests/test_dual_feed_hall.py` |
-| [B4] Аварийные сутки (23 работы): FIFO 27 / GREED 0 | `tests/test_emergency_day.py`, `benchmark/results/emergency_day_report.md` |
-| [B5] Фидер 200 / 600 работ: GREED проверен, FIFO ломает окна | `tests/test_scale_feeder.py`, `benchmark/results/scale_report.md` |
-| Чекер ловит overlap, ЗИП, квалификации, короткую длительность | `tests/test_adversarial_*.py` |
-| Аудит заморозки, мутаций модели, ID-map, импорта, CSV и UTC | `tests/test_audit_regressions.py`, `tests/test_import_export_audit.py`, `tests/test_time_contract.py`, `tests/test_final_audit_guards.py` |
+| [B1] [B2] РЭС «Северный»: 55 работ, 7 бригад, 39 активов. FIFO — 107 жёстких нарушений, GREED — 0 | `benchmark/results/jury_report.md` |
+| [B3] `CPSAT-30` на том же JSON: `optimal`, 0 жёстких, dual bound равен makespan | раздел D того же отчёта |
+| [B4] Аварийные сутки, 23 работы: FIFO 27 / GREED 0 | `benchmark/results/emergency_day_report.md` |
+| [B5] Фидер на 200 и на 600 работ: GREED проходит проверку, FIFO ломает окна | `benchmark/results/scale_report.md` |
 
-РЭС «Северный» копирует **типы** оборудования и открытые нормы. Это не
-именованный участок Россети и не промышленные данные. Сохранённые отчёты —
-снимки прежних запусков, не доказательство результата произвольного commit.
+РЭС «Северный» повторяет типы оборудования и открытые нормы. Это не
+именованный участок и не промышленные данные. Сохранённый отчёт — снимок
+того запуска, не обещание для любого будущего коммита.
 
-GREED и FIFO — эвристики (`heuristic_feasible`). Доказательство CP-SAT относится
-к его модели и целевой функции. Адаптер выбирает одно окно из нескольких;
-это не полный поиск по объединению окон и не доказательство глобальной
-невыполнимости исходной многовариантной задачи. Все задержки отдельных работ
-также нельзя отождествлять с агрегированной tardiness цепочки в SynAPS.
+На том же контуре есть блок станции и зал с двумя вводами. Оба синтетические.
+Запрет пары в зале — записанное правило постановки. Он не заменяет расчёт
+сети и не является сертификатом площадки.
 
-Если жюри спросит, подтверждает ли Rust «ноль» GREED на `res_severny`: доменную
-часть — да, слой движка считает Python, `engine_checked=false`. Обе границы
-закреплены тестами.
+## Чему научил контур
 
-0.1.8 закрывает Red Team 0.1.8–0.1.9: `deque` в `_job_chains`, FIFO
-``latest_finish``, заметка об усечении нарушений, overflow в `_cross_refs`.
-[Аудит fail-closed вошёл в 0.1.5](https://github.com/KonkovDV/SynAPS-GridPlan/pull/14).
-Badge относится к `main`. Доказательства аудита привязаны к commit в `AUDIT.md`,
-а не к номеру версии или картинке из дека.
+Поиск и проверка разошлись там, где модель солвера короче доменного правила.
+Отсюда вся осторожность со словом «оптимум»: оно относится к тому, что
+действительно скомпилировано.
 
-## Установка
+Часть полей каталога хранится и на вердикт не влияет: класс напряжения,
+родительский актив, координаты, виды отказа, ячейка склада. Срок поставки
+запрещает слишком ранний старт только при нулевом остатке и без даты
+пополнения. Сам остаток он не создаёт. Полный список —
+[docs/LIMITS.md](docs/LIMITS.md).
 
-Python ≥ 3.12. SynAPS закреплён **коммитом**, не веткой.
+На вход идёт JSON постановки. Свободный текст и запасная часть без количества
+отклоняются: пустое количество нельзя тихо прочитать как ноль. Доля JSON,
+прошедших проверку на размеченной выборке, не измеряет, насколько хорошо
+прочитан текст заявки, и в реестр цифр не входит.
 
-```bash
-python -m pip install -e ".[dev]" --force-reinstall
-python -m synaps_gridplan version
-python -m synaps_gridplan practice
-python -m pytest -q -m "not slow"
-```
+Пин SynAPS держится коммитом [V2]. Более новый `main` ядра сам по себе его
+не сдвигает: у закреплённой версии своё окно занятости вспомогательного
+ресурса, и это окно уже проверено тестом.
 
-## Контракт входа (0.1.8)
+Зелёный значок CI значит, что на `main` прошли тесты Python 3.12 и 3.13,
+Rust, lockfile и проверка формулировок. Он не заменяет снимок отчёта и не
+превращает фикстуру в пилот.
 
-- ISO-даты передавайте с `Z` или явным смещением, например
-  `2026-09-01T09:00:00+03:00`. Unix-время, boolean и naive datetime без зоны
-  отвергаются, в том числе в календарях бригад. Aware-моменты нормализуются в UTC.
-- Неизвестные поля верхнего и вложенного GridPlan-документа отвергаются,
-  включая native catalogs и лишние ключи календаря бригад. Расширения — только
-  в `domain_attributes`. JSON Schema в `schemas/` — конверт верхнего уровня плюс
-  вложенный Pydantic-инвентарь; jsonschema проверяет синтетические дампы.
-  Это не полная Draft 2020-12-норма произвольного будущего v2 и не байтовый
-  round trip.
-- ID внутри каталогов уникальны; ссылки должны существовать. Мутации
-  `model_copy(update=...)` повторно проверяются на границе компилятора и чекера.
-- `immutable:false` не закрепляет слот. Неизменяемую ПЛ нельзя отменить пустым
-  списком ожидаемых заморозок или сменой строки в сохранённом плане.
-- Пустая `travel_minutes` означает явное допущение нулевого переезда. В непустой
-  матрице реальный маршрут A→B не заменяется маршрутом «база→B». Начальные/
-  конечные поездки и индивидуальные маршруты при `max_parallel>1` требуют
-  отдельного согласования модели; полноценный VRP здесь не заявлен.
-- Плотная setup-матрица проверяется до построения по upstream-лимиту
-  2 000 000 элементов. Дополнительно действуют лабораторные квоты JSON и
-  каталогов (`synaps_gridplan.limits`). Это не SLA CPU/памяти процесса.
-- `approved=true`, происхождение данных и TRL — не подпись, не независимая
-  проверка источника и не регуляторный допуск.
+## Что взято из литературы 2026 года
 
-## Команды
+Сертификат оптимальности в CP — журнал, который пишет солвер, и отдельная
+программа, которая этот журнал проверяет. У CP-SAT в OR-Tools такого журнала
+нет. Второй солвер ради формата доказательства не подключался. Чужие проценты
+с учебных наборов в этот README не переносятся. Разбор с ссылками:
+[docs/sota-cp-2026.md](docs/sota-cp-2026.md).
 
-Проверенный демо-стенд жюри (РЭС «Северный», включая CP-SAT):
+Как у сетевых компаний уже разделена работа: формальные правила бригад и окон
+считает планировщик, потокораспределение считает другая система. GridPlan
+ведёт только первый слой. Карта источников: [PRACTICE.md](PRACTICE.md).
 
-```bash
-python benchmark/jury_benchmark.py --cpsat
-```
+## Документы
 
-Маленький фидер, GREED проходит проверку (exit 0):
-
-```bash
-python -m synaps_gridplan synthesize --mode small --seed 12 -o feeder.json
-python -m synaps_gridplan solve feeder.json --solver GREED -o result.json
-python -m synaps_gridplan check feeder.json result.json
-python -m synaps_gridplan report result.json --format markdown
-```
-
-`report` **не перепроверяет** сохранённый план. Импорт помечается
-`imported_snapshot_not_rechecked`. Повторная проверка — `check PROBLEM RESULT`
-(`verification_origin=independent_recheck`); сохранённый `verified_feasible`
-игнорируется. CSV экранирует формулоподобный текст; JSON не добавляет этих
-CSV-префиксов. Интерполяция Markdown сплющивает перевод строки, backticks и
-угловые скобки; это не общий HTML-sanitizer. Типизированный рендеринг не
-обещает побайтовый JSON round trip. Это не подпись файла.
-
-Fail-closed на том же контуре (`--seed 42` → exit **2**, `ASSET_OVERLAP`):
-
-```bash
-python -m synaps_gridplan synthesize --mode small --seed 42 -o feeder.json
-python -m synaps_gridplan solve feeder.json --solver GREED -o result.json
-```
-
-Это штатная работа продукта, не сломанный install. Native FIFO на том же
-seed тоже выходит **2**.
-
-Коды Python CLI:
-
-| Код | Смысл |
+| Зачем открывать | Файл |
 | --- | --- |
-| **0** | Команда выполнена. Для `solve`/`disrupt`/`check` это также означает подтверждённый план. |
-| **2** | План не прошёл проверку либо обработана ошибка аргументов/ввода/вывода. При ошибке входа файл плана может не появиться. |
-| **1** | Неперехваченная ошибка или проблема окружения. |
+| Граница, которая побеждает этот README | [`docs/LIMITS.md`](docs/LIMITS.md), [`docs/limitations.md`](docs/limitations.md) |
+| Откуда взялась каждая цифра | [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md) |
+| Как устроены слои | [`docs/architecture.md`](docs/architecture.md) |
+| Что примет и что отвергнет вход | [`docs/data-contract-v2.md`](docs/data-contract-v2.md) |
+| Мировая практика | [`PRACTICE.md`](PRACTICE.md) |
+| CP и языковые модели, 2024–2026 | [`docs/sota-cp-2026.md`](docs/sota-cp-2026.md) |
+| Горизонт годового и месячного графика как аналогия | [`docs/pp86_horizon_analogy.md`](docs/pp86_horizon_analogy.md) |
+| Реестр российского ПО: включение не заявлено | [`docs/ru_software_registry.md`](docs/ru_software_registry.md) |
+| След аудита | [`AUDIT.md`](AUDIT.md) |
+| Пакет подачи | [`SynAPS_GridPlan.pptx`](SynAPS_GridPlan.pptx) |
+| Дек v7, который не отправлять | [`docs/PITCH_V7_FACTCHECK.md`](docs/PITCH_V7_FACTCHECK.md) |
 
-Остальные постановки:
+Нумерованный каталог `docs/00`–`docs/29` и PDF в `_SUBMIT_MIK_2026_08_18/` —
+архив августа. Оттуда цифры не берутся.
 
-```bash
-python benchmark/emergency_day_benchmark.py
-python benchmark/scale_benchmark.py
-python -m synaps_gridplan synthesize --mode gres-block --seed 42 -o gres.json
-python -m synaps_gridplan synthesize --mode dual-feed-hall --seed 42 -o hall.json
-```
+## Заявки
 
-`gres-block` и `dual-feed-hall` собирает только Python. Native `synthesize`
-этих режимов намеренно завершается ошибкой.
+Пакет подачи — [`SynAPS_GridPlan.pptx`](SynAPS_GridPlan.pptx). Текст, который
+сверяет CI, лежит в [`docs/DECK_TEXT.txt`](docs/DECK_TEXT.txt).
 
-Rust: FIFO и доменные проверки, без реализации всего SynAPS engine checker:
+Приём акселератора «Энерготехнохаб» был продлён до 2 октября 2026
+включительно [P6]. Исход заявки GridPlan в репозитории не записан. Записка:
+[`docs/ETECHHUB_APPLICATION.md`](docs/ETECHHUB_APPLICATION.md). Приз программы,
+1 500 000 ₽, — потолок участия в анонсе, не выплата GridPlan [P8].
 
-```bash
-cd native/synaps-gridplan-rs
-cargo test --locked
-```
+Приём 10-го потока Академии инноваторов закрылся 14 сентября 2026. Это другой
+срок, не срок Энерготехнохаба. Записка: [`ACADEMY_APPLICATION.md`](ACADEMY_APPLICATION.md).
+[`APPLICATION.md`](APPLICATION.md) — исторический пакет марафона «Энергия
+будущего».
 
-Границы и отдельные коды native CLI — в [native README](native/synaps-gridplan-rs/README.md).
-Для непустой задачи любая непустая `travel_minutes` блокирует native-подтверждение,
-даже если матрица заполнена нулями. Доменный verdict выдаётся отдельно;
-`engine_checked=false`. Неподдерживаемое ограничение — не доказанное нарушение
-и не сертификат невыполнимости. Не удаляйте реальные переезды ради зелёного флага.
-Native `check` не заменяет проверку всех ограничений движка Python.
+Имени предметного эксперта ТОиР в репозитории нет.
 
-## Дерево
+## Состав
 
 ```
 src/synaps_gridplan/        Python-пакет
 native/synaps-gridplan-rs/  Rust: FIFO и доменные проверки
-schemas/                    JSON Schema (не замена семантической валидации)
-benchmark/                  РЭС / jury / аварийные сутки / масштаб
+schemas/                    JSON Schema, не замена смысловой проверки
+benchmark/                  РЭС, жюри, аварийные сутки, масштаб
 tests/
-docs/LIMITS.md              границы продукта
-docs/CLAIMS_REGISTRY.md     реестр утверждений
-docs/DECK_TEXT.txt          извлечённый текст пакета подачи
-docs/TEST_COUNT.txt         снимок pytest --collect-only
-docs/AI_WORK_PLAN_2026_10_18.md  живой контракт исполнителя
-docs/AI_WORK_PLAN_2026_10_01.md  снимок 1 октября, с исполнения снят
-index.html                  публичная страница; цифры только из реестра
-SynAPS_GridPlan.pptx        пакет подачи (14 слайдов)
-scripts/                    lint_claims, extract_deck_text, evidence_bundle
-AUDIT.md                    доказательства аудита и оставшиеся gate
-ACADEMY_APPLICATION.md      подготовка к 10-му потоку Академии (срок приёма прошёл)
-APPLICATION.md              исторический пакет энергетического марафона
-_SUBMIT_MIK_2026_08_18/     архив подачи 18.08.2026; PDF 0.1.4 — не пакет Энерготехнохаба
-PRACTICE.md                 мировая практика и границы
-CITATION.cff                автор в git
-sbom/                       CycloneDX-инвентарь lockfile, не сканер уязвимостей
-requirements-lock.txt       Linux-пин Python + SHA SynAPS
+docs/                       границы, реестр, контракт, литература
+index.html                  страница с теми же границами
+scripts/                    формулировки, текст дека, пакет доказательств
 ```
+
+Как устроены проверки в разработке: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Куда сообщать об уязвимости: [`SECURITY.md`](SECURITY.md).
 
 ## Лицензия
 

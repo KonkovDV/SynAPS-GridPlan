@@ -2,10 +2,14 @@
 
 ## Unreleased
 
-- **docs**: the README status section matches the code on `main`. Crew
-  calendars are compiled, Dependabot lockfile bumps that were open on
-  1 October are merged, and the 18 October executor plan is the live
-  contract. The October 1 plan stays a snapshot.
+- **docs**: the README is written as the product, not as a status log.
+  Lessons stay: compiled calendars, a compiled-model optimum, JSON intake,
+  and the 2026 proof literature in `docs/sota-cp-2026.md`. Percentages from
+  those papers are not product claims.
+
+- **docs**: crew calendars are documented as compiled. Dependabot lockfile
+  bumps that were open on 1 October are merged. The 1 October triage stays
+  a snapshot.
 
 - **feat**: JSON intake refuses prose and a spare with no quantity. The
   labeled sample reports 1/2 of emitted JSON passing `PlanOutcome.ok`.

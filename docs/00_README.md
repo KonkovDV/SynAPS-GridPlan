@@ -5,6 +5,7 @@
 > SynAPS `bd09d13`), если файл не датирован иначе. Актуальное состояние
 > продукта — [`README.md`](../README.md), [`AUDIT.md`](../AUDIT.md),
 > [`CHANGELOG.md`](../CHANGELOG.md), [`PRACTICE.md`](../PRACTICE.md),
+> [`LIMITS.md`](LIMITS.md), [`sota-cp-2026.md`](sota-cp-2026.md),
 > [`CLAIMS_REGISTRY.md`](CLAIMS_REGISTRY.md) и
 > `src/synaps_gridplan/versions.py`. Не переносить старые pin/TRL/ROI в
 > текущие утверждения. `scripts/lint_claims.py` этот каталог не сканирует:
