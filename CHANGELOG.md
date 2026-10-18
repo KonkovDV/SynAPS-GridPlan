@@ -3,7 +3,7 @@
 ## Unreleased
 
 - **docs**: the model section of the README no longer uses inline TeX.
-  GitHub and the editor preview were splitting subscripts and `\text`
+  GitHub and the editor preview were splitting subscripts and TeX
   commands into broken math. The same statements are now plain sentences
   and field names. The remaining TeX scraps in the notes are plain text too:
   the jury sum is `X1 + … + X6`, the deferred ABI is `p(o, m)`, and the
