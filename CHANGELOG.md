@@ -10,11 +10,17 @@
   benchmark percentages are cited as literature context, not product claims.
   Removed internal AI work-plan scratch files from `docs/`.
 
-- **feat**: fail-closed JSON intake (`synaps_gridplan.extract`) rejects raw
-  prose (`NOT_JSON`) and spare-part entries without an explicit quantity
-  (`MISSING_SPARE_QUANTITY`). On the two-item labeled intake fixture, 1/2 of
-  emitted JSON candidates pass `PlanOutcome.ok` (regression test only, not a
-  claims-registry row).
+- **feat**: fail-closed JSON intake (`synaps_gridplan.extract`) rejects prose
+  (`reason=prose` or `invalid_json`) and a spare with neither
+  `available_quantity` nor `stock_qty` (`blank_quantity`). On the two-item
+  labeled intake fixture, 1/2 of emitted JSON candidates pass `PlanOutcome.ok`
+  (regression test only, not a claims-registry row).
+
+- **docs**: bibliographic records in `docs/sota-cp-2026.md` and the README
+  algebra now follow `practice.py` and the papers as published. CP 2026 is
+  LIPIcs vol. 379, article 24. ConstraintBench's 65.0% is full-solution
+  feasibility, not a share of individual constraints. Invented module names,
+  intake reason codes, and the mis-tagged FIFO-W row are gone.
 
 - **docs**: added `docs/ru_software_registry.md` summarizing Russian software
   registry rules (Decrees No. 1236 and No. 1875). Registry inclusion is not
