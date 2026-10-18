@@ -15,7 +15,7 @@
 3. **Запрещённые заявления**: INFIMUM 39k/40 мин, +78M ₽, 27 дней, Zhu −9.8%, Prysmian −25%, 499770/145 с как кабельное доказательство, N-1, SAIDI, SOTA, «заменили INFIMUM», «repair на порядок быстрее», «Hamming 0 доказывает заморозку».
 4. **Не смешивать миры**: 499770 оп / ~145 с = синтетический GREEDY_COVER; 39k/40 мин = маркетинг вендора; −9.8% makespan = Zhu et al. Processes 14(5):769.
 5. **Ратчет длины функций** (`tests/test_architecture.py`): новые функции ≤ 80 строк; `cli.py::main` ≤ 130+10; `incremental_repair._solve_core` ≤ 253+10. Публичные функции в `synaps/` обязаны иметь production-вызывателя (тесты не считаются).
-6. **Permanent deferrals, не переоткрывать без нового RFC + Red Team**: native ABI для `p_{o,m}` (skip-to-Python — контракт), dmorill FJSSP-SDST (GPL-3, запрет), KI-S3 sentinel (BHK-разрезы не монотонны), CP-SAT energy term (закрыт в Wave 10, вес 0 по умолчанию).
+6. **Permanent deferrals, не переоткрывать без нового RFC + Red Team**: native ABI для `p(o, m)` (skip-to-Python — контракт), dmorill FJSSP-SDST (GPL-3, запрет), KI-S3 sentinel (BHK-разрезы не монотонны), CP-SAT energy term (закрыт в Wave 10, вес 0 по умолчанию).
 7. `benchmark/results/` и `benchmark/studies/` в .gitignore — измеренные числа писать в RFC/CHANGELOG, не в игнорируемые JSON.
 8. Железное правило ML: нейросети только советуют (L-RHO/Graph-RHO — advisory), никогда не движок завода. Без GPU-GA, без DRL-политики.
 
@@ -110,14 +110,14 @@
 
 ### K2. KI-F16 / verification-остатки из чата
 - ALNS native ranking на `base/speed` до snap — проверить текущее состояние, закрыть или задокументировать.
-- Полный SDST pack в native — оценить трудозатраты; не путать с permanent deferral `p_{o,m}` ABI.
+- Полный SDST pack в native — оценить трудозатраты; не путать с permanent deferral `p(o, m)` ABI.
 - MAB destroy-only arms — сверить с `docs/rfc/DESIGN_ALNS_MAB_OPERATOR_SELECTION.md`; если дизайн подтверждён — закрыть ссылкой, нет — задача.
 
 ### K3. A15-P2 wall-clock детерминизм
 - Уже закрыто штампами `wall_clock_path_dependent` / `determinism_violated`. Решить: нужен ли strict-режим (ошибка вместо штампа) для CI-гейтов.
 
 ### Не переоткрывать (permanent)
-- Native ABI `p_{o,m}`, dmorill GPL-3, KI-S3 sentinel, CP-SAT energy term. См. `docs/rfc/WAVE10_DEFERRED_DECISIONS.md`, `KNOWN_ISSUES.md`.
+- Native ABI `p(o, m)`, dmorill GPL-3, KI-S3 sentinel, CP-SAT energy term. См. `docs/rfc/WAVE10_DEFERRED_DECISIONS.md`, `KNOWN_ISSUES.md`.
 
 ---
 
