@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **docs**: the model section of the README no longer uses inline TeX.
+  GitHub and the editor preview were splitting subscripts and `\text`
+  commands into broken math. The same statements are now plain sentences
+  and field names.
+
 - **docs**: rewritten `README.md` and `docs/sota-cp-2026.md` following the
   `SynAPS` / `SynAPS-MobiRoute` domain repository standard (ADR-0004):
   formal compilation algebra, solver portfolio semantics, two-layer grid
