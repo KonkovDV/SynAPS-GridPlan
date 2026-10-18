@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **docs**: the README status section matches the code on `main`. Crew
+  calendars are compiled, Dependabot lockfile bumps that were open on
+  1 October are merged, and the 18 October executor plan is the live
+  contract. The October 1 plan stays a snapshot.
+
 - **feat**: JSON intake refuses prose and a spare with no quantity. The
   labeled sample reports 1/2 of emitted JSON passing `PlanOutcome.ok`.
   That fraction is not a claims row.

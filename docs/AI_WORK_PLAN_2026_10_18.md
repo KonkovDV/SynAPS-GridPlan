@@ -4,9 +4,9 @@
 [`CLAIMS_REGISTRY.md`](CLAIMS_REGISTRY.md). Снимок 01.10 сохранён в
 [`AI_WORK_PLAN_2026_10_01.md`](AI_WORK_PLAN_2026_10_01.md) и с исполнения снят.
 
-Ревизия: `main` @ `1da7624` (влит #60). Продукт **0.1.8**. Пин SynAPS
+Ревизия: база `27632d9` (влит #61). Продукт **0.1.8**. Пин SynAPS
 `6178c93b705ff58be21fa74a98651883a2da1169` (решение в `AUDIT.md` §10).
-Pytest collect-only: **297** (`docs/TEST_COUNT.txt`). В native-дереве **61** функция `#[test]`
+Pytest collect-only: **298** (`docs/TEST_COUNT.txt`). В native-дереве **61** функция `#[test]`
 (подсчёт исходников 18.10, не журнал CI). На `f56e693` их было 58; 48 в
 `AUDIT.md` §2 остаются наблюдением native `6dde1ce`.
 
