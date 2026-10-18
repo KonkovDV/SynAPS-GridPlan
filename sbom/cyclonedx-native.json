@@ -877,12 +877,12 @@
     {
       "type": "library",
       "name": "uuid",
-      "version": "1.26.1",
-      "purl": "pkg:cargo/uuid@1.26.1",
+      "version": "1.27.0",
+      "purl": "pkg:cargo/uuid@1.27.0",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "2ef6dac1e96601b4fb3acccccff2139741fcb757cb9a36089bf5be91cfb285ce"
+          "content": "97277d36b9c3ace13e58fa6e753f8b0bbbf302a18dd193240d70f9e29681059a"
         }
       ],
       "description": "registry+https://github.com/rust-lang/crates.io-index"
