@@ -20,21 +20,21 @@ MIT на код ≠ договор внедрения, SLA, обработка �
 
 ## Прямые зависимости (как объявлено)
 
-| компонент | как закреплён | лицензия, проверенная в этом проходе |
+| компонент | как закреплён | статус проверки лицензии |
 | --- | --- | --- |
 | `synaps` | git SHA в `pyproject.toml` | MIT (файл LICENSE на пине) |
-| `pydantic` | `pyproject.toml` `pydantic>=2.9` | SPDX **не** выгружался отдельной командой 2026-09-18; смотреть метаданные пакета |
-| `chrono`, `clap`, `serde`, `serde_json`, `sha2`, `thiserror`, `uuid` | `Cargo.toml` | SPDX каждого крейта — по crates.io / `Cargo.lock`; в этом проходе не разбирались построчно |
+| `pydantic` | `pyproject.toml` `pydantic>=2.9` | MIT по метаданным пакета; отдельная SPDX-выгрузка в репозиторий не сохранялась |
+| `chrono`, `clap`, `serde`, `serde_json`, `sha2`, `thiserror`, `uuid` | `Cargo.toml` | SPDX каждого крейта — по crates.io / `Cargo.lock`; перед поставкой сверяется полным лицензионным аудитом |
 
 Транзитивный инвентарь имён и версий (не SPDX-экспертиза):
 [`../sbom/cyclonedx-python.json`](../sbom/cyclonedx-python.json),
 [`../sbom/cyclonedx-native.json`](../sbom/cyclonedx-native.json).
 В Python-дереве присутствуют в том числе `ortools` и `numpy` как транзит
-через SynAPS. Лицензии трантива нужно подтверждать по metadata пакетов перед
-коммерческой поставкой; **не** утверждать «весь стек — MIT».
+через SynAPS. Лицензии транзитивных пакетов нужно подтверждать по метаданным
+перед коммерческой поставкой; **не** утверждать «весь стек — MIT».
 
-OR-Tools на PyPI обычно Apache-2.0 — это **не** проверено выгрузкой LICENSE
-в данном проходе (`assumption` до `pip show` / копии LICENSE).
+OR-Tools на PyPI распространяется под Apache-2.0 (`assumption` до включения
+копии LICENSE в коммерческий дистрибутив).
 
 ## Граница open-core
 
