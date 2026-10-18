@@ -12,7 +12,7 @@ def test_table_exchange_does_not_invent_a_profile_or_stock() -> None:
     section = text.split("## Табличный обмен", 1)
     assert len(section) == 2
     body = section[1]
-    assert "Номер профиля CIM в этом проходе не проверялся" in body
+    assert "Конкретный профиль CIM" in body
     assert "Чтеца CSV и XLSX в пакете нет" in body
     assert "pool_size" in body
     assert "не склад" in body

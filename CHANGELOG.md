@@ -2,99 +2,89 @@
 
 ## Unreleased
 
-- **docs**: the README is written as the product, not as a status log.
-  Lessons stay: compiled calendars, a compiled-model optimum, JSON intake,
-  and the 2026 proof literature in `docs/sota-cp-2026.md`. Percentages from
-  those papers are not product claims.
+- **docs**: rewritten `README.md` and `docs/sota-cp-2026.md` following the
+  `SynAPS` / `SynAPS-MobiRoute` domain repository standard (ADR-0004):
+  formal compilation algebra, solver portfolio semantics, two-layer grid
+  maintenance literature, DRCP proof-logging boundaries, and 2025–2026
+  LLM-to-CP benchmarks (`CP-Bench`, `CP-Agent`, `ConstraintBench`). External
+  benchmark percentages are cited as literature context, not product claims.
+  Removed internal AI work-plan scratch files from `docs/`.
 
-- **docs**: crew calendars are documented as compiled. Dependabot lockfile
-  bumps that were open on 1 October are merged. The 1 October triage stays
-  a snapshot.
+- **feat**: fail-closed JSON intake (`synaps_gridplan.extract`) rejects raw
+  prose (`NOT_JSON`) and spare-part entries without an explicit quantity
+  (`MISSING_SPARE_QUANTITY`). On the two-item labeled intake fixture, 1/2 of
+  emitted JSON candidates pass `PlanOutcome.ok` (regression test only, not a
+  claims-registry row).
 
-- **feat**: JSON intake refuses prose and a spare with no quantity. The
-  labeled sample reports 1/2 of emitted JSON passing `PlanOutcome.ok`.
-  That fraction is not a claims row.
+- **docs**: added `docs/ru_software_registry.md` summarizing Russian software
+  registry rules (Decrees No. 1236 and No. 1875). Registry inclusion is not
+  claimed, and no registry entry number exists in the repository.
 
-- **docs**: a memo lists the Russian software-registry rules read on
-  18 October 2026. Inclusion is not claimed, and the repository has no
-  registry number.
+- **docs**: added `docs/pp86_horizon_analogy.md` comparing annual/monthly
+  outage approval milestones in Government Decree No. 86 with `OutageWindow`
+  and `FrozenAssignment` in GridPlan. Regulatory compliance is not claimed.
 
-- **docs**: the 18 October executor plan records what landed that day.
-  The upstream aux change stays open.
+- **docs**: expanded `docs/data-contract-v2.md` with the flat-table exchange
+  mapping, `AuxiliaryResource.pool_size` vs warehouse stock distinction, and
+  `WorkCenter.calendar` intersection semantics (`shift_calendar ∩ availability`).
 
-- **docs**: a note on Government Decree 86 treats the annual and monthly
-  approval dates as an analogy for dispatch objects. The product does not
-  claim compliance, and no week horizon was added.
+- **docs**: recorded the 18 October 2026 `SynAPS` pin review in `AUDIT.md` §10;
+  `SynAPS` remains pinned at `6178c93` because upstream `8921ead` still starts
+  `AuxiliaryResource` occupancy at `start - setup_minutes`.
 
-- **docs**: the v2 data contract now maps a future table reader. There is no
-  CSV or XLSX parser, and no CIM profile number is stated.
+- **docs**: tracked `index.html` in the repository and extended
+  `scripts/lint_claims.py` to scan `.html` files.
 
-- **docs**: the 18 October pin review leaves SynAPS at `6178c93`. Upstream
-  `8921ead` still starts auxiliary occupancy at `start - setup_minutes`.
+- **docs**: section D of `jury_report.md` and `docs/limitations.md` state
+  explicitly that a `CPSAT-30` optimum applies to the compiled model (asset
+  exclusivity, simultaneous outage bans, and consumable spare stock remain
+  independent domain post-checks).
 
-- **docs**: `index.html` is in the repository. The claims linter reads HTML.
-  The page says the Yanino note is news, not model input, and that the
-  wall-clock figures are one machine, not a service level.
+- **ci**: increased the `scale-5k` workflow wall budget to 1200s. The pinned
+  GREED cap stops the search; the workflow measures the subsequent domain
+  verification of that partial schedule under `--allow-unverified` (diagnostic
+  probe, not a claims-registry row).
 
-- **docs**: section D of the jury report states that a CP-SAT optimum is the
-  compiled model. Asset exclusivity, pair bans, and spare stock stay outside
-  that model.
+- **bench**: added synthetic modes `scale-2k` and `scale-5k` (2 000 and 5 000
+  jobs, campaign packing) and `benchmark/scale_budget.py` (wall time and
+  `tracemalloc` peak). CI requires a verified GREED schedule on `scale-2k`.
 
-- **ci**: the scale-5k wall budget is 1200s. The pinned GREED cap still
-  stops the solve; the domain check of that partial plan is what the wall
-  clock measures. The run stays `--allow-unverified` and is not a claims row.
+- **ci**: extended `ruff check` to `benchmark/` and wrapped overlong template
+  lines in `jury_benchmark.py` and `res_severny_benchmark.py` without changing
+  rendered markdown.
 
-- **bench**: synthetic modes `scale-2k` and `scale-5k` (2 000 and 5 000 jobs,
-  campaign packing). `benchmark/scale_budget.py` records wall time and the
-  tracemalloc peak. CI requires a verified GREED plan on `scale-2k`. On
-  `scale-5k` the pinned GREED time cap stops the solve; that log is not a
-  claims-registry row.
+- **docs**: `AUDIT.md` §9 records the 1 October 2026 documentation audit
+  (58 `#[test]` functions in `native/synaps-gridplan-rs` vs 48 on historical
+  `6dde1ce`; Energotechhub intake window through 2 October 2026 inclusive).
 
-- **ci**: `ruff check` includes `benchmark/`. Five overlong lines in the jury
-  and «Северный» report templates moved into locals; the rendered markdown
-  is unchanged. `ruff format` still covers `src`, `tests`, and `scripts` only.
+- **ci**: Dependabot lockfile pull requests regenerate `sbom/` with the base
+  commit generator and push updated CycloneDX inventories back to the PR branch.
+- **fix**: decoupled `checker.py` from `compiler.py` by moving
+  `legacy_window_frozen_assignments` into `legacy_freeze.py`.
 
-- **docs**: `AUDIT.md` §9 records the 1 October 2026 truth pass. The 48 Rust
-  tests belong to native `6dde1ce`; this tree has 58 `#[test]` functions.
-  The 23–24 September red-team session still has no protocol. The Energotechhub
-  registry row on `f56e693` is still the 18 September snapshot; the programme
-  page that day showed intake through 2 October 2026 inclusive.
+- **fix**: compiled crew shift calendars into `WorkCenter.calendar` as the
+  intersection of `shift_calendar` and `availability` (both empty ⇒ 24/7;
+  disjoint non-empty lists ⇒ closed crew calendar, never 24/7). Both Python
+  and Rust checkers verify occupancy `[start - setup, end]` within a single
+  open interval; multi-day jobs split into a chain of daily operations with
+  outage hull `[first start, last end]`.
 
-- **ci**: Dependabot lockfile pull requests rebuild `sbom/` with the generator
-  from the base commit and push that inventory back. `contents: write` is
-  limited to that job. Every other pull request still fails if `sbom/` does
-  not match the lockfiles.
-- **fix**: the checker no longer imports the compiler for legacy window locks.
-  `legacy_window_frozen_assignments` lives in `legacy_freeze.py`; the compiler
-  projects those same rows onto operation ids. A second fitting window does
-  not add a second lock.
+- **fix**: non-linear precedence graphs (cycles, joins, fan-out) are rejected
+  at problem load in both Python and Rust.
 
-- **fix**: crew shifts are visible to the solver. `WorkCenter.calendar` is the
-  intersection of `shift_calendar` and `availability` (both empty means
-  round-the-clock; a disjoint pair does not fall back to round-the-clock).
-  Python and native checks use occupancy `[start - setup, end]`. A job longer
-  than one open interval becomes a chain of day parts; the outage hull runs
-  from the first part's start to the last part's end.
+- **fix**: zero on-hand spare stock with `lead_time_min > 0` and no
+  `replenishment_date` rejects job starts before
+  `planning_horizon_start + lead_time_min` (`SPARE_PART_NOT_YET_AVAILABLE`)
+  in Python and Rust `check`. Catalog metadata fields (`voltage_level`,
+  `parent_asset_id`, `coordinates`, `failure_modes`, `warehouse_location`) are
+  reported in `unenforced_fields`.
 
-- **fix**: a precedence cycle, join, or fan-out is rejected when the problem
-  loads, in Python and native. The compiler only builds linear chains, so a
-  lucky order is no longer reported as verified.
+- **fix**: `check` no longer republishes an imported `optimal` status; it
+  recomputes feasibility and records the input label as `claimed_status` with
+  `optimality_origin="imported_not_reproven"`.
 
-- **fix**: zero on-hand stock plus `lead_time_min` and no `replenishment_date`
-  rejects a start before `planning_horizon_start + lead_time_min`
-  (`SPARE_PART_NOT_YET_AVAILABLE`) in Python and native `check`. The delay
-  does not create stock. On-hand stock, a replenishment date, and the
-  decorative catalog fields (`voltage_level`, `parent_asset_id`,
-  `coordinates`, `failure_modes`, `warehouse_location`) are listed in
-  `unenforced_fields` and do not change the verdict.
-
-- **fix**: `check` no longer republishes an imported `optimal` status. Feasibility
-  is recomputed; the file's label is kept as `claimed_status` with
-  `optimality_origin=imported_not_reproven`. Native `check` still emits no status.
-
-- **docs**: Energotechhub intake on the programme page is 7 September–2 October
-  2026 inclusive (extended past 25 September). P6/P7/P11 refreshed 2026-10-01.
-  Working notes and the 1 October triage live in `docs/AI_WORK_PLAN_2026_10_01.md`.
+- **docs**: refreshed `P6`, `P7`, and `P11` in `docs/CLAIMS_REGISTRY.md` for
+  the Energotechhub intake window (7 September – 2 October 2026 inclusive).
 
 - **bench**: FIFO-W places a ready job inside a shift and an approved outage
   window, after travel, and not before its predecessor finishes. On synthetic

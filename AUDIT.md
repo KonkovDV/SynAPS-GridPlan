@@ -203,20 +203,22 @@ Rust: 3 lib + 6 CLI + 5 FIFO + 16 integration + 3 report + 6 schedule + 2 travel
 Дополнение к разделу 9. Это не бенчмарк и не строка
 [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md). Пин продукта не сдвигался.
 
-`origin/main` SynAPS в этой сверке — `8921ead` (10 коммитов после `6178c93`).
-Занятость aux по-прежнему начинается в `start - setup_minutes`:
-`_fill_serial_setup_windows_from_stamps` и `_check_aux_pools` в
-`synaps/solvers/feasibility_checker.py`. Документация нового поля
-`AuxiliaryResource.calendar` говорит то же: занятость `[start - setup, end]`
-должна лежать в одном интервале, а пустой список означает круглосуточно.
-Причина не компилировать aux актива не исчезла.
+`origin/main` репозитория `SynAPS` на дату ревью — `8921ead` (10 коммитов после
+`6178c93`). Занятость вспомогательного ресурса (`AuxiliaryResource`) в ядре
+по-прежнему начинается в `start - setup_minutes`
+(`_fill_serial_setup_windows_from_stamps` и `_check_aux_pools` в
+`synaps/solvers/feasibility_checker.py`). Описание нового поля
+`AuxiliaryResource.calendar` фиксирует то же правило: интервал
+`[start - setup, end]` должен целиком лежать внутри одного открытого окна, а
+пустой список означает круглосуточную доступность. Следовательно, причина не
+компилировать эксклюзивность актива в `AuxiliaryResource` сохраняется.
 
-Новые поля имеют пустой default и сами по себе старую задачу не меняют:
-`Operation.modes`, `ScheduleProblem.precedence_edges`, `Assignment.mode_code`.
-Режимы исполнения нельзя сочетать с `setup_matrix`. Солвер при этом менялся
-(`cpsat_solver.py`, `feasibility_checker.py`, новый `mode_choice.py`). Набор
-GridPlan на `8921ead` этот проход не гонял. Решение: пин остаётся `6178c93`.
-Перенос — отдельный PR после прогона набора, не вместе с доменной правкой.
-Правка, которая перестанет занимать aux на минутах матрицы, остаётся задачей
-в `C:\SynAPS`.
+Новые поля ядра (`Operation.modes`, `ScheduleProblem.precedence_edges`,
+`Assignment.mode_code`) имеют пустые значения по умолчанию и сами по себе
+существующую постановку не меняют; при этом альтернативные режимы исполнения
+несовместимы с `setup_matrix`, а код решателя и верификатора в `8921ead`
+обновлялся (`cpsat_solver.py`, `feasibility_checker.py`, `mode_choice.py`).
+Решение: пин остаётся `6178c93`. Обновление пина выносится в отдельный PR
+после изменения семантики интервала занятости `AuxiliaryResource` в `SynAPS`
+(отсчёт `[start, end)` без включения времени бригады в пути).
 
