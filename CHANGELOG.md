@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **docs**: a note on Government Decree 86 treats the annual and monthly
+  approval dates as an analogy for dispatch objects. The product does not
+  claim compliance, and no week horizon was added.
+
 - **docs**: the v2 data contract now maps a future table reader. There is no
   CSV or XLSX parser, and no CIM profile number is stated.
 
