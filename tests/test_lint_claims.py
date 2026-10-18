@@ -53,6 +53,16 @@ def test_linter_skips_historical_catalog_and_pdf() -> None:
     assert not lint.skip_path(ROOT / "README.md")
 
 
+def test_html_pages_are_scanned_for_banned_claims() -> None:
+    lint = _load("gridplan_lint_claims", "scripts/lint_claims.py")
+    assert ".html" in lint.TEXT_SUFFIXES
+    page = ROOT / "index.html"
+    text = page.read_text(encoding="utf-8")
+    assert lint.find_hits(text, lint.load_phrases()) == []
+    assert "не норма обслуживания" in text
+    assert "не вход модели" in text
+
+
 def test_test_count_snapshot_matches_collect_only() -> None:
     export = _load("gridplan_export_test_count", "scripts/export_test_count.py")
     expected = export.render(export.collected_count())
