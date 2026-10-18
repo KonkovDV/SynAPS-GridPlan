@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **docs**: section D of the jury report states that a CP-SAT optimum is the
+  compiled model. Asset exclusivity, pair bans, and spare stock stay outside
+  that model.
+
 - **ci**: the scale-5k wall budget is 1200s. The pinned GREED cap still
   stops the solve; the domain check of that partial plan is what the wall
   clock measures. The run stays `--allow-unverified` and is not a claims row.
