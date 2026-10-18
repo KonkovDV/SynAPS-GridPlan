@@ -140,3 +140,13 @@ def test_installed_synaps_source_mentions_rt20_markers() -> None:
     ptext = portfolio_file.read_text(encoding="utf-8")
     assert "solver_time_limit_s" in ptext or "_repair_merged_kwargs" in ptext
     assert "legalize base_assignments" in ptext
+
+
+def test_october_pin_review_keeps_the_declared_commit() -> None:
+    text = (REPO_ROOT / "AUDIT.md").read_text(encoding="utf-8")
+    section = text.split("## 10. Ревью пина 18.10.2026", 1)
+    assert len(section) == 2
+    body = section[1]
+    assert "8921ead" in body
+    assert SYNAPS_COMMIT.startswith("6178c93")
+    assert "пин остаётся" in body

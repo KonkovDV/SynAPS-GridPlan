@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **docs**: the 18 October pin review leaves SynAPS at `6178c93`. Upstream
+  `8921ead` still starts auxiliary occupancy at `start - setup_minutes`.
+
 - **docs**: `index.html` is in the repository. The claims linter reads HTML.
   The page says the Yanino note is news, not model input, and that the
   wall-clock figures are one machine, not a service level.
