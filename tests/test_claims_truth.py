@@ -49,6 +49,15 @@ def test_readme_points_at_claims_registry() -> None:
     assert "SynAPS_v8_Evidence.pptx" not in text
 
 
+def test_readme_status_matches_compiled_shifts() -> None:
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "Состояние на 18 октября 2026" in text
+    assert "docs/AI_WORK_PLAN_2026_10_18.md" in text
+    assert "Адаптер не передаёт" not in text
+    assert "Открытые PR Dependabot" not in text
+    assert "скомпилированн" in text
+
+
 def test_no_duplicate_root_claims_register() -> None:
     assert not (ROOT / "CLAIMS_REGISTER.md").exists()
     assert not (ROOT / "ETECHHUB_APPLICATION.md").exists()
