@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **docs**: the 18 October executor plan records what landed that day and
+  leaves the Russian software-registry memo, the upstream aux change, and
+  the measured JSON extractor still open.
+
 - **docs**: a note on Government Decree 86 treats the annual and monthly
   approval dates as an analogy for dispatch objects. The product does not
   claim compliance, and no week horizon was added.
