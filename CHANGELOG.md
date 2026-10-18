@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **docs**: `index.html` is in the repository. The claims linter reads HTML.
+  The page says the Yanino note is news, not model input, and that the
+  wall-clock figures are one machine, not a service level.
+
 - **docs**: section D of the jury report states that a CP-SAT optimum is the
   compiled model. Asset exclusivity, pair bans, and spare stock stay outside
   that model.

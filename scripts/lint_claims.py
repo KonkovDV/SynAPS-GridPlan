@@ -34,6 +34,7 @@ SKIP_NAMES = {
 }
 SKIP_PREFIXES = ("_SUBMIT_MIK_2026_08_18/", "docs/rfc/")
 SKIP_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".lock", ".svg"}
+TEXT_SUFFIXES = {".md", ".js", ".txt", ".pptx", ".html"}
 NEGATION_MARKERS = (
     "не ",
     "нет ",
@@ -125,7 +126,7 @@ def iter_hits() -> list[str]:
     for path in _tracked_files():
         if not path.is_file() or skip_path(path):
             continue
-        if path.suffix.lower() not in {".md", ".js", ".txt", ".pptx"}:
+        if path.suffix.lower() not in TEXT_SUFFIXES:
             continue
         text = file_text(path)
         if text is None:
