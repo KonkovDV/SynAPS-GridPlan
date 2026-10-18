@@ -26,7 +26,21 @@ GridPlanProblem (domain)
 | Benchmark | Synthetic relative behaviour only |
 | Customer evidence | Required for any pilot / savings claim — absent |
 
+## What the compile includes
+
+Crew calendars are compiled. `shift_calendar` and `availability` intersect
+into `WorkCenter.calendar`. Both empty means the crew is available around the
+clock. A disjoint pair leaves the crew closed for that period.
+
+CP-SAT `OPTIMAL` is the compiled model and its makespan. Asset exclusivity,
+pair bans, and spare stock stay in the post-check. `PlanOutcome.ok` needs an
+acceptable status, `verified_feasible`, and zero hard violations together.
+
+`extract_problem` accepts a JSON problem. Prose and a spare with no quantity
+are refused. The intake does not call a language model.
+
 ## Upstream pin
 
-Validated SynAPS commit is declared in `synaps_gridplan.versions.SYNAPS_COMMIT`
-and `pyproject.toml`.
+The validated SynAPS commit is `synaps_gridplan.versions.SYNAPS_COMMIT`,
+the same SHA as `pyproject.toml`. A newer upstream `main` does not move the
+pin by itself.

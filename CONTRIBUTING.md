@@ -1,9 +1,8 @@
 # Contributing
 
 This tree is the public contest packet (ISO 16290 TRL 4 self-assessment on
-synthetic fixtures; not GOST R 58048 certification). Claims are narrow: a
-plan is `verified_feasible` only when both check layers report zero hard
-violations. Quantitative statements belong in `docs/CLAIMS_REGISTRY.md`
+synthetic fixtures; not GOST R 58048 certification). Claims are narrow: a plan counts when `outcome.ok` is true, that is an
+acceptable status, `verified_feasible`, and zero hard violations together. Quantitative statements belong in `docs/CLAIMS_REGISTRY.md`
 (`verified` / `assumption` / `target` / `withdrawn`). Do not name a partner
 or customer without a document. 187-FZ / KII compliance is not claimed.
 

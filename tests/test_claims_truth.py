@@ -49,13 +49,20 @@ def test_readme_points_at_claims_registry() -> None:
     assert "SynAPS_v8_Evidence.pptx" not in text
 
 
-def test_readme_status_matches_compiled_shifts() -> None:
+def test_readme_speaks_as_the_product() -> None:
     text = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "Состояние на 18 октября 2026" in text
-    assert "docs/AI_WORK_PLAN_2026_10_18.md" in text
+    assert "скомпилированная модель" in text
+    assert "docs/sota-cp-2026.md" in text
     assert "Адаптер не передаёт" not in text
     assert "Открытые PR Dependabot" not in text
-    assert "скомпилированн" in text
+    assert "живой контракт исполнителя" not in text
+    assert "Состояние на 18 октября 2026" not in text
+    sota = (ROOT / "docs" / "sota-cp-2026.md").read_text(encoding="utf-8")
+    assert "DRCP" in sota
+    assert "CP-Agent" in sota
+    assert "ConstraintBench" in sota
+    assert "не переносятся" in sota
+    assert "100%" in sota
 
 
 def test_no_duplicate_root_claims_register() -> None:
