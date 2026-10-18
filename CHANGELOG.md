@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **docs**: the v2 data contract now maps a future table reader. There is no
+  CSV or XLSX parser, and no CIM profile number is stated.
+
 - **docs**: the 18 October pin review leaves SynAPS at `6178c93`. Upstream
   `8921ead` still starts auxiliary occupancy at `start - setup_minutes`.
 
