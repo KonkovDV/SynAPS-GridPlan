@@ -1,10 +1,6 @@
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/logo-horizontal-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/brand/logo-horizontal-light.svg">
-  <img alt="SynAPS-GridPlan" src="assets/brand/logo-horizontal-light.svg" width="520">
-</picture>
+<img src="docs/synaps-gridplan-logo.jpg" alt="SynAPS-GridPlan" width="720">
 
 ### Календарно-ресурсное планирование и независимая верификация графиков ТОиР электросетевого оборудования поверх ядра [SynAPS](https://github.com/KonkovDV/SynAPS)
 
