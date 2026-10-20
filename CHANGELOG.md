@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **fix**: `report` no longer dies on a legacy console code page. `main`
+  switches stdout and stderr to UTF-8 before printing. A stream that refuses
+  the switch still exits 2.
+
 - **docs**: the install line names the real lockfile, `requirements-lock.txt`.
   `requirements.lock` does not exist, so the first README command failed.
   The CI paragraph says what CI runs: a fresh `pip install -e ".[dev]"` from
