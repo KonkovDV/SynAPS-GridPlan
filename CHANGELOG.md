@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **fix**: replan no longer treats a day-part key `job:{id}:part:n` as another
+  job id. That parse raised `ValueError` before a split job could be
+  replanned. The default freeze still uses the `job:{id}` assignment only.
+
+- **docs**: safety clearances and service area are named as post-checks.
+  A non-empty `safety_constraints` list must sit in the union of the crew's
+  qualifications and the string entries of `domain_attributes.safety_clearances`.
+  That string match is not an electrical-safety-group certificate.
+  `SERVICE_AREA_MISMATCH` fires only when both area strings are set and
+  differ. Python stringifies a non-string `safety_clearances` entry; the
+  Rust domain checker skips it.
+
 - **fix**: `report` no longer dies on a legacy console code page. `main`
   switches stdout and stderr to UTF-8 before printing. A stream that refuses
   the switch still exits 2.
