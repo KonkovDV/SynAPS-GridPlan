@@ -10,7 +10,9 @@
   as earliest due date first, the order `plan_fifo` sorts by.
   `CONTRIBUTING.md` lists the CI gates and treats unnumbered `docs/` files as
   living. `docs/benchmark-protocol.md` describes the scripts that exist,
-  FIFO and FIFO-W included.
+  FIFO and FIFO-W included. The ГОСТ Р 58048 matrix no longer calls
+  `docs/architecture.md` an archive, and the ТОиР scenario dates its target
+  programme to the 1 October check instead of «сейчас».
 
 - **bench**: `jury_benchmark.py` renders section E itself. FIFO-W runs on
   the same РЭС «Северный» instance, and the section sits between D and F.
