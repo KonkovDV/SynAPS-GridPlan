@@ -13,7 +13,7 @@ from synaps_gridplan.model import (
     GridPlanProblem,
     MaintenanceJob,
 )
-from synaps_gridplan.planner import plan_maintenance
+from synaps_gridplan.planner import plan_maintenance, replan_after_disruption
 
 MSK = timezone(timedelta(hours=3))
 DAY = datetime(2026, 10, 5, tzinfo=MSK)
@@ -155,6 +155,14 @@ def test_job_longer_than_a_shift_compiles_to_day_parts() -> None:
     assert id_map[f"job:{job.id}:part:0"] == id_map[f"job:{job.id}"]
     assert f"job:{job.id}:part:1" in id_map
     assert schedule.operations[1].predecessor_op_id == schedule.operations[0].id
+
+
+def test_replan_of_a_split_job_does_not_read_part_keys_as_job_ids() -> None:
+    problem, _, _, job = _problem(duration_min=600)
+    base = plan_maintenance(problem, solver_config="GREED")
+    assert f"job:{job.id}:part:1" in base.id_map
+    outcome = replan_after_disruption(problem, base_outcome=base, disrupted_job_ids=[job.id])
+    assert outcome.metadata.get("error") != "problem_jobs_diverged_from_compiled_schedule"
 
 
 def test_day_parts_of_a_long_job_fit_moscow_shifts() -> None:

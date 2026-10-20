@@ -96,6 +96,17 @@ def plan_maintenance(
     )
 
 
+def _canonical_compiled_job_ids(id_map: dict[str, UUID]) -> set[UUID]:
+    """Job ids from ``job:{uuid}`` keys. Day-part keys are not extra jobs."""
+
+    found: set[UUID] = set()
+    for key in id_map:
+        if not key.startswith("job:") or ":part:" in key:
+            continue
+        found.add(UUID(key.removeprefix("job:")))
+    return found
+
+
 def replan_after_disruption(
     problem: GridPlanProblem,
     *,
@@ -114,9 +125,7 @@ def replan_after_disruption(
     if solver_config not in {"GREED", "INCREMENTAL_REPAIR"}:
         raise ValueError("repair uses INCREMENTAL_REPAIR; custom repair solvers are not supported")
 
-    compiled_job_ids = {
-        UUID(key.removeprefix("job:")) for key in base_outcome.id_map if key.startswith("job:")
-    }
+    compiled_job_ids = _canonical_compiled_job_ids(base_outcome.id_map)
     live_job_ids = {job.id for job in problem.jobs}
     if compiled_job_ids != live_job_ids:
         return PlanOutcome(
@@ -177,10 +186,9 @@ def replan_after_disruption(
     # preserve_frozen=[] disables this automatic locality lock, not declared ПЛ.
     if preserve_frozen is None:
         from synaps_gridplan.adapter import extract_frozen_from_result
+        from synaps_gridplan.constraints import _operation_job_ids
 
-        job_of_op = {
-            v: UUID(k.removeprefix("job:")) for k, v in id_map.items() if k.startswith("job:")
-        }
+        job_of_op = _operation_job_ids(problem, id_map)
         disrupted_set = set(disrupted_job_ids)
         keep = [
             a
