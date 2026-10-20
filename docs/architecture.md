@@ -36,8 +36,12 @@ CP-SAT `OPTIMAL` is the compiled model and its makespan. Asset exclusivity,
 pair bans, and spare stock stay in the post-check. `PlanOutcome.ok` needs an
 acceptable status, `verified_feasible`, and zero hard violations together.
 
-`extract_problem` accepts a JSON problem. Prose and a spare with no quantity
-are refused. The intake does not call a language model.
+`extract_problem` accepts a JSON object and does not call a language model.
+A refusal is one of `invalid_json`, `not_an_object`, `prose` (a root key
+`text`, `prompt`, `narrative`, or `request`), `envelope` (a `problem` key
+that is not the whole document), `blank_quantity` (a spare with neither
+`available_quantity` nor `stock_qty`), or `invalid_problem` (the object
+fails `GridPlanProblem`). A blank quantity does not become zero stock.
 
 ## Upstream pin
 
