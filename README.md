@@ -286,7 +286,7 @@ python -m synaps_gridplan solve problem_conflict.json --solver GREED -o plan_con
 
 **3. Оперативное перепланирование (`disrupt`), отчёт (`report`) и справка по слоям (`practice`):**
 
-`disrupt` требует хотя бы один `--job-id`: идентификатор берётся из `jobs[].id` того же JSON. `report` печатает снимок в stdout в UTF-8 и план заново не проверяет. Консоли нужна та же кодировка (`PYTHONIOENCODING=utf-8`), иначе печать обрывается кодом `2`. Перепланирование РЭС «Северный» без сдвига замороженных строк — сценарий B в `python benchmark/jury_benchmark.py`. Аварийные сутки — `python benchmark/emergency_day_benchmark.py`.
+`disrupt` требует хотя бы один `--job-id`: идентификатор берётся из `jobs[].id` того же JSON. `report` печатает снимок в stdout в UTF-8 и план заново не проверяет. Перед печатью команда переключает stdout и stderr на UTF-8. Если поток смену кодировки не принимает, печать завершается кодом `2`. Перепланирование РЭС «Северный» без сдвига замороженных строк — сценарий B в `python benchmark/jury_benchmark.py`. Аварийные сутки — `python benchmark/emergency_day_benchmark.py`.
 
 ```bash
 python -m synaps_gridplan report feeder_plan.json --format markdown

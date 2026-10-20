@@ -56,8 +56,22 @@ def _synthesize_problem(args: argparse.Namespace) -> GridPlanProblem:
     )
 
 
+def prefer_utf8_stdio() -> None:
+    """Print reports as UTF-8 even when the console default is a legacy code page."""
+
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8")
+        except (OSError, ValueError):
+            continue
+
+
 def main(argv: list[str] | None = None) -> int:
     """Return a non-success exit code for malformed or unreadable input."""
+    prefer_utf8_stdio()
     try:
         return _run(argv)
     except (OSError, ValueError, TypeError, KeyError) as exc:

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -183,3 +185,16 @@ def test_small_greed_multiseed_records_fail_closed() -> None:
     assert 42 in dirty
     assert 12 in clean
     assert dirty, "expected at least one fail-closed small seed"
+
+
+def test_main_switches_a_legacy_console_to_utf8(monkeypatch: pytest.MonkeyPatch) -> None:
+    stdout = io.TextIOWrapper(io.BytesIO(), encoding="cp1251")
+    stderr = io.TextIOWrapper(io.BytesIO(), encoding="cp1251")
+    monkeypatch.setattr(sys, "stdout", stdout)
+    monkeypatch.setattr(sys, "stderr", stderr)
+    assert main(["version"]) == 0
+    assert stdout.encoding is not None
+    assert stdout.encoding.lower() == "utf-8"
+    stdout.write("Č\n")
+    stdout.flush()
+    assert "Č" in stdout.buffer.getvalue().decode("utf-8")

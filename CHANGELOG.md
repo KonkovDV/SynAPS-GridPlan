@@ -14,6 +14,10 @@
   differ. Python stringifies a non-string `safety_clearances` entry; the
   Rust domain checker skips it.
 
+- **fix**: `report` no longer dies on a legacy console code page. `main`
+  switches stdout and stderr to UTF-8 before printing. A stream that refuses
+  the switch still exits 2.
+
 - **docs**: the landing page no longer says the checker verifies an electrical
   safety group or that a crew works one asset at a time. `QUALIFICATION_MISMATCH`
   compares qualification lists. `CREW_OVERLAP` compares concurrent jobs with
