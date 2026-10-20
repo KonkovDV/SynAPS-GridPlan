@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **docs**: the copy-paste CLI matches `argparse`. `synthesize` has no
+  `res-severny` or `emergency-day` mode; those instances stay in
+  `benchmark/jury_benchmark.py` and `benchmark/emergency_day_benchmark.py`.
+  `disrupt` requires `--job-id`, `report` writes to stdout, and schema or
+  quota failures exit 2. The skill pool and the setup-matrix cap
+  (`MAX_SCHEDULE_SETUP_ENTRIES`, 2 000 000 on pin `6178c93`) are named next
+  to the compile boundary.
+
 - **docs**: the JSON intake is named in full. `extract_problem` refuses
   `invalid_json`, `not_an_object`, `prose`, `envelope`, `blank_quantity`,
   and `invalid_problem`. README, the architecture note, the limitations
