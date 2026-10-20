@@ -45,10 +45,12 @@ before the list is allocated.
 
 CP-SAT `OPTIMAL` is the compiled model and its makespan. Asset exclusivity,
 pair bans, spare stock, `safety_constraints`, and `service_area` stay in the
-post-check. A non-empty safety list must be covered by the crew's
-qualifications or `domain_attributes.safety_clearances`
-(`SAFETY_CONSTRAINT_MISMATCH`). Service areas are compared only when both
-are set (`SERVICE_AREA_MISMATCH`). `PlanOutcome.ok` needs an
+post-check. A non-empty safety list must be covered by the union of the
+crew's qualifications and the string entries of
+`domain_attributes.safety_clearances` (`SAFETY_CONSTRAINT_MISMATCH`).
+Python stringifies a non-string entry in that list; the Rust checker skips
+it. Service areas are compared only when both are set
+(`SERVICE_AREA_MISMATCH`). `PlanOutcome.ok` needs an
 acceptable status, `verified_feasible`, and zero hard violations together.
 
 `synthesize --mode` is `small`, `medium`, `stress`, `scale-2k`, `scale-5k`,

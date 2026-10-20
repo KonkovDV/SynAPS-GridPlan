@@ -203,6 +203,7 @@ def test_committed_jury_report_matches_pin() -> None:
     assert "SERVICE_AREA_MISMATCH" in limits
     contract = (ROOT / "docs" / "data-contract-v2.md").read_text(encoding="utf-8")
     assert "safety_clearances" in contract
+    assert "Rust пропускает" in contract
     assert "`CPSAT-30`" in d_sec
     assert "| status | optimal |" in d_sec
     assert "| verified_feasible | да |" in d_sec
