@@ -23,14 +23,14 @@
 | Расчёт режима | Потоки, напряжение и критерий N-1. Этот контур их не считает |
 | **График ТОиР** | Бригада, смена, переезд, окно вывода, ЗИП и заявка, которую уже нельзя сдвинуть |
 
-Учебный РЭС запускается так. Полный разбор команд — в [разделе 6](#6-быстрый-старт-и-интерфейс-командной-строки).
+Учебный фидер, на котором `GREED` проходит проверку, запускается так. Именной стенд РЭС «Северный» собирает `python benchmark/jury_benchmark.py`: у `synthesize` такого `--mode` нет. Полный разбор команд — в [разделе 6](#6-быстрый-старт-и-интерфейс-командной-строки).
 
 ```bash
-pip install -r requirements.lock
+pip install -r requirements-lock.txt
 pip install --no-deps -e .
-python -m synaps_gridplan synthesize --mode res-severny --seed 7 -o severny.json
-python -m synaps_gridplan solve severny.json --solver GREED -o severny_plan.json
-python -m synaps_gridplan check severny.json severny_plan.json
+python -m synaps_gridplan synthesize --mode small --seed 12 -o feeder.json
+python -m synaps_gridplan solve feeder.json --solver GREED -o feeder_plan.json
+python -m synaps_gridplan check feeder.json feeder_plan.json
 ```
 
 ---
@@ -136,7 +136,7 @@ flowchart LR
 
 ### Что доказывает и чего не доказывает зелёный статус CI
 
-- **Зелёный CI доказывает**, что на чистой виртуальной машине при зафиксированных lock-файлах (`requirements.lock`, `Cargo.lock`) и пине `SynAPS` `6178c93` проходят модульные и негативные тесты Python (`3.12`, `3.13`) и Rust (`cargo test --locked`), статическая типизация `mypy`, линтер `ruff check src tests scripts benchmark`, проверка `pip-audit` / `cargo-audit`, сверка `sbom/`, контроль текста презентации (`extract_deck_text.py --check`), линтер запрещённых формулировок (`lint_claims.py`) и числовые гейты реестра утверждений [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md).
+- **Зелёный CI доказывает**, что на чистой Ubuntu пакет ставится из `pyproject.toml` с пином `SynAPS` `6178c93` (`pip install -e ".[dev]"`, не из lock-файла). На Python `3.12` и `3.13` проходят весь `pytest` вместе с медленными тестами CP-SAT, `mypy`, `ruff check src tests scripts benchmark` и `ruff format --check`. Тот же прогон запускает стенды жюри (`--cpsat`), аварийных суток и scale-фидера, пакет доказательств, `pip-audit`, поиск секретов, `lint_claims.py`, снимок числа тестов [T1], сверку текста слайдов, JSON Schema и `sbom/`. Отдельные задачи сверяют `requirements-lock.txt` с `uv pip compile` под Linux, гоняют Rust (`cargo fmt`, `cargo test --locked`, `clippy`, `cargo-audit`) с паритетом видов нарушений Python↔Rust и бюджет времени `scale-2k` / `scale-5k`. Числовые гейты читают [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md).
 - **Зелёный CI не доказывает** готовность к промышленному вводу на подстанции без участия диспетчера, полноту электрической проверки режима (N-1), универсальную оптимальность эвристики `GREED` на произвольных графах или наличие проверенного сертификата доказательства (DRCP / VeriPB) поверх солвера CP-SAT.
 
 ---
@@ -171,12 +171,14 @@ flowchart LR
 4. **Переезды.** Непустая карта `travel_minutes` (ключ `{from}|{to}`) становится матрицей переналадок. Пропущенное ребро не заменяется молча выездом с базы: компилятор поднимает `ValueError`. Пустая карта — явный нулевой переезд.
 5. **Предшествование.** Компилятор строит только линейные цепочки. Цикл, две входящие дуги или две исходящие отвергаются при загрузке JSON, в Python и в Rust.
 6. **Заморозка.** `FrozenAssignment` с `immutable=True` и наследие `outage_windows[].frozen` (`legacy_freeze.py`) передаются солверу как зафиксированные назначения и удерживаются при `disrupt`.
+7. **Навык как пул.** Каждая квалификация становится `AuxiliaryResource` с кодом `skill:{name}`. `pool_size` — сумма `max(1, max_parallel)` по бригадам, у которых эта квалификация есть. Первая часть работы требует одну единицу. Окно занятости — то же, что у любого вспомогательного ресурса на пине (§3.3).
+8. **Размер матрицы переездов.** До выделения списка компилятор считает `len(crews) × (число кодов площадок)²`. В коды входят площадки активов, базы бригад и служебная точка `idle`. Если ячеек больше `MAX_SCHEDULE_SETUP_ENTRIES` закреплённого SynAPS, а на пине `6178c93` это 2 000 000, компилятор поднимает `ValueError`.
 
 Оболочка простоя — правило чекера, не правило выбора окна. У одной работы, разрезанной на части, занятость актива — от самого раннего `start` до самого позднего `end`. У запрета пары (`SimultaneousOutageBan`, поля `asset_id_a` и `asset_id_b`) занятость цепочки связанных отключений — оболочка от первого старта до последнего конца. Независимые работы на одном активе остаются отдельными интервалами. Так читается модель простоя Goel & Meisel (EJOR 2013) в этом коде.
 
 ### 3.3. Что остаётся постпроверкой
 
-На пине `6178c93` и в просмотренном коммите `8921ead` ([`AUDIT.md`, §10](AUDIT.md)) занятость `AuxiliaryResource` начинается в момент `start` минус минуты переезда, а `pool_size` — параллельная ёмкость, минимум 1, и после операции ресурс возвращается в пул.
+На пине `6178c93` и в просмотренном коммите `8921ead` ([`AUDIT.md`, §10](AUDIT.md)) для каждой работы бригады, кроме первой на этом рабочем центре, занятость `AuxiliaryResource` начинается в момент `start` минус минуты переезда. `pool_size` — параллельная ёмкость, минимум 1, и после операции ресурс возвращается в пул.
 
 Поэтому актив и запрет пары в `AuxiliaryResource` не компилируются: иначе аппарат числился бы занятым, пока бригада ещё в пути. ЗИП компилируется иначе. Для каждой позиции создаётся вспомогательный ресурс с `pool_size = max(1, usable)`, и первая часть работы требует одну единицу. Это прокси одновременной ёмкости. Расход склада считает постпроверка: одна перечисленная позиция — одна единица, количественный BOM в `0.1.8` не задаётся.
 
@@ -206,7 +208,7 @@ flowchart LR
 
 | Идентификатор | Роль в системе | Учитывает при поиске | Может ли заявлять `optimal`? |
 | --- | --- | --- | --- |
-| `FIFO` | Наивный календарный базлайн («первым пришёл — первым назначен» на первую подходящую по навыкам бригаду) | Навыки бригады и порядок следования заявок | **Нет** (`heuristic_feasible` только при `0` нарушений чекера) |
+| `FIFO` | Наивный календарный базлайн: раньше срок `due_date` — раньше назначение, на бригаду с нужными навыками, которая освободится первой | Навыки бригады, `release_date`, `due_date`, конец горизонта и `latest_finish`. Смены, окна ПЛ и переезд не ждёт | **Нет** (`heuristic_feasible` только при `0` нарушений чекера) |
 | `FIFO-W` | Календарно-оконный базлайн для сравнения в разделе E отчёта жюри | Навыки, сменный календарь бригады, одобренное окно ПЛ, переезд и завершение предшественника | **Нет** |
 | `GREED` | Основной быстрый диспетчерский решатель `SynAPS` | Скомпилированная модель `ScheduleProblem` | **Нет.** Конфигурация с префиксом `GREED` получает `claim_status = heuristic_feasible` и статус `feasible` |
 | `CPSAT-30` | Точный решатель OR-Tools CP-SAT через `SynAPS` с бюджетом 30 с | Скомпилированная модель `ScheduleProblem` с минимизацией makespan и нижней оценкой (`lower_bound`) | **Да, для скомпилированной модели**, только если CP-SAT доказал `OPTIMAL` **и** независимый доменный чекер подтвердил `0` жёстких нарушений |
@@ -232,10 +234,12 @@ flowchart LR
 
 Раздел B того же отчёта жюри фиксирует перепланирование без сдвига замороженных строк ПЛ. Раздел E показывает базлайн `FIFO-W` на инстансе «Северный». Оба раздела читаются в файле отчёта; отдельных идентификаторов в реестре у них нет, и числа оттуда в эту таблицу не выносятся.
 
+Скрипты стендов перезаписывают отчёты в `benchmark/results/`. Время стены в них — машина прогона [B7], поэтому эти ячейки после повторного прогона меняются. Отчёт жюри пересобирается с `--cpsat`: без флага из него выпадает раздел D, а тесты его требуют.
+
 Дополнительно в репозитории представлены специализированные синтетические постановки:
 - **`gres-block`** (`tests/test_gres_block.py`) — ремонт энергоблока ГРЭС с технологической цепочкой и окнами вывода;
 - **`dual-feed-hall`** (`tests/test_dual_feed_hall.py`) — два независимых ввода питания машинного зала с табличным запретом одновременного отключения обоих лучей (`SIMULTANEOUS_OUTAGE_BAN`, структурный аналог ремонтопригодности без прерывания нагрузки; не реконструкция аварии конкретного дата-центра);
-- **Нагрузочные пробы `scale-2k` и `scale-5k`** (`benchmark/scale_budget.py`, `.github/workflows/scale-budget.yml`) — внутренние CI-пробы времени и пика памяти `tracemalloc` на укладке кампаний (не входят в реестр продуктовых утверждений `CLAIMS_REGISTRY.md`).
+- **Нагрузочные пробы `scale-2k` и `scale-5k`** (`benchmark/scale_budget.py`, `.github/workflows/scale-budget.yml`) — внутренние CI-пробы времени и пика памяти `tracemalloc` на укладке кампаний (не входят в реестр продуктовых утверждений `CLAIMS_REGISTRY.md`). Флаг `--allow-unverified` есть у этого скрипта.
 
 ---
 
@@ -243,13 +247,15 @@ flowchart LR
 
 ### Установка и проверка окружения
 
-Требуется **Python 3.12+**. Зависимости зафиксированы в `requirements.lock`, а ядро `SynAPS` привязано к коммиту `6178c93b705ff58be21fa74a98651883a2da1169`.
+Требуется **Python 3.12+**. Ядро `SynAPS` привязано к коммиту `6178c93b705ff58be21fa74a98651883a2da1169` в `pyproject.toml`. Lock-файл `requirements-lock.txt` собран `uv pip compile` под Linux, и задача `lockfile` в CI сверяет его с `pyproject.toml`.
 
 ```bash
-pip install -r requirements.lock
+pip install -r requirements-lock.txt
 pip install --no-deps -e .
 python -m synaps_gridplan version
 ```
+
+`version` печатает версию пакета, пин `synaps_commit`, `iso16290_trl` и путь к установленному `cli.py`. Для разработки нужны тестовые зависимости: `pip install -e ".[dev]"`, как в CI. Если в окружении стоит редактируемый checkout SynAPS на другом коммите, его выдаст падение `tests/test_version_pins.py`. `pip install -e ".[dev]" --force-reinstall` ставит пин поверх такого checkout.
 
 ### Основные сценарии CLI
 
@@ -274,32 +280,30 @@ python -m synaps_gridplan synthesize --mode small --seed 42 -o problem_conflict.
 python -m synaps_gridplan solve problem_conflict.json --solver GREED -o plan_conflict.json
 ```
 
-Коды возврата CLI:
-- `0` — расписание построено и прошло независимую проверку (`verified_feasible = True`, `hard_violation_count == 0`);
-- `2` — расписание построено или прочитано, но независимый чекер обнаружил жёсткие нарушения ограничений (для исследовательской записи неверифицированного файла предусмотрен явный флаг `--allow-unverified`);
-- `1` — ошибка аргументов командной строки, нарушение схемы входного JSON или превышение лабораторных квот чтения.
+Коды возврата Python CLI:
+- `0` — `solve`, `check` и `disrupt` вернули `PlanOutcome.ok`. Тот же код у законченных `synthesize`, `version`, `practice` и у напечатанного `report`.
+- `2` — план не прошёл проверку, либо вход не прочитан: схема, квота байт, ошибка синтеза, перехваченные `OSError`, `ValueError`, `TypeError`, `KeyError`. Ошибка разбора аргументов тоже завершается кодом `2`. Если `solve` или `disrupt` построили план, а проверка его не приняла, файл всё равно пишется: в нём видны `status`, `verified_feasible` и `hard_violation_count`.
 
-**3. Оперативное перепланирование (`disrupt`), генерация отчёта (`report`) и справка по слоям (`practice`):**
+**3. Оперативное перепланирование (`disrupt`), отчёт (`report`) и справка по слоям (`practice`):**
+
+`disrupt` требует хотя бы один `--job-id`: идентификатор берётся из `jobs[].id` того же JSON. `report` печатает снимок в stdout в UTF-8 и план заново не проверяет. Перед печатью команда переключает stdout и stderr на UTF-8. Если поток смену кодировки не принимает, печать завершается кодом `2`. Перепланирование РЭС «Северный» без сдвига замороженных строк — сценарий B в `python benchmark/jury_benchmark.py`. Аварийные сутки — `python benchmark/emergency_day_benchmark.py`.
 
 ```bash
-# Сгенерировать стенд РЭС «Северный», решить и внести возмущение без сдвига замороженных ПЛ
-python -m synaps_gridplan synthesize --mode res-severny --seed 7 -o severny.json
-python -m synaps_gridplan solve severny.json --solver GREED -o severny_plan.json
-python -m synaps_gridplan disrupt severny.json severny_plan.json -o severny_replan.json
-python -m synaps_gridplan report severny_replan.json --format markdown -o severny_report.md
-
-# Вывести метаданные архитектурного слоя и ссылок на мировую практику
+python -m synaps_gridplan report feeder_plan.json --format markdown
+python -m synaps_gridplan disrupt feeder.json feeder_plan.json --job-id <uuid из jobs> -o feeder_replan.json
 python -m synaps_gridplan practice
 ```
 
-Доступные режимы синтезатора (`synthesize --mode`): `small`, `medium`, `stress`, `scale-2k`, `scale-5k`, `frozen-conflict`, `res-severny`, `gres-block`, `emergency-day`, `dual-feed-hall`.
+Режимы `synthesize --mode`: `small`, `medium`, `stress`, `scale-2k`, `scale-5k`, `disruption`, `infeasible`, `frozen-conflict`, `gres-block`, `dual-feed-hall`. На `gres-block` и `dual-feed-hall` флаги `--assets`, `--jobs` и `--crews` отвергаются.
 
 **4. Нативный верификатор на Rust (`synaps-gridplan-rs`):**
 
 ```bash
 cargo test --manifest-path native/synaps-gridplan-rs/Cargo.toml --locked
-cargo run --manifest-path native/synaps-gridplan-rs/Cargo.toml --locked -- check severny.json severny_plan.json
+cargo run --manifest-path native/synaps-gridplan-rs/Cargo.toml --locked -- check feeder.json feeder_plan.json
 ```
+
+Непустая карта `travel_minutes` оставляет у native `check` поле `unsupported_constraints = ["travel_minutes"]` и `verified_feasible = false`, даже когда доменный список нарушений пуст. Учебный `small` такую карту содержит. Обнулять переезды, чтобы получить код `0`, не нужно: вердикт с переездом считает Python вместе с ядром SynAPS.
 
 **5. Локальный запуск всех проверок качества и реестра утверждений:**
 
@@ -322,7 +326,7 @@ ruff format --check src tests scripts
 | --- | --- |
 | График бригад и окон живёт отдельно от режима сети (Popovic et al., CP 2022; Barral et al., CPAIOR 2024; Tang et al., Energies 2025) | Слой `combinatorial_crew_window_mutex_freeze`: бригады, окна, цепочки, попарный запрет. Потоки, напряжение и критерий N-1 остаются в симуляторе (`electrical_security = out_of_scope`) |
 | Журнал DRCP удостоверяет записанную модель, не заявку диспетчера (Flippo et al., CP 2024 и CP 2026). OR-Tools CP-SAT такого журнала не отдаёт | Оптимум `CPSAT-30` — оптимум скомпилированной модели. Поверх ответа всегда стоит свой чекер. Чужой `optimal` не переиздаётся |
-| Текст заявки, который модель сама превращает в задачу, оставляет скрытые ошибки (CP-Bench, CP-Agent, ConstraintBench) | `extract` отвергает прозу (`prose`) и позицию ЗИП без количества (`blank_quantity`). Расписание выпускает солвер и проверка |
+| Текст заявки, который модель сама превращает в задачу, оставляет скрытые ошибки (CP-Bench, CP-Agent, ConstraintBench) | `extract` языковую модель не вызывает и отказывает по одной из шести причин: `invalid_json`, `not_an_object`, `prose`, `envelope`, `blank_quantity`, `invalid_problem`. Расписание выпускает солвер и проверка |
 
 ---
 
@@ -333,7 +337,7 @@ ruff format --check src tests scripts
 | Документ | Содержание |
 | --- | --- |
 | [`docs/LIMITS.md`](docs/LIMITS.md) · [`docs/limitations.md`](docs/limitations.md) | Главный перечень ограничений модели, границы компиляции `AuxiliaryResource`, различие между оптимумом скомпилированной модели и полным ТЗ |
-| [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md) | Единый реестр проверяемых утверждений (`V1`–`V3`, `B1`–`B7`, `T1`, `P1`–`P11`, `M1`–`M6`), артефактов и команд воспроизведения |
+| [`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md) | Единый реестр утверждений (`V1`–`V3`, `B1`–`B7`, `T1`, `P1`–`P12`, `M1`–`M6`), артефактов и команд воспроизведения. Числовой гейт CI читает таблицу `CI-gated` |
 | [`docs/sota-cp-2026.md`](docs/sota-cp-2026.md) · [`PRACTICE.md`](PRACTICE.md) | Обзор литературы 2022–2026: двухслойное планирование ремонтов сетей, DRCP/VeriPB и бенчмарки LLM-моделирования |
 | [`docs/architecture.md`](docs/architecture.md) | Внутреннее устройство пайплайна компиляции, решения и проверки |
 | [`docs/data-contract-v2.md`](docs/data-contract-v2.md) | Схема данных v2, правила валидации, `unenforced_fields`, маппинг табличного обмена и инварианты календаря бригад |

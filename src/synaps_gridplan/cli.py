@@ -56,8 +56,22 @@ def _synthesize_problem(args: argparse.Namespace) -> GridPlanProblem:
     )
 
 
+def prefer_utf8_stdio() -> None:
+    """Print reports as UTF-8 even when the console default is a legacy code page."""
+
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8")
+        except (OSError, ValueError):
+            continue
+
+
 def main(argv: list[str] | None = None) -> int:
     """Return a non-success exit code for malformed or unreadable input."""
+    prefer_utf8_stdio()
     try:
         return _run(argv)
     except (OSError, ValueError, TypeError, KeyError) as exc:
@@ -71,25 +85,38 @@ def _run(argv: list[str] | None = None) -> int:
 
     p_syn = sub.add_parser(
         "synthesize",
-        help="Write a synthetic feeder, GRES-block, or dual-feed hall JSON",
+        help="Write a synthetic JSON fixture",
+        description=(
+            "Write a synthetic JSON fixture. Named contest instances stay in "
+            "benchmark/jury_benchmark.py and benchmark/emergency_day_benchmark.py."
+        ),
     )
     p_syn.add_argument(
         "--assets",
         type=int,
         default=None,
-        help="feeder size (default 40); illegal with fixed modes",
+        help=(
+            "Asset count for --mode medium (default 40). Other feeder modes "
+            "ignore it. Rejected on the fixed modes gres-block and dual-feed-hall"
+        ),
     )
     p_syn.add_argument(
         "--jobs",
         type=int,
         default=None,
-        help="feeder size (default 200); illegal with fixed modes",
+        help=(
+            "Job count for --mode medium (default 200). Other feeder modes "
+            "ignore it. Rejected on the fixed modes gres-block and dual-feed-hall"
+        ),
     )
     p_syn.add_argument(
         "--crews",
         type=int,
         default=None,
-        help="feeder size (default 10); illegal with fixed modes",
+        help=(
+            "Crew count for --mode medium (default 10). Other feeder modes "
+            "ignore it. Rejected on the fixed modes gres-block and dual-feed-hall"
+        ),
     )
     p_syn.add_argument("--seed", type=int, default=42)
     p_syn.add_argument(
@@ -107,6 +134,7 @@ def _run(argv: list[str] | None = None) -> int:
             "gres-block",
             "dual-feed-hall",
         ],
+        help="Fixture shape. Size flags apply only to medium",
     )
     p_syn.add_argument("-o", "--output", type=Path, required=True)
 

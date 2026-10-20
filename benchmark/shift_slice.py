@@ -1,4 +1,4 @@
-"""Small shift fixture for section E. Not the 55-job monthly ``res_severny`` plan."""
+"""Small shift fixture for section F. Not the 55-job monthly ``res_severny`` plan."""
 
 from __future__ import annotations
 

@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 from pathlib import Path
+
+import pytest
 
 from synaps_gridplan.baselines import plan_fifo, plan_with_config
 from synaps_gridplan.cli import main
@@ -11,6 +15,33 @@ from synaps_gridplan.diff import diff_plans
 from synaps_gridplan.planner import plan_maintenance, replan_after_disruption
 from synaps_gridplan.report import render_report
 from synaps_gridplan.synthetic import synthesize_feeder
+
+_SYNTH_MODES = (
+    "small",
+    "medium",
+    "stress",
+    "scale-2k",
+    "scale-5k",
+    "disruption",
+    "infeasible",
+    "frozen-conflict",
+    "gres-block",
+    "dual-feed-hall",
+)
+
+
+def test_synthesize_help_names_modes_and_size_flags(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as caught:
+        main(["synthesize", "--help"])
+    assert caught.value.code == 0
+    text = " ".join(capsys.readouterr().out.split())
+    for mode in _SYNTH_MODES:
+        assert mode in text
+    assert "for --mode medium" in text
+    assert "Size flags apply only to medium" in text
+    assert "Rejected on the fixed modes gres-block and dual-feed-hall" in text
+    assert "benchmark/jury_benchmark.py" in text
+    assert "benchmark/emergency_day_benchmark.py" in text
 
 
 def test_fifo_baseline_deterministic() -> None:
@@ -154,3 +185,16 @@ def test_small_greed_multiseed_records_fail_closed() -> None:
     assert 42 in dirty
     assert 12 in clean
     assert dirty, "expected at least one fail-closed small seed"
+
+
+def test_main_switches_a_legacy_console_to_utf8(monkeypatch: pytest.MonkeyPatch) -> None:
+    stdout = io.TextIOWrapper(io.BytesIO(), encoding="cp1251")
+    stderr = io.TextIOWrapper(io.BytesIO(), encoding="cp1251")
+    monkeypatch.setattr(sys, "stdout", stdout)
+    monkeypatch.setattr(sys, "stderr", stderr)
+    assert main(["version"]) == 0
+    assert stdout.encoding is not None
+    assert stdout.encoding.lower() == "utf-8"
+    stdout.write("Č\n")
+    stdout.flush()
+    assert "Č" in stdout.buffer.getvalue().decode("utf-8")

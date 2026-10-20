@@ -2,6 +2,54 @@
 
 ## Unreleased
 
+- **fix**: `report` no longer dies on a legacy console code page. `main`
+  switches stdout and stderr to UTF-8 before printing. A stream that refuses
+  the switch still exits 2.
+
+- **docs**: the landing page no longer says the checker verifies an electrical
+  safety group or that a crew works one asset at a time. `QUALIFICATION_MISMATCH`
+  compares qualification lists. `CREW_OVERLAP` compares concurrent jobs with
+  `max_parallel`.
+
+- **fix**: `synthesize --help` names the real modes. `--assets`, `--jobs`,
+  and `--crews` size `--mode medium` only and are rejected on `gres-block`
+  and `dual-feed-hall`. Named contest instances stay in the benchmark
+  scripts. AUDIT records the 20 October reproduction slice, including 61
+  `#[test]` functions in the current Rust tree.
+
+- **docs**: the install line names the real lockfile, `requirements-lock.txt`.
+  `requirements.lock` does not exist, so the first README command failed.
+  The CI paragraph says what CI runs: a fresh `pip install -e ".[dev]"` from
+  `pyproject.toml` with the slow CP-SAT tests, while the `lockfile` job only
+  compares `requirements-lock.txt` with `uv pip compile`. `FIFO` is described
+  as earliest due date first, the order `plan_fifo` sorts by.
+  `CONTRIBUTING.md` lists the CI gates and treats unnumbered `docs/` files as
+  living. `docs/benchmark-protocol.md` describes the scripts that exist,
+  FIFO and FIFO-W included. The ГОСТ Р 58048 matrix no longer calls
+  `docs/architecture.md` an archive, and the ТОиР scenario dates its target
+  programme to the 1 October check instead of «сейчас».
+
+- **bench**: `jury_benchmark.py` renders section E itself. FIFO-W runs on
+  the same РЭС «Северный» instance, and the section sits between D and F.
+  Section E had been written into `jury_report.md` by hand, so a fresh run
+  dropped it and `test_fifo_w_section_matches_the_same_res_severny_instance`
+  failed. The report now says «у всех бригад», the condition the generator
+  checks, and ends with one newline. On 20 October 2026 a `--cpsat` rerun at
+  the pin changed only the wall-time cells of the jury, emergency-day, and
+  scale reports.
+  `benchmark/results/README.md` regenerates the jury report with `--cpsat`,
+  because a run without it drops section D. `test_emergency_report_renders_verified`
+  writes into `tmp_path`, so `pytest` no longer rewrites the committed
+  emergency-day report.
+
+- **docs**: the copy-paste CLI matches `argparse`. `synthesize` has no
+  `res-severny` or `emergency-day` mode; those instances stay in
+  `benchmark/jury_benchmark.py` and `benchmark/emergency_day_benchmark.py`.
+  `disrupt` requires `--job-id`, `report` writes to stdout, and schema or
+  quota failures exit 2. The skill pool and the setup-matrix cap
+  (`MAX_SCHEDULE_SETUP_ENTRIES`, 2 000 000 on pin `6178c93`) are named next
+  to the compile boundary.
+
 - **docs**: the JSON intake is named in full. `extract_problem` refuses
   `invalid_json`, `not_an_object`, `prose`, `envelope`, `blank_quantity`,
   and `invalid_problem`. README, the architecture note, the limitations

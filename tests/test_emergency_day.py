@@ -119,10 +119,12 @@ def test_emergency_determinism(problem) -> None:
     ]
 
 
-def test_emergency_report_renders_verified() -> None:
+def test_emergency_report_renders_verified(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """A dirty GREED plan must not be labelled verified in the rendered report."""
+    monkeypatch.setattr("emergency_day_benchmark.RESULTS", tmp_path)
     results = run()
     md = render_md(results)
+    assert (tmp_path / "emergency_day_report.md").read_text(encoding="utf-8") == md
     assert results["scenario_a"]["greed"]["verified_feasible"]
     assert "Восточный" in md
     assert "СТО 17330282" in md
