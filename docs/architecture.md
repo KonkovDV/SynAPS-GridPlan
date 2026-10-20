@@ -44,7 +44,11 @@ the pinned SynAPS (`2 000 000` at `6178c93`) compilation raises `ValueError`
 before the list is allocated.
 
 CP-SAT `OPTIMAL` is the compiled model and its makespan. Asset exclusivity,
-pair bans, and spare stock stay in the post-check. `PlanOutcome.ok` needs an
+pair bans, spare stock, `safety_constraints`, and `service_area` stay in the
+post-check. A non-empty safety list must be covered by the crew's
+qualifications or `domain_attributes.safety_clearances`
+(`SAFETY_CONSTRAINT_MISMATCH`). Service areas are compared only when both
+are set (`SERVICE_AREA_MISMATCH`). `PlanOutcome.ok` needs an
 acceptable status, `verified_feasible`, and zero hard violations together.
 
 `synthesize --mode` is `small`, `medium`, `stress`, `scale-2k`, `scale-5k`,

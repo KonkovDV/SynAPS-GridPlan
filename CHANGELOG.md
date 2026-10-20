@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **docs**: safety clearances and service area are named as post-checks.
+  A non-empty `safety_constraints` list must sit in the crew's
+  qualifications or in `domain_attributes.safety_clearances`. That string
+  match is not an electrical-safety-group certificate. `SERVICE_AREA_MISMATCH`
+  fires only when both area strings are set and differ. Python and the Rust
+  domain checker use the same rule.
+
 - **docs**: the landing page no longer says the checker verifies an electrical
   safety group or that a crew works one asset at a time. `QUALIFICATION_MISMATCH`
   compares qualification lists. `CREW_OVERLAP` compares concurrent jobs with

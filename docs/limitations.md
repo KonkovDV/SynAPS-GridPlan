@@ -18,7 +18,13 @@
    day parts on the same asset; the outage is the hull from the first start
    to the last end. Spare stock and skills are required once, on the first
    part. An immutable freeze stays one placement. **Safety and service
-   area** stay post-check only. This is not a labour-law roster.
+   area** stay post-check only, in Python and in the Rust domain checker.
+   A non-empty `safety_constraints` list must be covered by
+   `Crew.qualifications` or by `domain_attributes.safety_clearances`; the
+   code is `SAFETY_CONSTRAINT_MISMATCH`. An empty list asks for nothing.
+   That match is not an electrical-safety-group certificate. `SERVICE_AREA_MISMATCH`
+   fires only when both `Asset.service_area` and `Crew.service_area` are
+   non-empty and differ. This is not a labour-law roster.
 7. **No customer EAM / SCADA / GIS** integration.
 8. Heuristic solvers (`GREED`, `BEAM`, `ALNS`, `RHC`) map to
    `heuristic_feasible` and must not be called optimal without proof.
