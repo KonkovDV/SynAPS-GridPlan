@@ -79,9 +79,11 @@
     post-checks. Section D of `benchmark/results/jury_report.md` names that
     boundary (`скомпилированная модель`). The status is not an optimum of the
     full domain contract.
-25. `extract_problem` accepts a JSON problem and refuses prose and a spare
-    with neither `available_quantity` nor `stock_qty`. `measure_emitted`
-    counts `PlanOutcome.ok` only for JSON it emitted. The labeled-sample
-    fraction is not a `CLAIMS_REGISTRY` row and is not an accuracy on
+25. `extract_problem` accepts a JSON object and refuses six cases:
+    `invalid_json`, `not_an_object`, `prose`, `envelope`, `blank_quantity`
+    (neither `available_quantity` nor `stock_qty`), and `invalid_problem`.
+    A blank quantity does not become zero stock. `measure_emitted` counts
+    `PlanOutcome.ok` only for JSON it emitted. The labeled-sample fraction
+    is not a `CLAIMS_REGISTRY` row and is not an accuracy on
     maintenance-request text.
 

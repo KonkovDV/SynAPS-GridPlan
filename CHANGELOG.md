@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **docs**: the JSON intake is named in full. `extract_problem` refuses
+  `invalid_json`, `not_an_object`, `prose`, `envelope`, `blank_quantity`,
+  and `invalid_problem`. README, the architecture note, the limitations
+  list, and the 2026 literature review now list the same six reasons.
+
 - **docs**: the model section of the README no longer uses inline TeX.
   GitHub and the editor preview were splitting subscripts and TeX
   commands into broken math. The same statements are now plain sentences

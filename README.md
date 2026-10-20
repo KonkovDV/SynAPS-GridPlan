@@ -131,7 +131,7 @@ flowchart LR
 | Компилятор доменной задачи в `SynAPS` (`adapter.py`): календарь бригады, дробление длинной работы по сменам, переезды, линейные цепочки, заморозка слотов | Оптимизация или прямое моделирование показателей **SAIDI / SAIFI** как целевой функции |
 | Независимая проверка `check_gridplan_constraints` (Python) и нативный крейт `synaps-gridplan-rs` (в дереве 61 функция `#[test]`; это счёт исходников, не журнал CI) | Живые производственные выгрузки ПАО «Россети», ПАО «ЭЛ5-Энерго», Конаковской ГРЭС или других ДЗО |
 | Точный решатель `CPSAT-30` (OR-Tools CP-SAT через `SynAPS`), эвристика `GREED`, оперативный ремонт плана `INCREMENTAL_REPAIR`, базлайны `FIFO` и `FIFO-W` | Готовые промышленные коннекторы к 1С:ТОИР, SAP PM, Maximo, SCADA/EMS/OMS или парсеры CSV/XLSX в составе пакета |
-| Fail-closed приёмщик JSON `synaps_gridplan.extract` (коды `prose`, `invalid_json`, `blank_quantity`) | Сертификация по ГОСТ Р 58048-2017, аттестация КИИ по **187-ФЗ** или номер записи в Едином реестре российского ПО ([`docs/ru_software_registry.md`](docs/ru_software_registry.md)) |
+| Fail-closed приёмщик JSON `synaps_gridplan.extract` (`prose`, `invalid_json`, `not_an_object`, `envelope`, `blank_quantity`, `invalid_problem`) | Сертификация по ГОСТ Р 58048-2017, аттестация КИИ по **187-ФЗ** или номер записи в Едином реестре российского ПО ([`docs/ru_software_registry.md`](docs/ru_software_registry.md)) |
 | Воспроизводимые синтетические стенды (`B1`–`B5`, `B7`), генератор пакета доказательств `scripts/evidence_bundle.py`, аудит формулировок `scripts/lint_claims.py` и SBOM (`sbom/`) | Статус партнёра или подрядчика ПАО «Россети» (в конкурсных анонсах «Россети» — соорганизатор программы, а не заказчик GridPlan) |
 
 ### Что доказывает и чего не доказывает зелёный статус CI
@@ -191,7 +191,14 @@ flowchart LR
 
 `Asset.voltage_level`, `Asset.parent_asset_id`, `Asset.coordinates`, `Asset.failure_modes`, `SparePart.warehouse_location` принимаются и попадают в `unenforced_fields`. `SparePart.lead_time_min` жёсткий только при нулевом usable и без `replenishment_date`; иначе это предупреждение. Подробности — в [`docs/data-contract-v2.md`](docs/data-contract-v2.md).
 
-`extract_problem` языковую модель не вызывает. Свободный текст с ключом `text`, `prompt`, `narrative` или `request` получает причину `prose`. Неразборный JSON — `invalid_json`. Позиция ЗИП без `available_quantity` и без `stock_qty` — `blank_quantity`: пустая ячейка не становится нулевым остатком.
+`extract_problem` языковую модель не вызывает. Отказ называется так:
+
+- `invalid_json` — строка не разбирается как JSON.
+- `not_an_object` — разобранное значение не объект.
+- `prose` — в корне есть `text`, `prompt`, `narrative` или `request`.
+- `envelope` — ключ `problem` есть, но документ не равен одному этому объекту.
+- `blank_quantity` — у позиции ЗИП нет ни `available_quantity`, ни `stock_qty`. Пустая ячейка не становится нулём.
+- `invalid_problem` — объект не проходит схему `GridPlanProblem`.
 
 ---
 
@@ -356,7 +363,7 @@ SynAPS-GridPlan/
 │   ├── baselines.py             # FIFO и FIFO-W
 │   ├── crew_calendar.py         # Пересечение смен и доступности
 │   ├── legacy_freeze.py         # Заморозка из outage_windows[].frozen
-│   ├── extract.py               # Приём JSON: prose, invalid_json, blank_quantity
+│   ├── extract.py               # Приём JSON: шесть причин отказа, без языковой модели
 │   ├── synthetic.py             # Генераторы стендов, включая res_severny и фидеры
 │   └── cli.py                   # synthesize, solve, check, disrupt, report, practice
 ├── native/synaps-gridplan-rs/   # Доменный чекер и календарный FIFO; 61 функция #[test]
