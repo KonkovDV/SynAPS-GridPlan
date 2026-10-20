@@ -3,6 +3,9 @@
 Scenario A — calendar FIFO vs GREED, with an independent check.
 Scenario B — freeze two ПЛ rows, disrupt a storm set, replan.
 Scenario C — same seed twice.
+Section D — CPSAT-30 on the same instance (``--cpsat``).
+Section E — FIFO-W on the same instance.
+Section F — the separate 08–17 shift slice (``shift_slice.py``).
 
 A plan is marked verified only when the checker agrees and hard violations are 0.
 Heuristic GREED is never called optimal here. The violation table sums both
@@ -55,6 +58,15 @@ def _ok(snap: dict) -> bool:
         and snap["hard_violation_count"] == 0
         and snap.get("status") in {"feasible", "optimal"}
     )
+
+
+def fifo_w_snapshot(problem, outcome, wall_s: float) -> dict:
+    return {
+        **_snapshot(outcome, wall_s),
+        "crew_calendars_empty": all(
+            not crew.shift_calendar and not crew.availability for crew in problem.crews
+        ),
+    }
 
 
 def claims_pass(results: dict) -> bool:
@@ -133,6 +145,9 @@ def run(*, with_cpsat: bool = False) -> dict:
     same_plan = [a.model_dump(mode="json") for a in greed.schedule.assignments] == [
         a.model_dump(mode="json") for a in greed2.schedule.assignments
     ]
+    fifo_w, t_fifo_w = _timed(
+        lambda: plan_with_config(problem, solver_config="FIFO-W", apply_frozen=False)
+    )
 
     results = {
         "benchmark": "gridplan.jury.v2",
@@ -166,6 +181,7 @@ def run(*, with_cpsat: bool = False) -> dict:
                 [a.model_dump(mode="json") for a in greed.schedule.assignments]
             ),
         },
+        "fifo_w": fifo_w_snapshot(problem, fifo_w, t_fifo_w),
     }
     if with_cpsat:
         cpsat, t_cpsat = _timed(
@@ -203,6 +219,35 @@ def run(*, with_cpsat: bool = False) -> dict:
     )
     (RESULTS / "jury_report.md").write_text(render_md(results), encoding="utf-8")
     return results
+
+
+def render_section_fifo_w(snap: dict, *, jobs: int) -> str:
+    """Section E. A heuristic on the scenario A instance; never an optimum."""
+
+    calendars_empty = snap.get("crew_calendars_empty") is True
+    if calendars_empty:
+        lead = (
+            "Календари смен и доступности у всех бригад пустые, поэтому правило смены здесь\n"
+            "не действует: пустой календарь — круглосуточная бригада. Отличие от календарного\n"
+            "FIFO — окно отключения, переезд и ожидание конца предшественника. Эвристика,\n"
+        )
+    else:
+        lead = (
+            "Календарь смен или доступности задан хотя бы у одной бригады, и FIFO-W ставит\n"
+            "работу внутрь смены. Отличие от календарного FIFO — ещё окно отключения,\n"
+            "переезд и ожидание конца предшественника. Эвристика,\n"
+        )
+    return (
+        "\n## E. FIFO-W на том же инстансе\n\n"
+        f"{lead}"
+        "не оптимум CP-SAT и не другой датасет.\n\n"
+        "| Показатель | FIFO-W |\n"
+        "| --- | --- |\n"
+        f"| Работ назначено | {snap['assigned']} / {jobs} |\n"
+        f"| Жёстких нарушений | {snap['hard_violation_count']} |\n"
+        f"| Проверка | {_mark(_ok(snap))} |\n"
+        f"| Календари бригад | {'пустые' if calendars_empty else 'заданы'} |\n"
+    )
 
 
 def render_md(r: dict) -> str:
@@ -279,6 +324,8 @@ def render_md(r: dict) -> str:
     greed_assigned = f"{a['greed']['assigned']} / {inst['jobs']}"
     fifo_hard = a["fifo"]["hard_violation_count"]
     greed_hard = a["greed"]["hard_violation_count"]
+    fw = r.get("fifo_w")
+    fifo_w_section = render_section_fifo_w(fw, jobs=inst["jobs"]) if fw else ""
     e = r.get("scenario_e")
     e_section = ""
     if e:
@@ -353,8 +400,7 @@ GREED, расшифровка:
 
 Контур — слой формализуемых ограничений (бригады, окна, явные запреты пар, заморозка ПЛ),
 как слой 1 TMS Hydro-Québec (CP 2022). Потокораспределение вне продукта. Таблица: `PRACTICE.md`.
-{d_section}{e_section}
-"""
+{d_section}{fifo_w_section}{e_section}"""
 
 
 if __name__ == "__main__":

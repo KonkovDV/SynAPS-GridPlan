@@ -16,7 +16,13 @@ from synaps_gridplan.versions import GRIDPLAN_VERSION, SYNAPS_COMMIT
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "benchmark"))
 
-from jury_benchmark import _ok, claims_pass, render_md  # noqa: E402
+from jury_benchmark import (  # noqa: E402
+    _ok,
+    claims_pass,
+    fifo_w_snapshot,
+    render_md,
+    render_section_fifo_w,
+)
 from shift_slice import build_res_severny_shifts, render_section_e  # noqa: E402
 
 
@@ -224,6 +230,29 @@ def test_fifo_w_section_matches_the_same_res_severny_instance() -> None:
     assert outcome.verified_feasible is True
     assert "| Жёстких нарушений | 0 |" in section
     assert "| Проверка | да |" in section
+    rendered = render_section_fifo_w(fifo_w_snapshot(problem, outcome, 0.0), jobs=len(problem.jobs))
+    assert rendered in report
+    assert report.index("## D. CP-SAT") < report.index("## E. FIFO-W") < report.index("## F.")
+
+
+def test_fifo_w_renderer_does_not_pass_a_dirty_plan() -> None:
+    dirty = {
+        "assigned": 9,
+        "hard_violation_count": 3,
+        "verified_feasible": False,
+        "status": "error",
+        "crew_calendars_empty": False,
+    }
+    text = render_section_fifo_w(dirty, jobs=10)
+    assert "| Работ назначено | 9 / 10 |" in text
+    assert "| Проверка | нет |" in text
+    assert "| Календари бригад | заданы |" in text
+    assert "у всех бригад пустые" not in text
+    assert "не оптимум" in text
+    payload = _payload(greed_verified=True, greed_viol=0, repair_verified=True)
+    assert "## E. FIFO-W" not in render_md(payload)
+    payload["fifo_w"] = dirty
+    assert text in render_md(payload)
 
 
 def test_fifo_serialized_layers_match_hard_count() -> None:
