@@ -39,6 +39,12 @@ def test_academy_does_not_point_at_open_draft_prs() -> None:
     assert "ГОСТ Р 58048-2017" in text
 
 
+def test_readme_installs_from_the_real_lockfile() -> None:
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "pip install -r requirements-lock.txt" in text
+    assert "pip install -r requirements.lock" not in text
+
+
 def test_readme_points_at_claims_registry() -> None:
     text = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "docs/CLAIMS_REGISTRY.md" in text
