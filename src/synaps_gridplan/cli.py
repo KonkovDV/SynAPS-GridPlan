@@ -71,25 +71,38 @@ def _run(argv: list[str] | None = None) -> int:
 
     p_syn = sub.add_parser(
         "synthesize",
-        help="Write a synthetic feeder, GRES-block, or dual-feed hall JSON",
+        help="Write a synthetic JSON fixture",
+        description=(
+            "Write a synthetic JSON fixture. Named contest instances stay in "
+            "benchmark/jury_benchmark.py and benchmark/emergency_day_benchmark.py."
+        ),
     )
     p_syn.add_argument(
         "--assets",
         type=int,
         default=None,
-        help="feeder size (default 40); illegal with fixed modes",
+        help=(
+            "Asset count for --mode medium (default 40). Other feeder modes "
+            "ignore it. Rejected on the fixed modes gres-block and dual-feed-hall"
+        ),
     )
     p_syn.add_argument(
         "--jobs",
         type=int,
         default=None,
-        help="feeder size (default 200); illegal with fixed modes",
+        help=(
+            "Job count for --mode medium (default 200). Other feeder modes "
+            "ignore it. Rejected on the fixed modes gres-block and dual-feed-hall"
+        ),
     )
     p_syn.add_argument(
         "--crews",
         type=int,
         default=None,
-        help="feeder size (default 10); illegal with fixed modes",
+        help=(
+            "Crew count for --mode medium (default 10). Other feeder modes "
+            "ignore it. Rejected on the fixed modes gres-block and dual-feed-hall"
+        ),
     )
     p_syn.add_argument("--seed", type=int, default=42)
     p_syn.add_argument(
@@ -107,6 +120,7 @@ def _run(argv: list[str] | None = None) -> int:
             "gres-block",
             "dual-feed-hall",
         ],
+        help="Fixture shape. Size flags apply only to medium",
     )
     p_syn.add_argument("-o", "--output", type=Path, required=True)
 

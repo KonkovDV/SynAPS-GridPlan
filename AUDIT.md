@@ -222,3 +222,24 @@ Rust: 3 lib + 6 CLI + 5 FIFO + 16 integration + 3 report + 6 schedule + 2 travel
 после изменения семантики интервала занятости `AuxiliaryResource` в `SynAPS`
 (отсчёт `[start, end)` без включения времени бригады в пути).
 
+## 11. Срез воспроизведения 20.10.2026
+
+Дополнение к разделу 10. Это не бенчмарк и не строка
+[`docs/CLAIMS_REGISTRY.md`](docs/CLAIMS_REGISTRY.md). Пин не сдвигался:
+продукт **0.1.8**, SynAPS `6178c93`.
+
+- В дереве на эту дату **61** функция `#[test]` в `native/synaps-gridplan-rs`.
+  Раздел 9 оставляет **58** функций на `f56e693`. README называет текущий счёт
+  исходников, не журнал CI.
+- Установка в README — `pip install -r requirements-lock.txt`. Файла
+  `requirements.lock` нет. CI ставит `pip install -e ".[dev]"` из
+  `pyproject.toml`. Задача `lockfile` сверяет `requirements-lock.txt` с
+  `uv pip compile` под Linux.
+- Раздел E отчёта жюри (`FIFO-W` на том же инстансе) рисует
+  `benchmark/jury_benchmark.py`. Пересборка отчёта — с `--cpsat`: без флага
+  из файла выпадает раздел D.
+- Справка `synthesize --help` перечисляет режимы CLI. `--assets`, `--jobs` и
+  `--crews` задают размер только у `medium`; на `gres-block` и
+  `dual-feed-hall` они отвергаются. РЭС «Северный» и аварийные сутки остаются
+  скриптами `benchmark/`.
+
