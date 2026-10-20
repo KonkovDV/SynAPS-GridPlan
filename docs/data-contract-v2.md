@@ -29,6 +29,8 @@
 
 Принимаются и не меняют вердикт: `Asset.voltage_level`, `Asset.parent_asset_id`, `Asset.coordinates`, `Asset.failure_modes`, `SparePart.warehouse_location`. `SparePart.lead_time_min` жёсткий только при нулевом usable и без `replenishment_date`.
 
-`travel_minutes`: ключ `{from_location}|{to_location}`, минуты подготовки. Непустая матрица держит native `verified_feasible` ложным.
+`travel_minutes`: ключ `{from_location}|{to_location}`, минуты подготовки. Непустая матрица держит native `verified_feasible` ложным. Число ячеек матрицы в солвере — бригады × (коды площадок)², с базами бригад и точкой `idle`. Выше `MAX_SCHEDULE_SETUP_ENTRIES` пина (2 000 000) компилятор отказывает до выделения списка.
+
+`required_qualifications` компилятор собирает в пул `skill:{квалификация}`. `pool_size` — сумма `max(1, max_parallel)` по бригадам с этой строкой. Первая часть работы берёт одну единицу. На пине для каждой работы бригады, кроме первой на этом рабочем центре, окно начинается в `start` минус минуты переезда. Это одновременная ёмкость, не допуск по наряду.
 
 Конкретный профиль CIM (IEC 61970 / 61968) для пакета не фиксировался. Отображение опирается на JSON-схему пакета, не на номер профиля.
