@@ -8,9 +8,11 @@ Synthetic fixtures only. Committed markdown:
 | `emergency_day_report.md` | synthetic restoration day, uzel Vostochny |
 | `scale_report.md` | generic 200/600-job feeder: GREED verified, FIFO is not |
 
-Version pins live inside the files. JSON dumps are gitignored. A rerun at the
-pin changes only the wall-time cells. Without `--cpsat` the jury rerun drops
-section D, and `tests/test_jury_report.py` requires it.
+Version pins live inside the files. JSON dumps are gitignored. Wall time is
+the machine of the run, so a rerun rewrites those cells. On 20 October 2026 a
+rerun at the pin changed nothing else; any other diff is worth reading.
+Without `--cpsat` the jury rerun drops section D, and
+`tests/test_jury_report.py` requires it.
 
 ```bash
 python -m pip install -e ".[dev]" --force-reinstall
