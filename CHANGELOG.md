@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **bench**: `jury_benchmark.py` renders section E itself. FIFO-W runs on
+  the same РЭС «Северный» instance, and the section sits between D and F.
+  Section E had been written into `jury_report.md` by hand, so a fresh run
+  dropped it and `test_fifo_w_section_matches_the_same_res_severny_instance`
+  failed. The report now says «у всех бригад», the condition the generator
+  checks, and ends with one newline. A `--cpsat` rerun at the pin changes
+  only the wall-time cells of the jury, emergency-day, and scale reports.
+  `benchmark/results/README.md` regenerates the jury report with `--cpsat`,
+  because a run without it drops section D. `test_emergency_report_renders_verified`
+  writes into `tmp_path`, so `pytest` no longer rewrites the committed
+  emergency-day report.
+
 - **docs**: the copy-paste CLI matches `argparse`. `synthesize` has no
   `res-severny` or `emergency-day` mode; those instances stay in
   `benchmark/jury_benchmark.py` and `benchmark/emergency_day_benchmark.py`.
