@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **docs**: the landing page no longer says the checker verifies an electrical
+  safety group or that a crew works one asset at a time. `QUALIFICATION_MISMATCH`
+  compares qualification lists. `CREW_OVERLAP` compares concurrent jobs with
+  `max_parallel`.
+
 - **docs**: the install line names the real lockfile, `requirements-lock.txt`.
   `requirements.lock` does not exist, so the first README command failed.
   The CI paragraph says what CI runs: a fresh `pip install -e ".[dev]"` from

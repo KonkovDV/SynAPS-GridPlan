@@ -61,6 +61,8 @@ def test_html_pages_are_scanned_for_banned_claims() -> None:
     assert lint.find_hits(text, lint.load_phrases()) == []
     assert "не норма обслуживания" in text
     assert "не вход модели" in text
+    assert "max_parallel" in text
+    assert "электробезопасности" not in text
 
 
 def test_test_count_snapshot_matches_collect_only() -> None:
