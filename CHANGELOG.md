@@ -2,11 +2,11 @@
 
 ## Unreleased
 
-- **docs**: reviewed published SynAPS `6250abd` (27 Oct 2026). Auxiliary
-  occupancy is still `[start - setup, end)`, empty execution modes keep the
-  old single-mode problem, and the GridPlan pin stays `6178c93`. A same-day
-  probe of synthetic РЭС «Северный» matched the committed FIFO 107 / GREED 0
-  / CPSAT-30 optimum and is not a new claims-registry row.
+- **docs**: the 27 October SynAPS review now names audit A-02. The checker
+  takes the earlier of the stamped setup and the setup it derives from the
+  machine sequence, so occupancy can start before the stamp. The pin stays
+  `6178c93`. The same-day probe also matched the committed emergency-day
+  FIFO 27 / GREED 0 result. That is not a new claims-registry row.
 
 - **fix**: replan no longer treats a day-part key `job:{id}:part:n` as another
   job id. That parse raised `ValueError` before a split job could be
