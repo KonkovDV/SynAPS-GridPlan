@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **docs**: reviewed published SynAPS `6250abd` (27 Oct 2026). Auxiliary
+  occupancy is still `[start - setup, end)`, empty execution modes keep the
+  old single-mode problem, and the GridPlan pin stays `6178c93`. A same-day
+  probe of synthetic РЭС «Северный» matched the committed FIFO 107 / GREED 0
+  / CPSAT-30 optimum and is not a new claims-registry row.
+
 - **fix**: replan no longer treats a day-part key `job:{id}:part:n` as another
   job id. That parse raised `ValueError` before a split job could be
   replanned. The default freeze still uses the `job:{id}` assignment only.
