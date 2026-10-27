@@ -2,12 +2,11 @@
 
 ## Unreleased
 
-- **docs**: A-02 applies to calendars, not to the auxiliary pool. On
-  SynAPS `6250abd`, `_occupancy_start` takes the earlier of the stamped
-  setup and the derived changeover for work-center and auxiliary calendars.
-  The auxiliary pool and parallel machine capacity use only the derived
-  window: `start` for the first job on a machine, then `start` minus the
-  matrix minutes. The pin stays `6178c93`.
+- **docs**: the derived setup window is per sequence, not per machine.
+  On SynAPS `6250abd` the first job of a serial chain starts at `start`;
+  with `max_parallel > 1` that chain is one lane. A full check, which is
+  what GridPlan calls, then uses matrix minutes. The setup stamp is written
+  into that window only when a scoped notary skips the serial machine.
 
 - **fix**: replan no longer treats a day-part key `job:{id}:part:n` as another
   job id. That parse raised `ValueError` before a split job could be
