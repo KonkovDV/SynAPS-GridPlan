@@ -2,11 +2,12 @@
 
 ## Unreleased
 
-- **docs**: the 27 October SynAPS review now names audit A-02. The checker
-  takes the earlier of the stamped setup and the setup it derives from the
-  machine sequence, so occupancy can start before the stamp. The pin stays
-  `6178c93`. The same-day probe also matched the committed emergency-day
-  FIFO 27 / GREED 0 result. That is not a new claims-registry row.
+- **docs**: A-02 applies to calendars, not to the auxiliary pool. On
+  SynAPS `6250abd`, `_occupancy_start` takes the earlier of the stamped
+  setup and the derived changeover for work-center and auxiliary calendars.
+  The auxiliary pool and parallel machine capacity use only the derived
+  window: `start` for the first job on a machine, then `start` minus the
+  matrix minutes. The pin stays `6178c93`.
 
 - **fix**: replan no longer treats a day-part key `job:{id}:part:n` as another
   job id. That parse raised `ValueError` before a split job could be
