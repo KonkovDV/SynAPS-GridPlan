@@ -33,12 +33,19 @@ def compiled_crew_windows(
 
 
 def longest_open_minutes(crew: Crew, *, horizon_start: datetime) -> int | None:
-    """Longest open interval in minutes. ``None`` means round-the-clock."""
+    """Longest open interval in minutes. ``None`` means round-the-clock.
+
+    The one-minute marker entirely before ``horizon_start`` means the crew is
+    closed. It is not a shift, so it does not become the slice size.
+    """
 
     windows = compiled_crew_windows(crew, horizon_start=horizon_start)
     if not windows:
         return None
-    return max(int((end - start).total_seconds() // 60) for start, end in windows)
+    open_rows = [(start, end) for start, end in windows if end > horizon_start]
+    if not open_rows:
+        return 0
+    return max(int((end - start).total_seconds() // 60) for start, end in open_rows)
 
 
 def day_part_minutes(duration_min: int, window_minutes: int) -> list[int]:

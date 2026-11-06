@@ -2,10 +2,18 @@
 
 ## Unreleased
 
+- **fix**: a crew closed by a disjoint shift and availability is not sliced
+  into the one-minute marker before the horizon. That marker only keeps the
+  solver from treating the crew as round-the-clock. The job stays one
+  operation.
+
 - **docs**: rechecked SynAPS on 6 Nov 2026. Published `origin/main` is
   `b8006ef`; the checker file is unchanged since `6250abd`. A probe on the
   unpublished tip `fd02000` still matched the committed Severny and
   emergency-day reports. The pin stays `6178c93`.
+
+- **docs**: the public page no longer ties the laboratory scenario to a named
+  news incident. The SynAPS review no longer spells out checker window steps.
 
 - **fix**: replan no longer treats a day-part key `job:{id}:part:n` as another
   job id. That parse raised `ValueError` before a split job could be
