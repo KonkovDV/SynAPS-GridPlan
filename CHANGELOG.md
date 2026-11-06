@@ -2,10 +2,8 @@
 
 ## Unreleased
 
-- **docs**: an overlapping successor does not get a derived setup window.
-  On SynAPS `6250abd` the full check records `MACHINE_OVERLAP` and leaves
-  the window unset, so the auxiliary pool falls back to `start`. The pin
-  stays `6178c93`.
+- **docs**: the public page no longer ties the laboratory scenario to a named
+  news incident. The SynAPS review no longer spells out checker window steps.
 
 - **fix**: replan no longer treats a day-part key `job:{id}:part:n` as another
   job id. That parse raised `ValueError` before a split job could be
