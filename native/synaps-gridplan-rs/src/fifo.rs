@@ -4,13 +4,13 @@
 //! Assignments use domain job/crew UUIDs (not SynAPS operation UUIDs).
 
 use chrono::{DateTime, Duration, Utc};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 use crate::constraints::{check_plan, Violation};
 use crate::fingerprint::fingerprint_payload;
-use crate::model::GridPlanProblem;
+use crate::model::{Asset, Crew, GridPlanProblem, MaintenanceJob};
 use crate::schedule::{Assignment, ObjectiveSnapshot, PlanResult};
 use crate::{unsupported_native_constraints, CLAIM_LEVEL, SCHEMA_VERSION, VERSION};
 
@@ -43,6 +43,14 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
         .crews
         .iter()
         .map(|c| (c.id, problem.planning_horizon_start))
+        .collect();
+
+    let crews_by_id: HashMap<Uuid, &Crew> =
+        problem.crews.iter().map(|crew| (crew.id, crew)).collect();
+    let assets_by_id: HashMap<Uuid, &Asset> = problem
+        .assets
+        .iter()
+        .map(|asset| (asset.id, asset))
         .collect();
 
     let mut ordered: Vec<&crate::model::MaintenanceJob> = problem.jobs.iter().collect();
@@ -102,6 +110,22 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
                 qualified
             }
         };
+        // Same predicate as the domain checker. Drop a crew that fails it
+        // when another crew in this pool still passes. An empty pool stays
+        // empty-means-all only for the qualification fallback above: handing
+        // the solver nobody would mean every crew on the pinned engine.
+        let legal: Vec<Uuid> = eligible
+            .iter()
+            .copied()
+            .filter(|crew_id| {
+                let Some(crew) = crews_by_id.get(crew_id) else {
+                    return false;
+                };
+                covers_safety(job, crew)
+                    && covers_service_area(crew, assets_by_id.get(&job.asset_id).copied())
+            })
+            .collect();
+        let eligible = if legal.is_empty() { eligible } else { legal };
 
         let mut best: Option<(Uuid, DateTime<Utc>)> = None;
         let crew_code: HashMap<Uuid, &str> = problem
@@ -246,4 +270,39 @@ pub fn plan_fifo(problem: &GridPlanProblem) -> PlanResult {
         }),
     }
     .with_claim_defaults()
+}
+
+fn clearance_strings(crew: &Crew) -> HashSet<String> {
+    let Some(extra) = crew
+        .domain_attributes
+        .get("safety_clearances")
+        .and_then(Value::as_array)
+    else {
+        return HashSet::new();
+    };
+    extra
+        .iter()
+        .filter_map(|item| item.as_str().map(str::to_string))
+        .collect()
+}
+
+fn covers_safety(job: &MaintenanceJob, crew: &Crew) -> bool {
+    if job.safety_constraints.is_empty() {
+        return true;
+    }
+    let mut have: HashSet<String> = crew.qualifications.iter().cloned().collect();
+    have.extend(clearance_strings(crew));
+    job.safety_constraints
+        .iter()
+        .all(|item| have.contains(item))
+}
+
+fn covers_service_area(crew: &Crew, asset: Option<&Asset>) -> bool {
+    let Some(asset) = asset else {
+        return true;
+    };
+    if asset.service_area.is_empty() || crew.service_area.is_empty() {
+        return true;
+    }
+    asset.service_area == crew.service_area
 }

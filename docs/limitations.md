@@ -18,14 +18,19 @@
    day parts on the same asset; the outage is the hull from the first start
    to the last end. Spare stock and skills are required once, on the first
    part. An immutable freeze stays one placement. **Safety and service
-   area** stay post-check only. A non-empty `safety_constraints` list must
-   be covered by the union of `Crew.qualifications` and the string entries of
+   area** use one predicate in the compiler and in the checker. A non-empty
+   `safety_constraints` list must be covered by the union of
+   `Crew.qualifications` and the string entries of
    `domain_attributes.safety_clearances`; the code is
    `SAFETY_CONSTRAINT_MISMATCH`. An empty list asks for nothing. That match
-   is not an electrical-safety-group certificate. Python stringifies a
-   non-string entry in `safety_clearances`; the Rust domain checker skips it.
-   `SERVICE_AREA_MISMATCH` fires only when both `Asset.service_area` and
-   `Crew.service_area` are non-empty and differ. This is not a labour-law roster.
+   is not an electrical-safety-group certificate. A non-string entry in
+   `safety_clearances` is not a clearance: Python skips it and the Rust
+   domain checker skips it. `SERVICE_AREA_MISMATCH` fires only when both
+   `Asset.service_area` and `Crew.service_area` are non-empty and differ.
+   The compiler drops a crew that fails this predicate when another crew in
+   the pool still passes. It does not emit an empty eligible list, because
+   the pinned engine would read that as every work center. The checker still
+   rejects an imported assignment. This is not a labour-law roster.
 7. **No customer EAM / SCADA / GIS** integration.
 8. Heuristic solvers (`GREED`, `BEAM`, `ALNS`, `RHC`) map to
    `heuristic_feasible` and must not be called optimal without proof.
