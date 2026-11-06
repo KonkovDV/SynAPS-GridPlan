@@ -51,7 +51,9 @@ covered by the union of the crew's qualifications and the string entries of
 `domain_attributes.safety_clearances` (`SAFETY_CONSTRAINT_MISMATCH`).
 A non-string entry in that list is not a clearance: Python skips it and the
 Rust checker skips it. Service areas are compared only when both are set
-(`SERVICE_AREA_MISMATCH`). `PlanOutcome.ok` needs an
+(`SERVICE_AREA_MISMATCH`). Native FIFO and the legacy window freeze use that
+same list. The domain checker indexes compiled operations once and groups
+approved outage windows by asset before the walk. `PlanOutcome.ok` needs an
 acceptable status, `verified_feasible`, and zero hard violations together.
 
 `synthesize --mode` is `small`, `medium`, `stress`, `scale-2k`, `scale-5k`,

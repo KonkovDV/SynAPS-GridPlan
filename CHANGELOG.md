@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **perf**: the domain checker indexes compiled operations once and groups
+  approved outage windows by asset. Native FIFO builds the crew-code index
+  once. Native legacy freeze walks only the jobs of that asset and uses the
+  same eligibility list as the compiler.
+
 - **fix**: the compiler and native FIFO drop a crew that fails
   `safety_constraints` or `service_area` when another crew in the pool still
   passes. The checker repeats that predicate, so an imported assignment is

@@ -57,25 +57,51 @@ def _compiled_jobs_match(
     )
 
 
-def _operation_job_ids(problem: GridPlanProblem, id_map: dict[str, UUID]) -> dict[UUID, UUID]:
-    out: dict[UUID, UUID] = {}
+def _job_operation_index(
+    problem: GridPlanProblem, id_map: dict[str, UUID]
+) -> tuple[dict[UUID, UUID], dict[UUID, list[UUID]]]:
+    """One pass over ``id_map``: operation → job, and each job's part operations.
+
+    Part keys sort the same way as a full-map scan because they share the
+    ``job:{id}:part:`` prefix.
+    """
+
+    known = {job.id for job in problem.jobs}
+    op_to_job: dict[UUID, UUID] = {}
+    part_rows: dict[UUID, list[tuple[str, UUID]]] = {}
+    heads: dict[UUID, UUID] = {}
+    for key, op_id in id_map.items():
+        if not key.startswith("job:"):
+            continue
+        rest = key[4:]
+        mark = rest.find(":part:")
+        token = rest if mark < 0 else rest[:mark]
+        try:
+            job_id = UUID(token)
+        except ValueError:
+            continue
+        if job_id not in known:
+            continue
+        op_to_job[op_id] = job_id
+        if mark < 0:
+            heads[job_id] = op_id
+        else:
+            part_rows.setdefault(job_id, []).append((key, op_id))
+    parts_by_job: dict[UUID, list[UUID]] = {}
     for job in problem.jobs:
-        head = id_map.get(f"job:{job.id}")
-        if head is not None:
-            out[head] = job.id
-        prefix = f"job:{job.id}:part:"
-        for key, op_id in id_map.items():
-            if key.startswith(prefix):
-                out[op_id] = job.id
-    return out
+        rows = part_rows.get(job.id)
+        if rows:
+            rows.sort()
+            parts_by_job[job.id] = [op_id for _, op_id in rows]
+        elif job.id in heads:
+            parts_by_job[job.id] = [heads[job.id]]
+        else:
+            parts_by_job[job.id] = []
+    return op_to_job, parts_by_job
 
 
-def _part_operation_ids(job_id: UUID, id_map: dict[str, UUID]) -> list[UUID]:
-    parts = [id_map[key] for key in sorted(id_map) if key.startswith(f"job:{job_id}:part:")]
-    if parts:
-        return parts
-    head = id_map.get(f"job:{job_id}")
-    return [head] if head is not None else []
+def _operation_job_ids(problem: GridPlanProblem, id_map: dict[str, UUID]) -> dict[UUID, UUID]:
+    return _job_operation_index(problem, id_map)[0]
 
 
 def check_gridplan_constraints(
@@ -136,7 +162,24 @@ def check_gridplan_constraints(
     crews_by_id = {c.id: c for c in problem.crews}
     assets_by_id = {a.id: a for a in problem.assets}
     spares_by_id = {s.id: s for s in problem.spare_parts}
-    op_to_job = _operation_job_ids(problem, id_map)
+    op_to_job, parts_by_job = _job_operation_index(problem, id_map)
+    ops_by_id = {operation.id: operation for operation in schedule_problem.operations}
+    part_count_by_job: dict[UUID, int] = {}
+    for operation in schedule_problem.operations:
+        raw = operation.domain_attributes.get("gridplan_job_id")
+        if raw is None:
+            continue
+        try:
+            job_key = UUID(str(raw))
+        except ValueError:
+            continue
+        part_count_by_job[job_key] = int(
+            operation.domain_attributes.get("gridplan_part_count") or 1
+        )
+    approved_by_asset: dict[UUID, list[Any]] = {}
+    for window in problem.outage_windows:
+        if window.approved:
+            approved_by_asset.setdefault(window.asset_id, []).append(window)
     crew_of_wc = {id_map[f"crew:{c.id}"]: c.id for c in problem.crews if f"crew:{c.id}" in id_map}
 
     for asn in result.assignments:
@@ -229,11 +272,12 @@ def check_gridplan_constraints(
             )
 
         scheduled_min = int((asn.end_time - asn.start_time).total_seconds() // 60)
-        part_count = 1
-        for operation in schedule_problem.operations:
-            if operation.id == asn.operation_id:
-                part_count = int(operation.domain_attributes.get("gridplan_part_count") or 1)
-                break
+        placed = ops_by_id.get(asn.operation_id)
+        part_count = (
+            int(placed.domain_attributes.get("gridplan_part_count") or 1)
+            if placed is not None
+            else 1
+        )
         if asn.end_time <= asn.start_time or job.duration_min < 1:
             violations.append(
                 ConstraintViolation(
@@ -254,7 +298,14 @@ def check_gridplan_constraints(
                 )
             )
 
-        violations.extend(_outage_violations(problem, job, asn.start_time, asn.end_time))
+        violations.extend(
+            _outage_violations(
+                job,
+                asn.start_time,
+                asn.end_time,
+                approved_by_asset.get(job.asset_id, ()),
+            )
+        )
 
         if job.latest_finish is not None and asn.end_time > job.latest_finish:
             violations.append(
@@ -277,11 +328,7 @@ def check_gridplan_constraints(
             (asn.end_time - asn.start_time).total_seconds() // 60
         )
     for job in problem.jobs:
-        part_count = 0
-        for operation in schedule_problem.operations:
-            if str(operation.domain_attributes.get("gridplan_job_id")) != str(job.id):
-                continue
-            part_count = int(operation.domain_attributes.get("gridplan_part_count") or 1)
+        part_count = part_count_by_job.get(job.id, 0)
         if part_count > 1 and covered_minutes.get(job.id, 0) < job.duration_min:
             violations.append(
                 ConstraintViolation(
@@ -320,7 +367,7 @@ def check_gridplan_constraints(
     )
 
     # Completeness: a dropped job must not yield verified_feasible.
-    all_op_ids = {op_id for job in problem.jobs for op_id in _part_operation_ids(job.id, id_map)}
+    all_op_ids = {op_id for ids in parts_by_job.values() for op_id in ids}
     assigned_op_ids = [a.operation_id for a in result.assignments]
     seen_ops: set[UUID] = set()
     for op_id in assigned_op_ids:
@@ -334,7 +381,7 @@ def check_gridplan_constraints(
             )
         seen_ops.add(op_id)
     for job in problem.jobs:
-        if any(op_id not in seen_ops for op_id in _part_operation_ids(job.id, id_map)):
+        if any(op_id not in seen_ops for op_id in parts_by_job.get(job.id, ())):
             violations.append(
                 ConstraintViolation(
                     kind="UNSCHEDULED_JOB",
@@ -653,15 +700,14 @@ def _crew_overlap_violations(
 
 
 def _outage_violations(
-    problem: GridPlanProblem,
     job: MaintenanceJob,
     start: datetime,
     end: datetime,
+    windows: list[Any] | tuple[Any, ...],
 ) -> list[ConstraintViolation]:
     if not job.interruption_required:
         return []
 
-    windows = [w for w in problem.outage_windows if w.asset_id == job.asset_id and w.approved]
     for w in windows:
         if job.id in w.forbidden_job_ids and start < w.end and end > w.start:
             return [
