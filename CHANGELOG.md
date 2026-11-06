@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **docs**: rechecked SynAPS on the evening of 6 Nov 2026. Published
+  `origin/main` is `0a7f899`. The checker file is still unchanged since
+  `6250abd`. The published solver edits are lower bounds (cycle prefix,
+  mode demand on the auxiliary floor, shortest reservation) plus the greedy
+  finish-anchor and the LBBD capacity row. GridPlan still compiles no
+  execution modes. A probe on `0a7f899`, and the same probe on the
+  unpublished tip `26ba209`, matched the committed Severny and emergency-day
+  reports. The pin stays `6178c93`.
+
 - **fix**: touching half-open shift rows stay two windows. The compiler was
   joining a row that ended where the next began, so the solver could place
   a job across a boundary the checker still reads as two rows.
