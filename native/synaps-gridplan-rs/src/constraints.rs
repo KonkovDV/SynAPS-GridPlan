@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
+use crate::eligibility::{covers_safety, covers_service_area, SearchIndex};
 use crate::model::{
     Asset, Crew, CrewCalendarWindow, FrozenAssignment, GridPlanProblem, MaintenanceJob,
+    OutageWindow,
 };
 use crate::schedule::Assignment;
 use serde_json::{json, Value};
@@ -37,39 +39,25 @@ pub fn merge_expected_frozen(
         .collect()
 }
 
-fn first_window_freeze_crew(job: &MaintenanceJob, problem: &GridPlanProblem) -> Option<Uuid> {
-    if let Some(crew_id) = job.eligible_crew_ids.first() {
-        return Some(*crew_id);
-    }
-    let required: HashSet<_> = job.required_qualifications.iter().cloned().collect();
-    let selected: Vec<Uuid> = problem
-        .crews
-        .iter()
-        .filter(|crew| {
-            let have: HashSet<_> = crew.qualifications.iter().cloned().collect();
-            required.is_subset(&have)
-        })
-        .map(|crew| crew.id)
-        .collect();
-    if selected.is_empty() && required.is_empty() {
-        return problem.crews.first().map(|crew| crew.id);
-    }
-    selected.into_iter().next()
-}
-
-/// Legacy ``outage_windows[].frozen`` pins: window.start + duration on first eligible crew.
+/// Legacy ``outage_windows[].frozen`` pins: window.start + duration on the
+/// first crew ``crews_for_search`` would hand the compiler.
 fn window_frozen_assignments(problem: &GridPlanProblem) -> Vec<FrozenAssignment> {
+    let search = SearchIndex::build(problem);
+    let mut jobs_by_asset: HashMap<Uuid, Vec<&MaintenanceJob>> = HashMap::new();
+    for job in &problem.jobs {
+        jobs_by_asset.entry(job.asset_id).or_default().push(job);
+    }
     let mut out = Vec::new();
     let mut seen = HashSet::new();
     for window in &problem.outage_windows {
         if !window.frozen || !window.approved {
             continue;
         }
-        for job in &problem.jobs {
-            if job.asset_id != window.asset_id || !job.interruption_required {
-                continue;
-            }
-            if seen.contains(&job.id) {
+        let Some(jobs) = jobs_by_asset.get(&window.asset_id) else {
+            continue;
+        };
+        for job in jobs {
+            if !job.interruption_required || seen.contains(&job.id) {
                 continue;
             }
             if window.forbidden_job_ids.contains(&job.id) {
@@ -87,7 +75,7 @@ fn window_frozen_assignments(problem: &GridPlanProblem) -> Vec<FrozenAssignment>
             if end > window.end {
                 continue;
             }
-            let Some(crew_id) = first_window_freeze_crew(job, problem) else {
+            let Some(crew_id) = search.crews_for_search(job).into_iter().next() else {
                 continue;
             };
             seen.insert(job.id);
@@ -123,6 +111,15 @@ pub fn check_plan(
     let crews_by_id: HashMap<_, _> = problem.crews.iter().map(|c| (c.id, c)).collect();
     let assets_by_id: HashMap<_, _> = problem.assets.iter().map(|a| (a.id, a)).collect();
     let spares_by_id: HashMap<_, _> = problem.spare_parts.iter().map(|s| (s.id, s)).collect();
+    let mut approved_by_asset: HashMap<Uuid, Vec<&OutageWindow>> = HashMap::new();
+    for window in &problem.outage_windows {
+        if window.approved {
+            approved_by_asset
+                .entry(window.asset_id)
+                .or_default()
+                .push(window);
+        }
+    }
     for fr in expected_frozen {
         if !jobs_by_id.contains_key(&fr.job_id)
             || !crews_by_id.contains_key(&fr.crew_id)
@@ -246,7 +243,15 @@ pub fn check_plan(
                 job_id: Some(job.id),
             });
         }
-        out.extend(outage_violations(problem, job, a.start, a.end));
+        out.extend(outage_violations(
+            job,
+            a.start,
+            a.end,
+            approved_by_asset
+                .get(&job.asset_id)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
+        ));
     }
 
     out.extend(precedence_violations(problem, &by_job));
@@ -479,21 +484,16 @@ fn simultaneous_outage_ban_violations(
 }
 
 fn outage_violations(
-    problem: &GridPlanProblem,
     job: &MaintenanceJob,
     start: DateTime<Utc>,
     end: DateTime<Utc>,
+    windows: &[&OutageWindow],
 ) -> Vec<Violation> {
     if !job.interruption_required {
         return vec![];
     }
-    let windows: Vec<_> = problem
-        .outage_windows
-        .iter()
-        .filter(|w| w.asset_id == job.asset_id && w.approved)
-        .collect();
 
-    for w in &windows {
+    for w in windows {
         if w.forbidden_job_ids.contains(&job.id) && start < w.end && end > w.start {
             return vec![Violation {
                 kind: "FORBIDDEN_OUTAGE_WINDOW".into(),
@@ -512,7 +512,7 @@ fn outage_violations(
     }
 
     let allowed: Vec<_> = windows
-        .into_iter()
+        .iter()
         .filter(|w| {
             if w.forbidden_job_ids.contains(&job.id) {
                 return false;
@@ -828,34 +828,18 @@ fn catalog_field_violations(
         }
     }
 
-    if !job.safety_constraints.is_empty() {
-        let mut clearances: HashSet<String> = crew.qualifications.iter().cloned().collect();
-        if let Some(extra) = crew
-            .domain_attributes
-            .get("safety_clearances")
-            .and_then(Value::as_array)
-        {
-            for item in extra {
-                if let Some(text) = item.as_str() {
-                    clearances.insert(text.to_string());
-                }
-            }
-        }
-        let required: HashSet<String> = job.safety_constraints.iter().cloned().collect();
-        if !required.is_subset(&clearances) {
-            out.push(Violation {
-                kind: "SAFETY_CONSTRAINT_MISMATCH".into(),
-                message: format!(
-                    "job {} safety_constraints are not covered by crew {}",
-                    job.external_ref, crew.code
-                ),
-                job_id: Some(job.id),
-            });
-        }
+    if !covers_safety(job, crew) {
+        out.push(Violation {
+            kind: "SAFETY_CONSTRAINT_MISMATCH".into(),
+            message: format!(
+                "job {} safety_constraints are not covered by crew {}",
+                job.external_ref, crew.code
+            ),
+            job_id: Some(job.id),
+        });
     }
 
-    let asset_area = asset.map(|a| a.service_area.as_str()).unwrap_or("");
-    if !asset_area.is_empty() && !crew.service_area.is_empty() && asset_area != crew.service_area {
+    if !covers_service_area(crew, asset) {
         out.push(Violation {
             kind: "SERVICE_AREA_MISMATCH".into(),
             message: format!(

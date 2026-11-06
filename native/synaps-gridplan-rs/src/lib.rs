@@ -3,6 +3,7 @@
 
 pub mod bridge;
 pub mod constraints;
+pub mod eligibility;
 pub mod fifo;
 pub mod fingerprint;
 pub mod ids;

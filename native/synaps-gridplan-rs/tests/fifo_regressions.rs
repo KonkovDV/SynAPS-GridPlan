@@ -126,3 +126,39 @@ fn fifo_keeps_the_crew_that_matches_service_area() {
     assert!(result.ok(), "{:?}", result.violations);
     assert_eq!(result.assignments[0].crew_id, north_id);
 }
+
+#[test]
+fn legacy_freeze_pins_the_same_crew_fifo_selects() {
+    let mut p = problem();
+    let asset_id = p.jobs[0].asset_id;
+    for asset in &mut p.assets {
+        if asset.id == asset_id {
+            asset.service_area = "north".into();
+        }
+    }
+    p.jobs[0].eligible_crew_ids.clear();
+    p.jobs[0].interruption_required = true;
+    p.jobs[0].duration_min = 60;
+    p.crews.truncate(1);
+    p.crews[0].service_area = "south".into();
+    p.crews[0].code = "south".into();
+    let mut north = p.crews[0].clone();
+    north.id = Uuid::new_v5(&p.crews[0].id, b"north");
+    north.code = "north".into();
+    north.service_area = "north".into();
+    let north_id = north.id;
+    p.crews.push(north);
+    let window = serde_json::from_value(json!({
+        "id": Uuid::new_v5(&asset_id, b"window"),
+        "asset_id": asset_id,
+        "start": p.planning_horizon_start,
+        "end": p.planning_horizon_start + Duration::hours(3),
+        "approved": true,
+        "frozen": true,
+    }))
+    .unwrap();
+    p.outage_windows = vec![window];
+    let result = plan_fifo(&p);
+    assert!(result.ok(), "{:?}", result.violations);
+    assert_eq!(result.assignments[0].crew_id, north_id);
+}
