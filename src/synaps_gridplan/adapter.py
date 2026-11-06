@@ -25,11 +25,9 @@ from synaps_gridplan.crew_calendar import (
     day_part_minutes,
     longest_open_minutes,
 )
+from synaps_gridplan.eligibility import crews_for_search
 from synaps_gridplan.legacy_freeze import (
     approved_outage_windows as _approved_outage_windows,
-)
-from synaps_gridplan.legacy_freeze import (
-    eligible_crew_ids as _eligible_crews,
 )
 from synaps_gridplan.legacy_freeze import (
     legacy_window_frozen_assignments,
@@ -379,7 +377,7 @@ def to_schedule_problem(problem: GridPlanProblem) -> tuple[ScheduleProblem, dict
         for job in chain:
             job_asset = assets_by_id[job.asset_id]
             loc = job_asset.location_code or job_asset.code
-            eligible = list(job.eligible_crew_ids) or _eligible_crews(job, problem)
+            eligible = crews_for_search(job, problem)
             op_earliest, op_latest = _job_clearance_bounds(
                 job, windows_by_asset.get(job.asset_id, [])
             )

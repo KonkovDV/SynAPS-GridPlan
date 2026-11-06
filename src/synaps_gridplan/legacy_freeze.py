@@ -10,6 +10,7 @@ from collections import defaultdict
 from datetime import timedelta
 from uuid import UUID
 
+from synaps_gridplan.eligibility import crews_for_search, qualification_crew_ids
 from synaps_gridplan.model import (
     FrozenAssignment,
     GridPlanProblem,
@@ -29,11 +30,7 @@ def approved_outage_windows(job: MaintenanceJob, windows: list[OutageWindow]) ->
 
 
 def eligible_crew_ids(job: MaintenanceJob, problem: GridPlanProblem) -> list[UUID]:
-    required = set(job.required_qualifications)
-    selected = [crew.id for crew in problem.crews if required.issubset(set(crew.qualifications))]
-    if not selected and not required:
-        return [crew.id for crew in problem.crews]
-    return selected
+    return qualification_crew_ids(job, problem)
 
 
 def legacy_window_frozen_assignments(problem: GridPlanProblem) -> list[FrozenAssignment]:
@@ -59,7 +56,7 @@ def legacy_window_frozen_assignments(problem: GridPlanProblem) -> list[FrozenAss
                 continue
             if not job.interruption_required or not approved_outage_windows(job, [window]):
                 continue
-            eligible = list(job.eligible_crew_ids) or eligible_crew_ids(job, problem)
+            eligible = crews_for_search(job, problem)
             if not eligible:
                 continue
             end = window.start + timedelta(minutes=job.duration_min)

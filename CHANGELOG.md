@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **fix**: the compiler and native FIFO drop a crew that fails
+  `safety_constraints` or `service_area` when another crew in the pool still
+  passes. The checker repeats that predicate, so an imported assignment is
+  still rejected. A non-string `safety_clearances` entry is not a clearance
+  on either side. An empty eligible list is not emitted: the pinned engine
+  would read it as every work center.
+
 - **docs**: rechecked SynAPS on the evening of 6 Nov 2026. Published
   `origin/main` is `0a7f899`. The checker file is still unchanged since
   `6250abd`. The published solver edits are lower bounds (cycle prefix,

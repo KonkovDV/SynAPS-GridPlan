@@ -13,6 +13,7 @@ from uuid import UUID
 
 from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
+from synaps_gridplan.eligibility import covers_safety, covers_service_area
 from synaps_gridplan.legacy_freeze import legacy_window_frozen_assignments
 from synaps_gridplan.model import FrozenAssignment, GridPlanProblem, MaintenanceJob, SparePart
 from synaps_gridplan.unenforced import spare_earliest_use
@@ -428,34 +429,26 @@ def _catalog_field_violations(
                 )
             )
 
-    required_safety = set(job.safety_constraints)
-    if required_safety:
-        clearances = set(crew.qualifications)
-        extra = getattr(crew, "domain_attributes", {}) or {}
-        listed = extra.get("safety_clearances", [])
-        if isinstance(listed, list):
-            clearances.update(str(item) for item in listed)
-        if not required_safety.issubset(clearances):
-            violations.append(
-                ConstraintViolation(
-                    kind="SAFETY_CONSTRAINT_MISMATCH",
-                    message=(
-                        f"job {job.external_ref} safety_constraints {sorted(required_safety)} "
-                        f"are not covered by crew {crew.code}"
-                    ),
-                    job_id=job.id,
-                )
+    if not covers_safety(job, crew):
+        violations.append(
+            ConstraintViolation(
+                kind="SAFETY_CONSTRAINT_MISMATCH",
+                message=(
+                    f"job {job.external_ref} safety_constraints {sorted(job.safety_constraints)} "
+                    f"are not covered by crew {crew.code}"
+                ),
+                job_id=job.id,
             )
+        )
 
-    asset_area = str(getattr(asset, "service_area", "") or "") if asset is not None else ""
-    crew_area = str(getattr(crew, "service_area", "") or "")
-    if asset_area and crew_area and asset_area != crew_area:
+    if not covers_service_area(crew, asset):
+        asset_area = getattr(asset, "service_area", "") or ""
         violations.append(
             ConstraintViolation(
                 kind="SERVICE_AREA_MISMATCH",
                 message=(
                     f"job {job.external_ref} asset area {asset_area!r} "
-                    f"does not match crew {crew.code} area {crew_area!r}"
+                    f"does not match crew {crew.code} area {crew.service_area!r}"
                 ),
                 job_id=job.id,
             )
