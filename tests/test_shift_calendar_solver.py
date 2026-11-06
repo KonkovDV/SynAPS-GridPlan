@@ -87,6 +87,7 @@ def test_disjoint_calendars_are_not_compiled_as_round_the_clock() -> None:
     assert [(row.start, row.end) for row in calendar] == [
         (problem.planning_horizon_start - timedelta(minutes=1), problem.planning_horizon_start)
     ]
+    assert len(schedule.operations) == 1
 
 
 def test_setup_before_the_shift_is_a_violation() -> None:

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **fix**: a crew closed by a disjoint shift and availability is not sliced
+  into the one-minute marker before the horizon. That marker only keeps the
+  solver from treating the crew as round-the-clock. The job stays one
+  operation.
+
 - **docs**: the public page no longer ties the laboratory scenario to a named
   news incident. The SynAPS review no longer spells out checker window steps.
 
