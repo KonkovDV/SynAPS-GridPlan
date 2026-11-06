@@ -81,9 +81,11 @@ def _intersect(
 
 
 def _merge(rows: Iterable[tuple[datetime, datetime]]) -> list[tuple[datetime, datetime]]:
+    """Merge overlapping intervals. Touching half-open ends stay separate."""
+
     merged: list[tuple[datetime, datetime]] = []
     for start, end in sorted(rows):
-        if not merged or start > merged[-1][1]:
+        if not merged or start >= merged[-1][1]:
             merged.append((start, end))
             continue
         previous_start, previous_end = merged[-1]

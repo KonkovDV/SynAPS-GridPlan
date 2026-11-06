@@ -56,9 +56,9 @@
 18. **`shift_calendar`:** each assignment must sit inside **one** calendar
     row. A night shift split across midnight as two adjacent rows is read as
     `OUTSIDE` / `SHIFT_CALENDAR_VIOLATION`. Merge those rows before ingest.
-    Rows are not auto-stitched. The one-minute marker before the horizon is
-    a closed crew, not a shift: the compiler does not slice the job into
-    that minute.
+    Rows are not auto-stitched, including two half-open rows that only touch.
+    The one-minute marker before the horizon is a closed crew, not a shift:
+    the compiler does not slice the job into that minute.
 19. **ЗИП:** one stock unit per job. There is no quantity field on the job.
     Two repairs of the same spare need `qty ≥ 2`.
 20. **Datetimes** on one problem must be all-naive or all-aware. Mixing
