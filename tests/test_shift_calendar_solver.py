@@ -76,6 +76,30 @@ def test_solver_calendar_is_the_intersection() -> None:
     ]
 
 
+def test_touching_shift_rows_stay_separate() -> None:
+    shifts = [
+        CrewCalendarWindow(start=DAY + timedelta(hours=8), end=DAY + timedelta(hours=12)),
+        CrewCalendarWindow(start=DAY + timedelta(hours=12), end=DAY + timedelta(hours=17)),
+    ]
+    problem, _, _, _ = _problem(shifts=shifts)
+    schedule, _ = to_schedule_problem(problem)
+    calendar = schedule.work_centers[0].calendar
+    assert [(row.start, row.end) for row in calendar] == [
+        (DAY + timedelta(hours=8), DAY + timedelta(hours=12)),
+        (DAY + timedelta(hours=12), DAY + timedelta(hours=17)),
+    ]
+    overlap = [
+        CrewCalendarWindow(start=DAY + timedelta(hours=8), end=DAY + timedelta(hours=14)),
+        CrewCalendarWindow(start=DAY + timedelta(hours=10), end=DAY + timedelta(hours=16)),
+    ]
+    problem, _, _, _ = _problem(shifts=overlap)
+    schedule, _ = to_schedule_problem(problem)
+    calendar = schedule.work_centers[0].calendar
+    assert [(row.start, row.end) for row in calendar] == [
+        (DAY + timedelta(hours=8), DAY + timedelta(hours=16)),
+    ]
+
+
 def test_disjoint_calendars_are_not_compiled_as_round_the_clock() -> None:
     shifts = [CrewCalendarWindow(start=DAY + timedelta(hours=8), end=DAY + timedelta(hours=12))]
     availability = [

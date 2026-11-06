@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **fix**: touching half-open shift rows stay two windows. The compiler was
+  joining a row that ended where the next began, so the solver could place
+  a job across a boundary the checker still reads as two rows.
+
 - **fix**: a crew closed by a disjoint shift and availability is not sliced
   into the one-minute marker before the horizon. That marker only keeps the
   solver from treating the crew as round-the-clock. The job stays one
